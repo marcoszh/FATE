@@ -29,11 +29,10 @@ import org.apache.logging.log4j.Logger;
 public class Configuration {
     private static final Logger LOGGER = LogManager.getLogger();
     private final String confPath;
-    private static HashMap<String, String> properties;
+    private static HashMap<String, String> properties = new HashMap<>();
 
     public Configuration(String confPath){
         this.confPath = confPath;
-        properties = new HashMap<>();
     }
 
     public int load(){
