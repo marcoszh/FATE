@@ -79,62 +79,63 @@ public class TransferJobScheduler implements Runnable {
 
     @Override
     public void run() {
-        try {
+
             boolean latchWaitResult = false;
             int waitCount = 0;
             while (System.currentTimeMillis() > 0) {
-                while (!latchWaitResult && ++waitCount < 15 && jobQueue.isEmpty()) {
-                    latchWaitResult = jobQueueReadyLatch.await(1, TimeUnit.SECONDS);
-                }
+                try {
+                    while (!latchWaitResult && ++waitCount < 15 && jobQueue.isEmpty()) {
+                        latchWaitResult = jobQueueReadyLatch.await(1, TimeUnit.SECONDS);
+                    }
 
-                waitCount = 0;
-                latchWaitResult = false;
-                resetLatch();
+                    waitCount = 0;
+                    latchWaitResult = false;
+                    resetLatch();
 
-                if (jobQueue.isEmpty()) {
-                    continue;
-                }
+                    if (jobQueue.isEmpty()) {
+                        continue;
+                    }
 
-                Federation.TransferMeta cur = jobQueue.remove();
-                LOGGER.info("[FEDERATION][SCHEDULER] processing job: {}, executor active: {}, executor max capacity: {}",
-                        toStringUtils.toOneLineString(cur), transferJobSchedulerExecutor.getActiveCount(), transferJobSchedulerExecutor.getMaxPoolSize());
+                    Federation.TransferMeta cur = jobQueue.remove();
+                    LOGGER.info("[FEDERATION][SCHEDULER] processing job: {}, executor active: {}, executor max capacity: {}",
+                            toStringUtils.toOneLineString(cur), transferJobSchedulerExecutor.getActiveCount(), transferJobSchedulerExecutor.getMaxPoolSize());
 
-                Federation.TransferType type = cur.getType();
+                    Federation.TransferType type = cur.getType();
 
-                BaseTransferProcessor processor = null;
-                switch (type) {
-                    case SEND:
-                        processor = transferServiceFactory.createSendProcessor(cur);
-                        break;
-                    case RECV:
-                        processor = transferServiceFactory.createRecvProcessor(cur);
-                        break;
-                    default:
-                        transferMetaHelper.onError(cur, 200, "Invalid transfer type: " + type);
-                        break;
-                }
+                    BaseTransferProcessor processor = null;
+                    switch (type) {
+                        case SEND:
+                            processor = transferServiceFactory.createSendProcessor(cur);
+                            break;
+                        case RECV:
+                            processor = transferServiceFactory.createRecvProcessor(cur);
+                            break;
+                        default:
+                            transferMetaHelper.onError(cur, 200, "Invalid transfer type: " + type);
+                            break;
+                    }
 
-                String transferMetaId = transferPojoUtils.generateTransferId(cur);
-                if (processor != null) {
-                    LOGGER.info("[FEDERATION][SCHEDULER] ready to submit job. transferMetaId: {}, type: {}, processorType: {}, ",
-                            transferMetaId, type.name(), processor.getClass().getSimpleName());
+                    String transferMetaId = transferPojoUtils.generateTransferId(cur);
+                    if (processor != null) {
+                        LOGGER.info("[FEDERATION][SCHEDULER] ready to submit job. transferMetaId: {}, type: {}, processorType: {}, ",
+                                transferMetaId, type.name(), processor.getClass().getSimpleName());
 
-                    CountDownLatch countDownLatch = new CountDownLatch(1);
-                    ListenableFuture<?> listenableFuture = transferJobSchedulerExecutor.submitListenable(processor);
-                    listenableFuture.addCallback(new ListenableFutureCallback<Object>() {
-                        @Override
-                        public void onFailure(Throwable throwable) {
-                            LOGGER.error("[FEDERATION][SCHEDULER] processor failed: transferMetaId: {}, exception: {}",
-                                    transferMetaId, errorUtils.getStackTrace(throwable));
-                            countDownLatch.countDown();
-                        }
+                        CountDownLatch countDownLatch = new CountDownLatch(1);
+                        ListenableFuture<?> listenableFuture = transferJobSchedulerExecutor.submitListenable(processor);
+                        listenableFuture.addCallback(new ListenableFutureCallback<Object>() {
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                                LOGGER.error("[FEDERATION][SCHEDULER] processor failed: transferMetaId: {}, exception: {}",
+                                        transferMetaId, errorUtils.getStackTrace(throwable));
+                                countDownLatch.countDown();
+                            }
 
-                        @Override
-                        public void onSuccess(Object o) {
-                            LOGGER.info("[FEDERATION][SCHEDULER] processor success. transferMetaId: {}", transferMetaId);
-                            countDownLatch.countDown();
-                        }
-                    });
+                            @Override
+                            public void onSuccess(Object o) {
+                                LOGGER.info("[FEDERATION][SCHEDULER] processor success. transferMetaId: {}", transferMetaId);
+                                countDownLatch.countDown();
+                            }
+                        });
 
 /*                    boolean awaitResult = false;
                     while (!awaitResult) {
@@ -148,17 +149,18 @@ public class TransferJobScheduler implements Runnable {
                         }
                         awaitResult = countDownLatch.await(10, TimeUnit.SECONDS);
                     }*/
-                } else {
-                    LOGGER.error("[FEDERATION][SCHEDULER][FATAL] processor is null. transferMetaId: {}. type: {}",
-                            transferMetaId, type.name());
+                    } else {
+                        LOGGER.error("[FEDERATION][SCHEDULER][FATAL] processor is null. transferMetaId: {}. type: {}",
+                                transferMetaId, type.name());
+                    }
+                }catch(Throwable e){
+                    LOGGER.error(errorUtils.getStackTrace(e));
                 }
 
 
             }
 
-        } catch (Exception e) {
-            LOGGER.error(errorUtils.getStackTrace(e));
-        }
+
     }
 
     @Async
