@@ -56,7 +56,7 @@ public:
     LMDBStore();
     LMDBStore(const LMDBStore& other);
     ~LMDBStore();
-    bool init(string dataDir, StoreInfo storeInfo);
+    bool init(string dataDir, StoreInfo& storeInfo);
     void put(const Operand* operand);
     long putAll(ServerReader<Operand>* reader);
     string_view putIfAbsent(const Operand* operand);
@@ -72,7 +72,7 @@ private:
     lmdb::cursor createCursor(lmdb::txn txn, lmdb::dbi dbi);
     void iterateAll();
 
-    string dbDir;
+    string _dbDir;
     StoreInfo storeInfo;
 
     std::shared_ptr<MDBEnv> _env;

@@ -8,14 +8,14 @@ import java.util.Map;
 
 public class StandardScale {
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     public Map<String, Object> transform(Map<String, Object> inputData, Map<String, StandardScaleParam> standardScalesMap) {
         LOGGER.info("Start StandardScale transform");
         for (String key : inputData.keySet()) {
             try {
                 StandardScaleParam standardScale = standardScalesMap.get(key);
 
-                double value = (double) inputData.get(key);
+                double value = Double.parseDouble(inputData.get(key).toString());
                 double scale = standardScale.getScale();
                 if (scale == 0)
                     scale = 1;

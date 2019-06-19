@@ -26,6 +26,7 @@ public class ReturnResult {
     private static final Logger LOGGER = LogManager.getLogger();
     private int retcode;
     private String retmsg = "";
+    private String caseid = "";
     private Map<String, Object> data;
     private Map<String, Object> log;
     private Map<String, Object> warn;
@@ -52,20 +53,35 @@ public class ReturnResult {
         return retmsg;
     }
 
-    public void putAllData(Map<String, Object> map){
-        this.data.putAll(map);
-    }
-
-    public void putAllLog(Map<String, Object> map){
-        this.log.putAll(map);
-    }
-
-    public void putAllWarn(Map<String, Object> map){
-        this.warn.putAll(map);
+    public void setData(Map<String, Object> data) {
+        this.data = data;
     }
 
     public Map<String, Object> getData() {
         return data;
     }
 
+    public void setLog(Map<String, Object> log) {
+        this.log = log;
+    }
+
+    public Map<String, Object> getLog() {
+        return log;
+    }
+
+    public void setWarn(Map<String, Object> warn) {
+        this.warn = warn;
+    }
+
+    public Map<String, Object> getWarn() {
+        return warn;
+    }
+
+    public void setCaseid(String caseid) {
+        this.caseid = caseid;
+    }
+
+    public String getCaseid() {
+        return caseid;
+    }
 }

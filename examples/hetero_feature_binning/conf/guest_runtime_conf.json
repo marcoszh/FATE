@@ -29,7 +29,7 @@
         "work_mode": "TO SET",
         "model_table": "feature_binning_guest_table",
         "model_namespace": "example_data_namespace",
-        "need_one_hot": true
+        "need_one_hot": false
         },
 
     "EncryptParam": {
@@ -47,12 +47,10 @@
         "bin_num": 10,
         "cols": -1,
         "local_only": false,
-        "result_table": "feature_binning_guest_table",
-        "result_namespace": "example_data_namespace",
         "display_result": ["iv"]
     },
 
     "OneHotEncoderParam": {
-        "cols": ["fid10"]
+        "cols": ["fid1"]
     }
 }
