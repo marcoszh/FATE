@@ -18,16 +18,22 @@ package com.webank.ai.fate.serving.utils;
 
 import com.webank.ai.fate.core.bean.FederatedParty;
 import com.webank.ai.fate.core.bean.FederatedRoles;
+import com.webank.ai.fate.core.bean.ReturnResult;
 import com.webank.ai.fate.core.utils.FederatedUtils;
+import com.webank.ai.fate.core.utils.ObjectTransform;
 import com.webank.ai.fate.serving.core.bean.FederatedInferenceType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class InferenceUtils {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Logger inferenceAuditLogger = LogManager.getLogger("inference");
+    private static final Logger inferenceAuditLogger = LogManager.getLogger("inferenceAudit");
+    private static final Logger inferenceLogger = LogManager.getLogger("inference");
 
     public static String generateCaseid() {
         return UUID.randomUUID().toString().replace("-", "");
@@ -37,19 +43,13 @@ public class InferenceUtils {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    public static void logInferenceAudited(Enum<FederatedInferenceType> inferenceType, FederatedParty federatedParty, FederatedRoles federatedRoles, String caseid, String seqno, int statusCode, boolean useCache, boolean billing) {
-        String billingDesc, useCacheDesc;
-        if (billing) {
-            billingDesc = "billing";
-        } else {
-            billingDesc = "nobilling";
-        }
-        if (useCache) {
-            useCacheDesc = "fromCache";
-        } else {
-            useCacheDesc = "fromRequest";
-        }
-        inferenceAuditLogger.info(" {} {} {} {} {} {} {} {} {}", inferenceType, federatedParty.getRole(), federatedParty.getPartyId(), FederatedUtils.federatedRolesIdentificationString(federatedRoles), caseid, seqno, statusCode, useCacheDesc, billingDesc);
+    public static void logInference(Enum<FederatedInferenceType> inferenceType, FederatedParty federatedParty, FederatedRoles federatedRoles, String caseid, String seqno, int retcode, long elapsed, boolean getRemotePartyResult, boolean billing, Map<String, Object> inferenceRequest, ReturnResult inferenceResult) {
+        inferenceAuditLogger.info(" {} {} {} {} {} {} {} {} {} {}", inferenceType, federatedParty.getRole(), federatedParty.getPartyId(), FederatedUtils.federatedRolesIdentificationString(federatedRoles), caseid, seqno, retcode, elapsed, getRemotePartyResult ? 1 : 0, billing ? 1 : 0);
+        Map<String, Object> inferenceLog = new HashMap<>();
+        inferenceLog.put("inferenceRequest", inferenceRequest);
+        inferenceLog.put("inferenceResult", ObjectTransform.bean2Json(inferenceResult));
+        String inferenceLogBase64String = Base64.getEncoder().encodeToString(ObjectTransform.bean2Json(inferenceLog).getBytes());
+        inferenceLogger.info(" {} {} {} {} {} {} {} {} {} {} {}", inferenceType, federatedParty.getRole(), federatedParty.getPartyId(), FederatedUtils.federatedRolesIdentificationString(federatedRoles), caseid, seqno, retcode, elapsed, getRemotePartyResult ? 1 : 0, billing ? 1 : 0, inferenceLogBase64String);
     }
 
     public static Object getClassByName(String classPath) {
