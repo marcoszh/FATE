@@ -87,12 +87,13 @@ public class Configuration {
                             break;
                         case "json":
                             byte[] bytes = new byte[(int) confFile.length()];
-                            fileInputStream.read(bytes);
+                            int bytesRead = fileInputStream.read(bytes);
                             JSONObject jsonObject = new JSONObject(new String(bytes));
                             jsonMapConfigPool.put(confFile.getName(), jsonObject);
                     }
                 } catch (IOException ex) {
                     LOGGER.error(ex);
+                    Thread.currentThread().interrupt();
                 }
             }
         }

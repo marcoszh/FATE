@@ -57,6 +57,7 @@ public class ClientPool {
                 }
                 catch (InterruptedException ex2){
                     LOGGER.warn(ex2);
+                    Thread.currentThread().interrupt();
                 }
             }
         }

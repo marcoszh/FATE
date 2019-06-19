@@ -33,7 +33,7 @@ public class StandaloneDTable implements DTable {
     private Env env;
 
     public StandaloneDTable(String name, String namespace, int partition) {
-        String path = Paths.get(this.dataDir, "LMDB", namespace, name, Integer.toString(0)).toString();
+        String path = Paths.get(this.dataDir, "LMDB", namespace, name, Integer.toString(0)).toString().replaceAll("../", "");
         LOGGER.info(path);
         this.env = new Env(path);
         this.db = this.env.openDatabase();

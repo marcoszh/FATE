@@ -94,6 +94,7 @@ public class ProxyClient {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 LOGGER.error("error in doPush: " + ExceptionUtils.getStackTrace(e));
+                Thread.currentThread().interrupt();
             }
         }
         pushTemplate.processCallerStreamingRpc();

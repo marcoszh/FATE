@@ -162,6 +162,7 @@ public class PushServerRequestStreamObserver extends BaseCalleeRequestStreamObse
             } catch (InterruptedException e) {
                 LOGGER.info(errorUtils.getStackTrace(e));
                 onError(e);
+                Thread.currentThread().interrupt();
             }
         }
 

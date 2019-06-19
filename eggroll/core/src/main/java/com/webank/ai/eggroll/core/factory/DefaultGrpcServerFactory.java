@@ -169,7 +169,7 @@ public class DefaultGrpcServerFactory implements GrpcServerFactory {
 
             String logPropertiesPath = properties.getProperty("log.properties");
             if (StringUtils.isNotBlank(logPropertiesPath)) {
-                File logConfFile = new File(logPropertiesPath);
+                File logConfFile = new File(logPropertiesPath.replaceAll("../", ""));
                 if (logConfFile.exists() && logConfFile.isFile()) {
                     try (FileInputStream logFis = new FileInputStream(logConfFile)) {
                         ConfigurationSource configurationSource = new ConfigurationSource(logFis, logConfFile);

@@ -29,5 +29,6 @@ public class StringConstants {
     public static final String SEND_START = "send_start";
     public static final String SEND_END = "send_end";
 
-    public static final String ROLE_FATE = "fate";
+    public static final String ROLE_EGG = "egg";
+    public static final String ROLE_ROLL = "roll";
 }

@@ -107,7 +107,7 @@ class EggRoll(object):
     def init():
         if EggRoll.init_flag:
             return
-        config = file_utils.load_json_conf('arch/conf/mock_roll.json')
+        config = file_utils.load_json_conf('eggroll/conf/mock_roll.json')
         egg_ids = config.get('eggs')
 
         for egg_id in egg_ids:

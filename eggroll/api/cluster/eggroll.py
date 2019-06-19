@@ -33,7 +33,7 @@ from eggroll.api.utils.iter_utils import split_every
 from eggroll.api.core import EggRollContext
 
 
-def init(job_id=None, server_conf_path="arch/conf/server_conf.json", eggroll_context=None):
+def init(job_id=None, server_conf_path="eggroll/conf/server_conf.json", eggroll_context=None):
     if job_id is None:
         job_id = str(uuid.uuid1())
     global LOGGER

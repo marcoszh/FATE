@@ -184,7 +184,9 @@ public class RollKvServiceClient {
             }
         } catch (Throwable e) {
             LOGGER.error("[ROLL][PUTALL][MAINTASK] error in putAll main task: {}", errorUtils.getStackTrace(e));
-            template.errorCallerStreamingRpc(e);
+            if (template != null) {
+                template.errorCallerStreamingRpc(e);
+            }
             hasError = true;
         } finally {
             if (!needReset && !hasError) {

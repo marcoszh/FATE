@@ -90,7 +90,7 @@ public class IterateProcessor implements Callable<OperandBroker> {
         this.curChunkSize = 0;
         minChunkSize = range.getMinChunkSize();
         if (minChunkSize < 0) {
-           minChunkSize = Long.MAX_VALUE;
+            minChunkSize = Long.MAX_VALUE;
         }
 
         this.eggBrokersLock = new Object();
@@ -115,7 +115,7 @@ public class IterateProcessor implements Callable<OperandBroker> {
         totalFragments = fragments.size();
 
         if (minChunkSize == 0) {
-            minChunkSize = Math.max(totalFragments * ((1 << 20) + (768 << 10)), DEFAULT_MIN_CHUNK_SIZE);
+            minChunkSize = Math.max((long) totalFragments * ((1 << 20) + (768 << 10)), DEFAULT_MIN_CHUNK_SIZE);
             minChunkSize = Math.min(minChunkSize, DEFAULT_MAX_CHUNK_SIZE);
         }
 
@@ -259,7 +259,7 @@ public class IterateProcessor implements Callable<OperandBroker> {
         }
         Kv.Range range = null;
         synchronized (eggRangesLock) {
-             range = eggRanges.get(fragmentOrder);
+            range = eggRanges.get(fragmentOrder);
         }
         OperandBroker result = storageServiceClient.iterate(range, storeInfoWithFragment, fragmentToNode);
 

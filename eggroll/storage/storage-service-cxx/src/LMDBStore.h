@@ -45,8 +45,8 @@
 #include "third_party/lmdb-safe/lmdb-safe.hh"
 
 using std::string;
-using com::webank::ai::fate::api::eggroll::storage::Operand;
-using com::webank::ai::fate::api::eggroll::storage::Range;
+using com::webank::ai::eggroll::api::storage::Operand;
+using com::webank::ai::eggroll::api::storage::Range;
 using grpc::ServerReader;
 using grpc::ServerWriter;
 using eggroll::handle_eptr;

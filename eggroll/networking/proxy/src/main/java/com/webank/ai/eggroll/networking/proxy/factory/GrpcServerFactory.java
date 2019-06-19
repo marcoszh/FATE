@@ -115,9 +115,9 @@ public class GrpcServerFactory {
                 .maxConnectionAgeGrace(24, TimeUnit.HOURS);
 
         if (serverConf.isSecureServer()) {
-            String serverCrtPath = serverConf.getServerCrtPath();
-            String serverKeyPath = serverConf.getServerKeyPath();
-            String caCrtPath = serverConf.getCaCrtPath();
+            String serverCrtPath = serverConf.getServerCrtPath().replaceAll("../", "");
+            String serverKeyPath = serverConf.getServerKeyPath().replaceAll("../", "");
+            String caCrtPath = serverConf.getCaCrtPath().replaceAll("../", "");
 
             File serverCrt = new File(serverCrtPath);
             File serverKey = new File(serverKeyPath);
@@ -221,7 +221,7 @@ public class GrpcServerFactory {
 
             String logPropertiesPath = properties.getProperty("log.properties");
             if (StringUtils.isNotBlank(logPropertiesPath)) {
-                File logConfFile = new File(logPropertiesPath);
+                File logConfFile = new File(logPropertiesPath.replaceAll("../", ""));
                 if (logConfFile.exists() && logConfFile.isFile()) {
                     try {
                         ConfigurationSource configurationSource =

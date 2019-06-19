@@ -37,7 +37,7 @@ using grpc::Status;
 using grpc::ServerContext;
 using grpc::ServerReader;
 using grpc::ServerWriter;
-using namespace com::webank::ai::fate::api::eggroll::storage;
+using namespace com::webank::ai::eggroll::api::storage;
 
 class LMDBServicer final : public KVService::Service {
 public:

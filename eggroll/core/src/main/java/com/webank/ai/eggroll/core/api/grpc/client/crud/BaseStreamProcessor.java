@@ -42,6 +42,8 @@ public abstract class BaseStreamProcessor<T> implements StreamProcessor<T> {
             }
         } catch (InterruptedException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
         }
     }
 

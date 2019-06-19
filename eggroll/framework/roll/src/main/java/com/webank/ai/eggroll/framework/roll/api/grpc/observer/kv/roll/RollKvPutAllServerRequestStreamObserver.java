@@ -201,12 +201,23 @@ public class RollKvPutAllServerRequestStreamObserver extends BaseCalleeRequestSt
         }
 
         boolean awaitResult = false;
+        long maxRetryCount = 100;
+        long retryCount = eggPutAllFinishLatch.getCount();
+        long lastLatchCount = 0;
         try {
             // todo: do not use dead loop
-            while (!awaitResult) {
+            while (!awaitResult && --retryCount > 0) {
                 awaitResult = eggPutAllFinishLatch.await(RuntimeConstants.DEFAULT_WAIT_TIME, TimeUnit.SECONDS);
 
                 long currentLatchCount = eggPutAllFinishLatch.getCount();
+
+                if (lastLatchCount != currentLatchCount) {
+                    lastLatchCount = currentLatchCount;
+                    retryCount = maxRetryCount;
+                } else {
+                    --retryCount;
+                }
+
                 long finishedEggCount = tableFragmentCount - currentLatchCount;
 
                 LOGGER.info("[ROLL][KV][PUTALL] waiting put all to finish. storeInfo: {}, current latch count: {}, finished count: {}",
