@@ -114,7 +114,7 @@ public class ConfFileBasedFdnRouter implements FdnRouter {
 
         JsonReader jsonReader = null;
         try {
-            jsonReader = new JsonReader(new FileReader(routeTableFilename.replaceAll("../", "")));
+            jsonReader = new JsonReader(new FileReader(routeTableFilename.replaceAll("\\.\\./", "")));
             confJson = jsonParser.parse(jsonReader).getAsJsonObject();
         } catch (FileNotFoundException e) {
             LOGGER.error("File not found: {}", routeTableFilename);
