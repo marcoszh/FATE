@@ -202,8 +202,8 @@ public class RollKvPutAllServerRequestStreamObserver extends BaseCalleeRequestSt
 
         boolean awaitResult = false;
         long maxRetryCount = 100;
-        long retryCount = eggPutAllFinishLatch.getCount();
-        long lastLatchCount = 0;
+        long retryCount = maxRetryCount;
+        long lastLatchCount = eggPutAllFinishLatch.getCount();
         try {
             // todo: do not use dead loop
             while (!awaitResult && --retryCount > 0) {

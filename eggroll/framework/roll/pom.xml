@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>com.webank.ai.eggroll</groupId>
-            <artifactId>eggroll-storage-service</artifactId>
+            <artifactId>eggroll-storage-service-java</artifactId>
             <version>${eggroll.version}</version>
         </dependency>
     </dependencies>

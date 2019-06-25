@@ -18,12 +18,11 @@ import argparse
 import sys
 import time
 from concurrent import futures
-from eggroll.api.utils import log_utils, cloudpickle
+from eggroll.api.utils import log_utils, cloudpickle, eggroll_serdes
 import grpc
 import lmdb
 from cachetools import cached
 from grpc._cython import cygrpc
-from eggroll.api.utils import eggroll_serdes
 from cachetools import LRUCache
 from eggroll.api.proto import kv_pb2, processor_pb2, processor_pb2_grpc, storage_basic_pb2
 import os
@@ -59,6 +58,7 @@ class Processor(processor_pb2_grpc.ProcessServiceServicer):
 
     @cached(cache=LRUCache(maxsize=100))
     def get_function(self, function_bytes):
+        eggroll_serdes.bytes_security_check(function_bytes)
         try:
             return cloudpickle.loads(function_bytes)
         except:
@@ -128,6 +128,7 @@ class Processor(processor_pb2_grpc.ProcessServiceServicer):
                 cursor = src_txn.cursor()
                 for k_bytes, v_bytes in cursor:
                     v = _serdes.deserialize(v_bytes)
+
                     v1 = _mapper(v)
                     serialized_value = _serdes.serialize(v1)
                     dst_txn.put(k_bytes, serialized_value)
