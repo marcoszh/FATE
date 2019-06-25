@@ -95,7 +95,7 @@ class LoggerFactory(object):
 
     @staticmethod
     def get_hanlder(className,level=None):
-        if not LoggerFactory.LOG_DIR:
+        if not LoggerFactory.LOG_DIR or not className:
             return logging.StreamHandler()
         formatter = logging.Formatter('"%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s"')
         log_file = os.path.join(LoggerFactory.LOG_DIR, "{}.log".format(className))
@@ -144,10 +144,10 @@ def setLevel(level):
 
 
 def getLogger(className=None,useLevelFile=False):
-    if className is None:
-        frame = inspect.stack()[1]
-        module = inspect.getmodule(frame[0])
-        className = os.path.splitext(os.path.basename(module.__file__))[0]
+    # if className is None:
+    #     frame = inspect.stack()[1]
+    #     module = inspect.getmodule(frame[0])
+    #     className = os.path.splitext(os.path.basename(module.__file__))[0]
     return LoggerFactory.getLogger(className)
 
 
