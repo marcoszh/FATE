@@ -682,6 +682,7 @@ class DataIO(ModelBase):
 
         if input_model_meta.input_format == "dense":
             self.reader = DenseFeatureReader(self.model_param)
+            self.reader.set_tracker(self.tracker)
         elif input_model_meta.input_format == "sparse":
             self.reader = SparseFeatureReader(self.model_param)
         elif input_model_meta.input_format == "tag":
