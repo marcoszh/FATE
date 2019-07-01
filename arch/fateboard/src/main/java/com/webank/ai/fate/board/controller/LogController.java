@@ -27,32 +27,6 @@ public class LogController {
     @Autowired
     LogFileService logFileService;
 
-    @RequestMapping(value = "/test", method = RequestMethod.GET)
-
-    public @ResponseBody
-    String test() {
-        File file = new File("/Users/kaideng/work/webank/data_output.txt");
-        StringBuffer result = new StringBuffer();
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-
-            String sb = null;
-            do {
-                try {
-                    sb = br.readLine();
-                    result.append(sb);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } while (sb != null);
-
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        return result.toString();
-    }
 
 
     @RequestMapping(value = "/queryLogWithSizeSSH/{jobId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
