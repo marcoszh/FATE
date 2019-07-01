@@ -20,7 +20,7 @@ import concurrent
 import grpc
 
 from eggroll.api.cluster.eggroll import _DTable, _EggRoll
-from eggroll.api.proto import basic_meta_pb2, clustercomm_pb2, clustercomm_pb2_grpc, storage_basic_pb2
+from eggroll.api.proto import basic_meta_pb2, cluster_comm_pb2, cluster_comm_pb2_grpc, storage_basic_pb2
 from eggroll.api.utils import file_utils, eggroll_serdes
 from eggroll.api.utils.log_utils import getLogger
 
@@ -32,16 +32,16 @@ CONF_KEY_TARGET = "clustercomm"
 CONF_KEY_LOCAL = "local"
 CONF_KEY_SERVER = "servers"
 
-ERROR_STATES = [clustercomm_pb2.CANCELLED, clustercomm_pb2.ERROR]
+ERROR_STATES = [cluster_comm_pb2.CANCELLED, cluster_comm_pb2.ERROR]
 
 
 async def _async_receive(stub, transfer_meta):
     LOGGER.debug("start receiving {}".format(transfer_meta))
     resp_meta = stub.recv(transfer_meta)
-    while resp_meta.transferStatus != clustercomm_pb2.COMPLETE:
+    while resp_meta.transferStatus != cluster_comm_pb2.COMPLETE:
         if resp_meta.transferStatus in ERROR_STATES:
             raise IOError(
-                "receive terminated, state: {}".format(clustercomm_pb2.TransferStatus.Name(resp_meta.transferStatus)))
+                "receive terminated, state: {}".format(cluster_comm_pb2.TransferStatus.Name(resp_meta.transferStatus)))
         resp_meta = stub.checkStatusNow(resp_meta)
         await asyncio.sleep(1)
     LOGGER.info("finish receiving {}".format(resp_meta))
@@ -51,10 +51,10 @@ async def _async_receive(stub, transfer_meta):
 def _thread_receive(receive_func, check_func, transfer_meta):
     LOGGER.debug("start receiving {}".format(transfer_meta))
     resp_meta = receive_func(transfer_meta)
-    while resp_meta.transferStatus != clustercomm_pb2.COMPLETE:
+    while resp_meta.transferStatus != cluster_comm_pb2.COMPLETE:
         if resp_meta.transferStatus in ERROR_STATES:
             raise IOError(
-                "receive terminated, state: {}".format(clustercomm_pb2.TransferStatus.Name(resp_meta.transferStatus)))
+                "receive terminated, state: {}".format(cluster_comm_pb2.TransferStatus.Name(resp_meta.transferStatus)))
         resp_meta = check_func(resp_meta)
     LOGGER.info("finish receiving {}".format(resp_meta))
     return resp_meta
@@ -100,7 +100,7 @@ class ClusterCommRuntime(object):
         self.channel = grpc.insecure_channel(
             target="{}:{}".format(host, port),
             options=[('grpc.max_send_message_length', -1), ('grpc.max_receive_message_length', -1)])
-        self.stub = clustercomm_pb2_grpc.TransferSubmitServiceStub(self.channel)
+        self.stub = cluster_comm_pb2_grpc.TransferSubmitServiceStub(self.channel)
         self.__pool = concurrent.futures.ThreadPoolExecutor()
         ClusterCommRuntime.instance = self
 
@@ -136,7 +136,7 @@ class ClusterCommRuntime(object):
 
         auth_dict = self.trans_conf.get(algorithm)
 
-        src = clustercomm_pb2.Party(partyId="{}".format(self.party_id), name=self.role)
+        src = cluster_comm_pb2.Party(partyId="{}".format(self.party_id), name=self.role)
 
         if idx >= 0:
             if role is None:
@@ -160,7 +160,7 @@ class ClusterCommRuntime(object):
                     '''
                     If it is a table, send the meta right away.
                     '''
-                    desc = clustercomm_pb2.TransferDataDesc(transferDataType=clustercomm_pb2.DTABLE,
+                    desc = cluster_comm_pb2.TransferDataDesc(transferDataType=cluster_comm_pb2.DTABLE,
                                                            storageLocator=self.__get_locator(obj),
                                                            taggedVariableName=_serdes.serialize(_tagged_key))
                 else:
@@ -170,16 +170,16 @@ class ClusterCommRuntime(object):
                     _table = _EggRoll.get_instance().table(OBJECT_STORAGE_NAME, self.job_id)
                     _table.put(_tagged_key, obj)
                     storage_locator = self.__get_locator(_table)
-                    desc = clustercomm_pb2.TransferDataDesc(transferDataType=clustercomm_pb2.OBJECT,
+                    desc = cluster_comm_pb2.TransferDataDesc(transferDataType=cluster_comm_pb2.OBJECT,
                                                            storageLocator=storage_locator,
                                                            taggedVariableName=_serdes.serialize(_tagged_key))
 
                 LOGGER.debug("[REMOTE] Sending {}".format(_tagged_key))
 
-                dst = clustercomm_pb2.Party(partyId="{}".format(_partyId), name=_role)
+                dst = cluster_comm_pb2.Party(partyId="{}".format(_partyId), name=_role)
                 job = basic_meta_pb2.Job(jobId=self.job_id, name=name)
-                self.stub.send(clustercomm_pb2.TransferMeta(job=job, tag=tag, src=src, dst=dst, dataDesc=desc,
-                                                           type=clustercomm_pb2.SEND))
+                self.stub.send(cluster_comm_pb2.TransferMeta(job=job, tag=tag, src=src, dst=dst, dataDesc=desc,
+                                                           type=cluster_comm_pb2.SEND))
                 LOGGER.debug("[REMOTE] Sent {}".format(_tagged_key))
 
     def get(self, name, tag, idx=-1):
@@ -208,10 +208,10 @@ class ClusterCommRuntime(object):
         # tasks = []
         results = []
         for party_id in party_ids:
-            src = clustercomm_pb2.Party(partyId="{}".format(party_id), name=src_role)
-            dst = clustercomm_pb2.Party(partyId="{}".format(self.party_id), name=self.role)
-            trans_meta = clustercomm_pb2.TransferMeta(job=job, tag=tag, src=src, dst=dst,
-                                                     type=clustercomm_pb2.RECV)
+            src = cluster_comm_pb2.Party(partyId="{}".format(party_id), name=src_role)
+            dst = cluster_comm_pb2.Party(partyId="{}".format(self.party_id), name=self.role)
+            trans_meta = cluster_comm_pb2.TransferMeta(job=job, tag=tag, src=src, dst=dst,
+                                                     type=cluster_comm_pb2.RECV)
             # tasks.append(_receive(self.stub, trans_meta))
             results.append(self.__pool.submit(_thread_receive, self.stub.recv, self.stub.checkStatus, trans_meta))
         # results = loop.run_until_complete(asyncio.gather(*tasks))
@@ -224,7 +224,7 @@ class ClusterCommRuntime(object):
             dest_table = _EggRoll.get_instance().table(name=desc.storageLocator.name,
                                                        namespace=desc.storageLocator.namespace,
                                                        persistent=_persistent)
-            if recv_meta.dataDesc.transferDataType == clustercomm_pb2.OBJECT:
+            if recv_meta.dataDesc.transferDataType == cluster_comm_pb2.OBJECT:
                 __tagged_key = _serdes.deserialize(desc.taggedVariableName)
                 rtn.append(dest_table.get(__tagged_key))
                 LOGGER.debug("[GET] Got remote object {}".format(__tagged_key))
