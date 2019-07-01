@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #
 #  Copyright 2019 The FATE Authors. All Rights Reserved.
 #
@@ -13,9 +15,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-class LogisticRegressionModelMeta:
-    def __init__(self):
-        self.n_iter_ = 0
-        self.coef_ = None
-        self.intercept_ = None
-        self.classes_ = None
+
+cd $(dirname "$0")
+curtime=$(date +%Y%m%d%H%M%S)
+work_mode=0
+jobid="feature_selection_example_standalone_"$curtime
+
+echo current_dir is $(dirname "$0")
+nohup python hetero_feature_selection_guest_test.py ${jobid} > nohup.guest &
+nohup python hetero_feature_selection_host_test.py ${jobid} > nohup.host &
+

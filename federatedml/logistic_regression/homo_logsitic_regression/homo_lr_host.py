@@ -20,30 +20,39 @@ import numpy as np
 
 from arch.api import federation
 from arch.api.utils import log_utils
-from federatedml.logistic_regression.base_logistic_regression import BaseLogisticRegression
+from federatedml.logistic_regression.homo_logsitic_regression.homo_lr_base import HomoLRBase
 from federatedml.model_selection import MiniBatch
 from federatedml.optim import Initializer
-from federatedml.optim import Optimizer
 from federatedml.optim import activation
 from federatedml.optim.federated_aggregator.homo_federated_aggregator import HomoFederatedAggregator
 from federatedml.optim.gradient import LogisticGradient, TaylorLogisticGradient
-from federatedml.param.param import LogisticParam
 from federatedml.statistic import data_overview
 from federatedml.util import consts
-from federatedml.util.transfer_variable import HomoLRTransferVariable
+from fate_flow.entity.metric import MetricMeta
+from fate_flow.entity.metric import Metric
+from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
+from arch.api.proto import lr_model_param_pb2
 
 LOGGER = log_utils.getLogger()
 
 
-class HomoLRHost(BaseLogisticRegression):
-    def __init__(self, params: LogisticParam):
-        super(HomoLRHost, self).__init__(params)
+class HomoLRHost(HomoLRBase):
+    def __init__(self):
+        super(HomoLRHost, self).__init__()
 
-        self.learning_rate = params.learning_rate
-        self.batch_size = params.batch_size
-        self.encrypt_params = params.encrypt_param
+        self.aggregator = HomoFederatedAggregator()
 
-        if self.encrypt_params.method in [consts.PAILLIER]:
+        self.transfer_variable = HomoLRTransferVariable()
+        self.initializer = Initializer()
+        self.mini_batch_obj = None
+        self.classes_ = [0, 1]
+        self.has_sychronized_encryption = False
+        self.role = consts.HOST
+
+    def _init_model(self, params):
+        super(HomoLRHost, self)._init_model(params)
+        encrypt_params = params.encrypt_param
+        if encrypt_params.method in [consts.PAILLIER]:
             self.use_encrypt = True
         else:
             self.use_encrypt = False
@@ -57,17 +66,12 @@ class HomoLRHost(BaseLogisticRegression):
         else:
             self.gradient_operator = LogisticGradient()
 
-        self.aggregator = HomoFederatedAggregator()
-        self.party_weight = params.party_weight
-
-        self.optimizer = Optimizer(learning_rate=self.learning_rate, opt_method_name=params.optimizer)
-        self.transfer_variable = HomoLRTransferVariable()
-        self.initializer = Initializer()
-        self.mini_batch_obj = None
-        self.classes_ = [0, 1]
-        self.has_sychronized_encryption = False
-
     def fit(self, data_instances):
+        if not self.need_run:
+            return data_instances
+
+        self.header = data_instances.schema.get('header')  # ['x1', 'x2', 'x3' ... ]
+
         self._abnormal_detection(data_instances)
 
         self.__init_parameters(data_instances)
@@ -98,6 +102,17 @@ class HomoLRHost(BaseLogisticRegression):
                     if self.updater is not None:
                         loss_norm = self.updater.loss_norm(self.coef_)
                         total_loss += loss + loss_norm
+
+                    metric_meta = MetricMeta(name='train',
+                                             metric_type="LOSS",
+                                             extra_metas={
+                                                 "unit_name": "homo_lr"
+                                             })
+                    self.callback_meta(metric_name='loss', metric_namespace='train', metric_meta=metric_meta)
+                    self.callback_metric(metric_name='loss',
+                                         metric_namespace='train',
+                                         metric_data=[Metric(iter_num, total_loss)])
+
                 else:
                     grad, _ = grad_loss.reduce(self.aggregator.aggregate_grad)
                     grad = np.array(grad)
@@ -171,12 +186,15 @@ class HomoLRHost(BaseLogisticRegression):
             if converge_flag:
                 break
                 # self.save_model()
+        self.data_output = data_instances
 
     def __init_parameters(self, data_instances):
 
         party_weight_id = self.transfer_variable.generate_transferid(
             self.transfer_variable.host_party_weight
         )
+        LOGGER.debug("Start to remote party_weight: {}, transfer_id: {}".format(self.party_weight, party_weight_id))
+
         federation.remote(self.party_weight,
                           name=self.transfer_variable.host_party_weight.name,
                           tag=party_weight_id,
@@ -192,6 +210,8 @@ class HomoLRHost(BaseLogisticRegression):
             total_batch_num = self.mini_batch_obj.batch_nums
             re_encrypt_times = total_batch_num // self.re_encrypt_batches
             transfer_id = self.transfer_variable.generate_transferid(self.transfer_variable.re_encrypt_times)
+            LOGGER.debug("Start to remote re_encrypt_times: {}, transfer_id: {}".format(re_encrypt_times, transfer_id))
+
             federation.remote(re_encrypt_times,
                               name=self.transfer_variable.re_encrypt_times.name,
                               tag=transfer_id,
@@ -207,6 +227,8 @@ class HomoLRHost(BaseLogisticRegression):
         use_encryption_id = self.transfer_variable.generate_transferid(
             self.transfer_variable.use_encrypt
         )
+        LOGGER.debug("Start to remote use_encrypt: {}, transfer_id: {}".format(self.use_encrypt, use_encryption_id))
+
         federation.remote(self.use_encrypt,
                           name=self.transfer_variable.use_encrypt.name,
                           tag=use_encryption_id,
@@ -219,11 +241,15 @@ class HomoLRHost(BaseLogisticRegression):
             pubkey = federation.get(name=self.transfer_variable.paillier_pubkey.name,
                                     tag=pubkey_id,
                                     idx=0)
+            LOGGER.debug("Received pubkey")
             self.encrypt_operator.set_public_key(pubkey)
         LOGGER.info("Finish synchronized ecryption")
         self.has_sychronized_encryption = True
 
-    def predict(self, data_instances, predict_param):
+    def predict(self, data_instances):
+        if not self.need_run:
+            return data_instances
+
         if not self.has_sychronized_encryption:
             self.__synchronize_encryption()
             self.__load_arbiter_model()
@@ -238,6 +264,8 @@ class HomoLRHost(BaseLogisticRegression):
 
         if self.use_encrypt:
             encrypted_wx_id = self.transfer_variable.generate_transferid(self.transfer_variable.predict_wx)
+            LOGGER.debug("Host encrypted wx id: {}".format(encrypted_wx_id))
+            LOGGER.debug("Start to remote wx: {}, transfer_id: {}".format(wx, encrypted_wx_id))
             federation.remote(wx,
                               name=self.transfer_variable.predict_wx.name,
                               tag=encrypted_wx_id,
@@ -248,17 +276,21 @@ class HomoLRHost(BaseLogisticRegression):
                                             tag=predict_result_id,
                                             idx=0)
             # local_predict_table = predict_result.collect()
-            predict_result_table = predict_result.join(data_instances, lambda p, d: (d.label, None, p))
+            predict_result_table = predict_result.join(data_instances, lambda p, d: [d.label, None, p])
         else:
             pred_prob = wx.mapValues(lambda x: activation.sigmoid(x))
-            pred_label = self.classified(pred_prob, predict_param.threshold)
-            if predict_param.with_proba:
+            pred_label = self.classified(pred_prob, self.predict_param.threshold)
+            if self.predict_param.with_proba:
                 predict_result = data_instances.mapValues(lambda x: x.label)
                 predict_result = predict_result.join(pred_prob, lambda x, y: (x, y))
             else:
                 predict_result = data_instances.mapValues(lambda x: (x.label, None))
-            predict_result_table = predict_result.join(pred_label, lambda x, y: (x[0], x[1], y))
+            predict_result_table = predict_result.join(pred_label, lambda x, y: [x[0], x[1], y])
+        LOGGER.debug("Finish predict")
         return predict_result_table
+
+    def evaluate(self, labels, pred_prob, pred_labels, evaluate_param):
+        return {}
 
     def __init_model(self, data_instances):
         model_shape = data_overview.get_features_shape(data_instances)
@@ -284,10 +316,20 @@ class HomoLRHost(BaseLogisticRegression):
         LOGGER.debug("final_model: {}".format(final_model))
         self.set_coef_(final_model)
 
-    def save_model(self, model_table, model_namespace, job_id=None, model_name=None):
-        # No need to save model in host
-        pass
+    def _get_param(self):
+        header = self.header
+        weight_dict = {}
+        for idx, header_name in enumerate(header):
+            coef_i = self.coef_[idx]
+            weight_dict[header_name] = coef_i
 
-    def load_model(self, model_table, model_namespace):
-        # No need to load model in host
-        pass
+        param_protobuf_obj = lr_model_param_pb2.LRModelParam(iters=self.n_iter_,
+                                                             loss_history=[],
+                                                             is_converged=self.is_converged,
+                                                             weight={},
+                                                             intercept=0,
+                                                             header=header)
+        from google.protobuf import json_format
+        json_result = json_format.MessageToJson(param_protobuf_obj)
+        LOGGER.debug("json_result: {}".format(json_result))
+        return param_protobuf_obj

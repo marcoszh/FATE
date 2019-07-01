@@ -18,21 +18,33 @@ import functools
 
 import numpy as np
 
-from arch.api.model_manager import manager as model_manager
 from arch.api.proto import onehot_meta_pb2, onehot_param_pb2
 from arch.api.utils import log_utils
+from federatedml.model_base import ModelBase
 from federatedml.statistic.data_overview import get_header
 from federatedml.util import consts
+from federatedml.param.onehot_encoder_param import OneHotEncoderParam
 
 LOGGER = log_utils.getLogger()
 
+MODEL_PARAM_NAME = 'OneHotParam'
+MODEL_META_NAME = 'OneHotMeta'
+MODEL_NAME = 'OneHotEncoder'
 
-class OneHotEncoder(object):
-    def __init__(self, param):
-        self.cols = param.cols
+
+class OneHotEncoder(ModelBase):
+    def __init__(self):
+        super(OneHotEncoder, self).__init__()
+        self.cols = []
         self.header = []
         self.col_maps = {}
         self.cols_dict = {}
+        self.output_data = None
+        self.model_param = OneHotEncoderParam()
+
+    def _init_model(self, model_param):
+        self.model_param = model_param
+        self.cols_index = model_param.cols
 
     def fit(self, data_instances):
         self._init_cols(data_instances)
@@ -48,12 +60,20 @@ class OneHotEncoder(object):
         self._detect_overflow(col_maps)
         self.col_maps = col_maps
         self.set_schema(data_instances)
+        data_instances = self.transform(data_instances)
+
         return data_instances
+
+    def _detect_overflow(self, col_maps):
+        for col_name, col_value_map in col_maps.items():
+            if len(col_value_map) > consts.ONE_HOT_LIMIT:
+                raise ValueError("Input data should not have more than {} possible value when doing one-hot encode"
+                                 .format(consts.ONE_HOT_LIMIT))
 
     def transform(self, data_instances):
         self._init_cols(data_instances)
         ori_header = self.header.copy()
-        self._transform_schema(data_instances)
+        self._transform_schema()
         f = functools.partial(self.transfer_one_instance,
                               col_maps=self.col_maps,
                               ori_header=ori_header,
@@ -62,20 +82,7 @@ class OneHotEncoder(object):
         self.set_schema(new_data)
         return new_data
 
-    def fit_transform(self, data_instances):
-        self.fit(data_instances)
-        new_data = self.transform(data_instances)
-        return new_data
-
-    def _detect_overflow(self, col_maps):
-        for col_name, col_value_map in col_maps.items():
-            if len(col_value_map) > consts.ONE_HOT_LIMIT:
-                raise ValueError("Input data should not have more than {} possible value when doing one-hot encode"
-                                 .format(consts.ONE_HOT_LIMIT))
-
-    def _transform_schema(self, data_instances):
-        if not self.header:
-            self._init_cols(data_instances)
+    def _transform_schema(self):
 
         header = self.header
         LOGGER.info("[Result][OneHotEncoder]Before one-hot, data_instances schema is : {}".format(header))
@@ -97,8 +104,21 @@ class OneHotEncoder(object):
     def _init_cols(self, data_instances):
         header = get_header(data_instances)
         self.header = header
-        if self.cols == -1:
+        if self.cols_index == -1:
             self.cols = header
+        else:
+            cols = []
+            for idx in self.cols_index:
+                try:
+                    idx = int(idx)
+                except ValueError:
+                    raise ValueError("In binning module, selected index: {} is not integer".format(idx))
+
+                if idx >= len(header):
+                    raise ValueError(
+                        "In binning module, selected index: {} exceed length of data dimension".format(idx))
+                cols.append(header[idx])
+            self.cols = cols
 
         self.cols_dict = {}
         for col in self.cols:
@@ -107,6 +127,13 @@ class OneHotEncoder(object):
 
     @staticmethod
     def record_new_header(data, cols, cols_dict):
+        """
+        Generate a new schema based on data value. Each new value will generate a new header.
+
+        Returns
+        -------
+        col_maps: a dict in which keys are original header, values are dicts. The dicts in value
+        """
         col_maps = {}
         for col_name in cols:
             col_maps[col_name] = {}
@@ -121,10 +148,6 @@ class OneHotEncoder(object):
                 if feature_value not in this_col_map:
                     new_feature_header = str(col_name) + '_' + str(feature_value)
                     this_col_map[feature_value] = new_feature_header
-
-                if len(this_col_map) > consts.ONE_HOT_LIMIT:
-                    raise ValueError("Input data should not have more than {} possible value when doing one-hot encode"
-                                     .format(consts.ONE_HOT_LIMIT))
 
         return col_maps
 
@@ -179,45 +202,33 @@ class OneHotEncoder(object):
     def set_schema(self, data_instance):
         data_instance.schema = {"header": self.header}
 
-    def _save_meta(self, name, namespace):
+    def _get_meta(self):
         meta_protobuf_obj = onehot_meta_pb2.OneHotMeta(cols=self.cols)
-        buffer_type = "OneHotEncoder.meta"
+        return meta_protobuf_obj
 
-        model_manager.save_model(buffer_type=buffer_type,
-                                 proto_buffer=meta_protobuf_obj,
-                                 name=name,
-                                 namespace=namespace)
-        return buffer_type
-
-    def save_model(self, name, namespace):
-
-        meta_buffer_type = self._save_meta(name, namespace)
-
+    def _get_param(self):
         pb_dict = {}
         for col_name, value_dict in self.col_maps.items():
             value_dict_obj = onehot_param_pb2.ColDict(encode_map=value_dict)
             pb_dict[col_name] = value_dict_obj
 
         result_obj = onehot_param_pb2.OneHotParam(col_map=pb_dict)
+        return result_obj
 
-        param_buffer_type = "OneHotEncoder.param"
+    def save_model(self):
+        meta_obj = self._get_meta()
+        param_obj = self._get_param()
+        result = {
+            MODEL_META_NAME: meta_obj,
+            MODEL_PARAM_NAME: param_obj
+        }
+        return result
 
-        model_manager.save_model(buffer_type=param_buffer_type,
-                                 proto_buffer=result_obj,
-                                 name=name,
-                                 namespace=namespace)
+    def _load_model(self, model_dict):
+        self._parse_need_run(model_dict, MODEL_META_NAME)
+        model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
+        # model_meta = model_dict.get(MODEL_NAME).get(MODEL_META_NAME)
 
-        return [(meta_buffer_type, param_buffer_type)]
-
-    def load_model(self, name, namespace):
-
-        result_obj = onehot_param_pb2.OneHotParam()
-        return_code = model_manager.read_model(buffer_type='OneHotEncoder.param',
-                                               proto_buffer=result_obj,
-                                               name=name,
-                                               namespace=namespace)
-        self.col_maps = dict(result_obj.col_map)
+        self.col_maps = dict(model_param.col_map)
         for k, v in self.col_maps.items():
             self.col_maps[k] = dict(v.encode_map)
-
-        return return_code
