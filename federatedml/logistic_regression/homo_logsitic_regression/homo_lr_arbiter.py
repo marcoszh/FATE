@@ -16,31 +16,25 @@
 
 from arch.api import federation
 from arch.api.utils import log_utils
-from federatedml.logistic_regression.base_logistic_regression import BaseLogisticRegression
-from federatedml.optim import DiffConverge
+from federatedml.logistic_regression.homo_logsitic_regression.homo_lr_base import HomoLRBase
 from federatedml.optim import activation
 from federatedml.optim.federated_aggregator import HomoFederatedAggregator
-from federatedml.param.param import LogisticParam
 from federatedml.secureprotol import PaillierEncrypt, FakeEncrypt
 from federatedml.util import consts
-from federatedml.util.transfer_variable import HomoLRTransferVariable
+from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
+from fate_flow.entity.metric import MetricMeta
+from fate_flow.entity.metric import Metric
 
 LOGGER = log_utils.getLogger()
 
 
-class HomoLRArbiter(BaseLogisticRegression):
-    def __init__(self, params: LogisticParam):
-        super(HomoLRArbiter, self).__init__(params)
-        self.re_encrypt_batches = params.re_encrypt_batches
+class HomoLRArbiter(HomoLRBase):
+    def __init__(self):
+        super(HomoLRArbiter, self).__init__()
         self.aggregator = HomoFederatedAggregator()
-        if params.converge_func == 'diff':
-            self.convege_func = DiffConverge(eps=self.eps)
-        else:
-            raise RuntimeWarning("Cannot recognize converge_func, must be 'eps'.")
+
         self.transfer_variable = HomoLRTransferVariable()
 
-        self.predict_threshold = params
-        self.encrypt_param = params.encrypt_param
         self.classes_ = [0, 1]
 
         # To be initialized
@@ -53,8 +47,16 @@ class HomoLRArbiter(BaseLogisticRegression):
         self.loss_history = []
         self.is_converged = False
         self.header = []
+        self.role = consts.ARBITER
+
+    def _init_model(self, params):
+        super(HomoLRArbiter, self)._init_model(params)
+        self.encrypt_param = params.encrypt_param
 
     def fit(self, data=None):
+        if not self.need_run:
+            return data
+
         LOGGER.debug("self.has_sychronized_encryption: {}".format(self.has_sychronized_encryption))
         self.__init_parameters()
         LOGGER.debug("self.has_sychronized_encryption: {}".format(self.has_sychronized_encryption))
@@ -75,9 +77,21 @@ class HomoLRArbiter(BaseLogisticRegression):
                                                         party_weights=self.party_weights,
                                                         host_use_encryption=self.host_use_encryption)
             self.loss_history.append(total_loss)
+
+            metric_meta = MetricMeta(name='train',
+                                     metric_type="LOSS",
+                                     extra_metas={
+                                         "unit_name": "homo_lr"
+                                     })
+            self.callback_meta(metric_name='loss', metric_namespace='train', metric_meta=metric_meta)
+            self.callback_metric(metric_name='loss',
+                                 metric_namespace='train',
+                                 metric_data=[Metric(iter_num, total_loss)])
+
             LOGGER.info("Iter: {}, loss: {}".format(iter_num, total_loss))
             # send model
             final_model_id = self.transfer_variable.generate_transferid(self.transfer_variable.final_model, iter_num)
+            # LOGGER.debug("Sending final_model, model id: {}, final_model: {}".format(final_model_id, final_model))
             federation.remote(final_model,
                               name=self.transfer_variable.final_model.name,
                               tag=final_model_id,
@@ -93,7 +107,7 @@ class HomoLRArbiter(BaseLogisticRegression):
                                   idx=idx)
 
             # send converge flag
-            converge_flag = self.convege_func.is_converge(total_loss)
+            converge_flag = self.converge_func.is_converge(total_loss)
             converge_flag_id = self.transfer_variable.generate_transferid(
                 self.transfer_variable.converge_flag,
                 iter_num)
@@ -114,10 +128,16 @@ class HomoLRArbiter(BaseLogisticRegression):
                 self.is_converged = True
                 break
         self._set_header()
+        self.data_output = data
 
-    def predict(self, data=None, predict_param=None):
+    def predict(self, data=None):
+        LOGGER.debug("In arbiter's predict, need run: {}".format(self.need_run))
+        if not self.need_run:
+            return data
+
         # synchronize encryption information
         if not self.has_sychronized_encryption:
+            print("Has not synchronized yet")
             self.__synchronize_encryption()
             self.__send_host_mode()
 
@@ -125,14 +145,18 @@ class HomoLRArbiter(BaseLogisticRegression):
             if use_encrypt:
                 encrypter = self.host_encrypter[idx]
                 predict_wx_id = self.transfer_variable.generate_transferid(self.transfer_variable.predict_wx)
+                LOGGER.debug("Arbiter encrypted wx id: {}".format(predict_wx_id))
+
                 predict_wx = federation.get(name=self.transfer_variable.predict_wx.name,
                                             tag=predict_wx_id,
                                             idx=idx
                                             )
                 decrypted_wx = encrypter.distribute_decrypt(predict_wx)
                 pred_prob = decrypted_wx.mapValues(lambda x: activation.sigmoid(x))
-                pred_label = self.classified(pred_prob, predict_param.threshold)
+                pred_label = self.classified(pred_prob, self.predict_param.threshold)
                 predict_result_id = self.transfer_variable.generate_transferid(self.transfer_variable.predict_result)
+                LOGGER.debug(
+                    "Start to remote pred_label: {}, transfer_id: {}".format(pred_label, predict_result_id))
                 federation.remote(pred_label,
                                   name=self.transfer_variable.predict_result.name,
                                   tag=predict_result_id,
@@ -208,9 +232,10 @@ class HomoLRArbiter(BaseLogisticRegression):
                 encrypter.generate_key(self.encrypt_param.key_length)
                 pub_key = encrypter.get_public_key()
                 pubkey_id = self.transfer_variable.generate_transferid(self.transfer_variable.paillier_pubkey)
+                # LOGGER.debug("Start to remote pub_key: {}, transfer_id: {}".format(pub_key, pubkey_id))
                 federation.remote(pub_key, name=self.transfer_variable.paillier_pubkey.name,
                                   tag=pubkey_id, role=consts.HOST, idx=idx)
-                # LOGGER.debug("send pubkey to host: {}".format(idx))
+                LOGGER.info("send pubkey to host: {}".format(idx))
 
             self.host_encrypter.append(encrypter)
         self.has_sychronized_encryption = True
@@ -224,6 +249,7 @@ class HomoLRArbiter(BaseLogisticRegression):
                 final_model = encrypter.encrypt_list(model)
             else:
                 final_model = model
+            LOGGER.debug("Start to remote final_model: {}, transfer_id: {}".format(final_model, final_model_id))
             federation.remote(final_model,
                               name=self.transfer_variable.final_model.name,
                               tag=final_model_id,
@@ -256,6 +282,9 @@ class HomoLRArbiter(BaseLogisticRegression):
                 encrypter = self.host_encrypter[idx]
                 decrypt_model = encrypter.decrypt_list(re_encrypt_model)
                 re_encrypt_model = encrypter.encrypt_list(decrypt_model)
+                LOGGER.debug("Start to remote re_encrypt_model: {}, transfer_id: {}".format(re_encrypt_model,
+                                                                                            re_encrypted_model_id))
+
                 federation.remote(re_encrypt_model, name=self.transfer_variable.re_encrypted_model.name,
                                   tag=re_encrypted_model_id, role=consts.HOST, idx=idx)
 
@@ -267,3 +296,39 @@ class HomoLRArbiter(BaseLogisticRegression):
 
     def _set_header(self):
         self.header = ['head_' + str(x) for x in range(len(self.coef_))]
+
+    # def cross_validation(self, data_instances=None):
+    #
+
+    def run(self, component_parameters=None, args=None):
+        """
+        Rewrite run function so that it can start fit and predict without input data.
+        """
+        need_cv = self._init_runtime_parameters(component_parameters)
+        data_sets = args["data"]
+
+        need_eval = False
+        for data_key in data_sets:
+
+            if "train_data" in data_sets[data_key]:
+                need_eval = True
+            else:
+                need_eval = False
+
+        if need_cv:
+            self.cross_validation(None)
+
+        elif "model" in args:
+            self._load_model(args)
+            self.predict()
+        else:
+            self.fit()
+            if need_eval:
+                self.predict()
+
+
+
+
+
+
+
