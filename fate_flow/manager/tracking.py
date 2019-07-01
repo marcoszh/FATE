@@ -27,7 +27,7 @@ class Tracking(object):
 
     def __init__(self, job_id: str, component_name: str = None, task_id: str = None, model_id: str = None):
         self.job_id = job_id
-        self.component_name = component_name
+        self.component_name = component_name if component_name else 'pipeline'
         self.task_id = task_id
         self.table_namespace = '_'.join(['fate_flow', 'tracking', 'data', self.job_id, self.component_name])
         self.model_id = model_id
@@ -40,6 +40,7 @@ class Tracking(object):
         FateStorage.save_data(kv.items(), namespace=self.table_namespace,
                               name=Tracking.metric_table_name(metric_namespace, metric_name),
                               partition=Tracking.METRIC_DATA_PARTITION, create_if_missing=True, error_if_exist=True)
+        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name)
 
     def read_metric_data(self, metric_namespace: str, metric_name: str):
         kv = FateStorage.read_data(namespace=self.table_namespace,
@@ -53,6 +54,7 @@ class Tracking(object):
     def set_metric_meta(self, metric_namespace: str, metric_name: str, metric_meta: MetricMeta):
         FateStorage.save_data_table_meta(metric_meta.to_dict(), namespace=self.table_namespace,
                                          name=Tracking.metric_table_name(metric_namespace, metric_name))
+        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name)
 
     def get_metric_meta(self, metric_namespace: str, metric_name: str):
         kv = FateStorage.get_data_table_meta(namespace=self.table_namespace,
@@ -61,7 +63,7 @@ class Tracking(object):
 
     def put_into_metric_list(self, metric_namespace: str, metric_name: str):
         kv = {'%s:%s' % (metric_namespace, metric_name): metric_name}
-        FateStorage.save_data(kv, namespace=self.table_namespace, name=Tracking.metric_list_table_name(),
+        FateStorage.save_data(kv.items(), namespace=self.table_namespace, name=Tracking.metric_list_table_name(),
                               partition=Tracking.METRIC_LIST_PARTITION, create_if_missing=True, error_if_exist=True)
 
     def get_metric_list(self):
@@ -96,13 +98,13 @@ class Tracking(object):
         {"ProtobufferClassName": ProtobufferObject}
         :return:
         """
-        model_manager.save_model(model_key=self.component_name if self.component_name else 'pipeline',
+        model_manager.save_model(model_key=self.component_name,
                                  model_buffers=model_buffers,
                                  model_version=self.model_version,
                                  model_id=self.model_id)
 
     def get_output_model(self):
-        return model_manager.read_model(model_key=self.component_name if self.component_name else 'pipeline',
+        return model_manager.read_model(model_key=self.component_name,
                                         model_version=self.model_version,
                                         model_id=self.model_id)
 

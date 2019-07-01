@@ -46,7 +46,7 @@ id_counter = IdCounter()
 
 
 def generate_job_id():
-    return '_'.join([datetime.datetime.now().strftime("%Y%m%d_%H%M%S"), str(PARTY_ID), str(id_counter.incr())])
+    return '_'.join([datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f"), str(id_counter.incr())])
 
 
 def get_job_directory(job_id=None):
@@ -117,7 +117,7 @@ def clean_job(job_id):
 
 
 @DB.connection_context()
-def query_tasks(job_id, task_id, role, party_id):
+def query_tasks(job_id, task_id, role=None, party_id=None):
     if role and party_id:
         tasks = Task.select().where(Task.f_job_id == job_id, Task.f_task_id == task_id, Task.f_role == role, Task.f_party_id == party_id)
     else:

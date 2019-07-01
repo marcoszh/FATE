@@ -26,6 +26,8 @@ from fate_flow.db.db_models import Task, Job
 from fate_flow.manager.tracking import Tracking
 from fate_flow.manager.queue_manager import JOB_QUEUE
 from fate_flow.storage.fate_storage import FateStorage
+from fate_flow.entity.metric import Metric
+from fate_flow.settings import API_VERSION
 import traceback
 
 manager = Flask(__name__)
@@ -52,6 +54,7 @@ def submit_job():
     job.f_job_id = job_id
     job.f_role = job_initiator.get('role', '')
     job.f_party_id = job_initiator.get('party_id', '')
+    job.f_roles = json_dumps(job_config.get('role', {}))
     job.f_initiator_party_id = job_initiator.get('party_id', '')
     job.f_dsl = json_dumps(job_dsl)
     job.f_config = json_dumps(job_config)
@@ -71,7 +74,8 @@ def submit_job():
 
 def run_job(job_id, job_dsl_path, job_runtime_conf_path):
     dsl = DSLParser()
-    default_runtime_conf_path = os.path.join(file_utils.get_project_base_directory(), *['federatedml', 'conf', 'default_runtime_conf'])
+    default_runtime_conf_path = os.path.join(file_utils.get_project_base_directory(),
+                                             *['federatedml', 'conf', 'default_runtime_conf'])
     setting_conf_path = os.path.join(file_utils.get_project_base_directory(), *['federatedml', 'conf', 'setting_conf'])
     dsl.run(dsl_json_path=job_dsl_path,
             runtime_conf=job_runtime_conf_path,
@@ -107,11 +111,13 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
                     dest_party_id = party_parameters.get('local', {}).get('party_id')
                     federated_api(job_id=job_id,
                                   method='POST',
-                                  url='/job/{}/{}/{}/{}/{}/run'.format(job_id,
-                                                                       component_name,
-                                                                       task_id,
-                                                                       role,
-                                                                       dest_party_id),
+                                  url='/{}/job/{}/{}/{}/{}/{}/run'.format(
+                                      API_VERSION,
+                                      job_id,
+                                      component_name,
+                                      task_id,
+                                      role,
+                                      dest_party_id),
                                   dest_party_id=dest_party_id,
                                   json_body={'job_initiator': job_initiator,
                                              'job_args': party_job_args,
@@ -161,6 +167,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
         tracking.save_output_data_table(output_data, task_output_dsl.get('data')[0])
         tracking.save_output_model(output_model)
         task.f_status = 'success'
+        tracking.log_metric_data('TRAIN', 'LOSS0', [Metric(key=1, value=0.1), Metric(key=2, value=0.2)])
     except Exception as e:
         logger.exception(e)
         task.f_status = 'failed'
@@ -187,10 +194,12 @@ def get_task_run_args(job_id, job_args, input_dsl):
                 for data_key in data_list:
                     data_key_item = data_key.split('.')
                     if data_key_item[0] == 'args':
-                        data_table = FateStorage.table(namespace=job_args.get('data', {}).get(data_key_item[2]).get('namespace', ''),
-                                                       name=job_args.get('data', {}).get(data_key_item[2]).get('name', ''))
+                        data_table = FateStorage.table(
+                            namespace=job_args.get('data', {}).get(data_key_item[2]).get('namespace', ''),
+                            name=job_args.get('data', {}).get(data_key_item[2]).get('name', ''))
                     else:
-                        data_table = Tracking(job_id=job_id, component_name=data_key_item[0]).get_output_data_table(data_name=data_key_item[1])
+                        data_table = Tracking(job_id=job_id, component_name=data_key_item[0]).get_output_data_table(
+                            data_name=data_key_item[1])
                     args_from_component = this_type_args[data_key_item[0]] = this_type_args.get(data_key_item[0], {})
                     args_from_component[data_type] = data_table
         elif input_type == 'model':

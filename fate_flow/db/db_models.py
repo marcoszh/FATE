@@ -62,7 +62,7 @@ def init_tables():
 
 class Job(DataBaseModel):
     f_job_id = CharField(max_length=100)
-    f_name = CharField(max_length=500, index=True)
+    f_name = CharField(max_length=500, null=True)
     f_description = TextField(null=True)
     f_tag = CharField(max_length=50, null=True, index=True)
     f_role = CharField(max_length=50, index=True)

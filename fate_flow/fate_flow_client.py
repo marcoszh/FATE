@@ -12,6 +12,7 @@ import sys
 
 SERVERS = "servers"
 ROLE = "manager"
+API_VERSION = "v1"
 server_conf = file_utils.load_json_conf("arch/conf/server_conf.json")
 JOB_FUNC = ["submitJob", "jobStatus"]
 JOB_QUEUE_FUNC = ["queueStatus"]
@@ -38,7 +39,7 @@ def prettify(response, verbose=True):
 def call_fun(func, dsl_data, config_data):
     IP = server_conf.get(SERVERS).get(ROLE).get('host')
     HTTP_PORT = server_conf.get(SERVERS).get(ROLE).get('http.port')
-    LOCAL_URL = "http://{}:{}".format(IP, HTTP_PORT)
+    LOCAL_URL = "http://{}:{}/{}".format(IP, HTTP_PORT, API_VERSION)
 
     if func in JOB_FUNC:
         if dsl_data and config_data:
@@ -50,7 +51,7 @@ def call_fun(func, dsl_data, config_data):
     elif func in DATA_FUNC:
         response = requests.post("/".join([LOCAL_URL, "data", func]), json=config_data)
     elif func in DTABLE_FUNC:
-        response = requests.post("/".join([LOCAL_URL, "dtable", func]), json=config_data)
+        response = requests.post("/".join([LOCAL_URL, "datatable", func]), json=config_data)
     elif func in MODEL_FUNC:
         response = requests.post("/".join([LOCAL_URL, "model", func]), json=config_data)
 
