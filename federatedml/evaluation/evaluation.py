@@ -212,18 +212,18 @@ class Evaluation(ModelBase):
 
                     metric_name_fpr = '_'.join([metric_name, "fpr"])
                     self.__save_curve_data(thresholds, fpr, metric_name_fpr, metric_namespace)
-                    self.__save_curve_meta(metric_name_fpr, metric_namespace, metric, unit_name="threshold",
+                    self.__save_curve_meta(metric_name_fpr, metric_namespace, metric.upper(), unit_name="threshold",
                                            curve_name=metric_name_fpr)
 
                     metric_name_tpr = '_'.join([metric_name, "tpr"])
                     self.__save_curve_data(thresholds, tpr, metric_name_tpr, metric_namespace)
-                    self.__save_curve_meta(metric_name_tpr, metric_namespace, metric, unit_name="threshold",
+                    self.__save_curve_meta(metric_name_tpr, metric_namespace, metric.upper(), unit_name="threshold",
                                            curve_name=metric_name_tpr)
 
                 elif metric in [consts.ACCURACY, consts.LIFT, consts.GAIN]:
                     score, thresholds = metric_res[1]
                     self.__save_curve_data(thresholds, score, metric_name, metric_namespace)
-                    self.__save_curve_meta(metric_name, metric_namespace, metric, unit_name="threshold",
+                    self.__save_curve_meta(metric_name, metric_namespace, metric.upper(), unit_name="threshold",
                                            curve_name=metric_name)
                 elif metric in [consts.PRECISION, consts.RECALL]:
                     precision_recall[metric] = metric_res
@@ -241,13 +241,13 @@ class Evaluation(ModelBase):
                     metric_name_precision = '_'.join([data_type, "precision"])
                     self.__save_curve_data(precision_res[1][1], precision_res[1][0], metric_name_precision,
                                            metric_namespace)
-                    self.__save_curve_meta(metric_name_precision, metric_namespace, consts.PRECISION,
+                    self.__save_curve_meta(metric_name_precision, metric_namespace, consts.PRECISION.upper(),
                                            unit_name="threshold")
 
                     metric_name_recall = '_'.join([data_type, "recall"])
                     self.__save_curve_data(recall_res[1][1], recall_res[1][0], metric_name_recall,
                                            metric_namespace)
-                    self.__save_curve_meta(metric_name_recall, metric_namespace, consts.RECALL,
+                    self.__save_curve_meta(metric_name_recall, metric_namespace, consts.RECALL.upper(),
                                            unit_name="threshold")
                 else:
                     LOGGER.warning("Unknown metric:{}".format(metric))
