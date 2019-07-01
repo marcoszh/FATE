@@ -64,6 +64,10 @@ class DenseFeatureReader(object):
         self.label_type = data_io_param.label_type
         self.output_format = data_io_param.output_format
         self.header = None
+        self.tracker = None
+
+    def set_tracker(self, tracker):
+        self.tracker = tracker
 
     def generate_header(self, input_data, input_data_feature):
         # self.header = storage.get_data_table_meta(input_data)
@@ -142,21 +146,23 @@ class DenseFeatureReader(object):
                                                                                 replace_method=self.missing_fill_method,
                                                                                 replace_value=self.default_value)
                 if self.missing_impute is None:
-                    self.missing_impute = imputer_processor.get_imputer_value_list()
+                    self.missing_impute = imputer_processor.get_missing_value_list()
             else:
                 input_data_features = imputer_processor.transform(input_data_features,
                                                                   replace_method=self.missing_fill_method,
                                                                   transform_value=self.default_value)
 
             if self.missing_impute is None:
-                self.missing_impute = imputer_processor.get_imputer_value_list()
+                self.missing_impute = imputer_processor.get_missing_value_list()
 
             missing_impute_rate = imputer_processor.get_impute_rate(mode)
             callback("missing_value_ratio",
-                     missing_impute_rate)
+                     missing_impute_rate,
+                     self.tracker)
 
             callback("missing_value_list",
-                     self.missing_impute)
+                     self.missing_impute,
+                     self.tracker)
 
         return input_data_features
 
@@ -171,7 +177,7 @@ class DenseFeatureReader(object):
                                           replace_value=self.outlier_replace_value)
 
                 if self.outlier_impute is None:
-                    self.outlier_impute = imputer_processor.get_imputer_value_list()
+                    self.outlier_impute = imputer_processor.get_missing_value_list()
             else:
                 input_data_features = imputer_processor.transform(input_data_features,
                                                                   replace_method=self.outlier_replace_method,
@@ -179,10 +185,12 @@ class DenseFeatureReader(object):
 
             outlier_replace_rate = imputer_processor.get_impute_rate(mode)
             callback("outlier_value_ratio",
-                     outlier_replace_rate)
+                     outlier_replace_rate,
+                     self.tracker)
 
             callback("outlier_value_list",
-                     self.outlier_impute)
+                     self.outlier_impute,
+                     self.tracker)
 
         return input_data_features
 
@@ -656,6 +664,7 @@ class DataIO(ModelBase):
         print ("model_param is {}".format(model_param))
         if model_param.input_format == "dense":
             self.reader = DenseFeatureReader(self.model_param)
+            self.reader.set_tracker(self.tracker)
         elif model_param.input_format == "sparse":
             self.reader = SparseFeatureReader(self.model_param)
         elif model_param.input_format == "tag":
@@ -870,8 +879,9 @@ def load_outlier_model(header=None,
 
 
 def callback(keyword="missing_impute",
-             value_list=None):
-    tracker = Tracking("abc", "123")
+             value_list=None,
+             tracker=None):
+    # tracker = Tracking("abc", "123")
     if keyword.endswith("ratio"):
         metric_list = []
         for i in range(len(value_list)):

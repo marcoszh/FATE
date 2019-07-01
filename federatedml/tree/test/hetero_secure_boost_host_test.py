@@ -22,6 +22,7 @@ import sys
 import unittest
 from arch.api import eggroll
 from arch.api import federation
+from fate_flow.manager.tracking import Tracking 
 from federatedml.feature.instance import Instance
 from federatedml.feature.sparse_vector import SparseVector
 from federatedml.tree.hetero_secureboosting_tree_host import HeteroSecureBoostingTreeHost
@@ -80,6 +81,8 @@ class TestHeteroSecureBoostHost(unittest.TestCase):
                           }
        
         tree_host = HeteroSecureBoostingTreeHost()
+        tracker = Tracking("abc", "123")
+        tree_host.set_tracker(tracker)
         tree_host.run(component_param, self.args)
         tree_host.save_model()
 

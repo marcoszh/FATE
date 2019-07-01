@@ -30,6 +30,7 @@ class ModelBase(object):
         self.flowid = ''
         self.taskid = ''
         self.need_run = True
+        self.tracker = None
 
     def _init_runtime_parameters(self, component_parameters):
         param_extracter = ParamExtract()
@@ -158,14 +159,17 @@ class ModelBase(object):
         if self.transfer_variable is not None:
             self.transfer_variable.set_taskid(self.taskid)
 
+    def set_tracker(self, tracker):
+        self.tracker = tracker
+
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
-        tracker = Tracking('123', 'abc')
-        tracker.set_metric_meta(metric_name=metric_name,
-                                metric_namespace=metric_namespace,
-                                metric_meta=metric_meta)
+        # tracker = Tracking('123', 'abc')
+        self.tracker.set_metric_meta(metric_name=metric_name,
+                                     metric_namespace=metric_namespace,
+                                     metric_meta=metric_meta)
 
     def callback_metric(self, metric_name, metric_namespace, metric_data):
-        tracker = Tracking('123', 'abc')
-        tracker.log_metric_data(metric_name=metric_name,
-                                metric_namespace=metric_namespace,
-                                metrics=metric_data)
+        # tracker = Tracking('123', 'abc')
+        self.tracker.log_metric_data(metric_name=metric_name,
+                                     metric_namespace=metric_namespace,
+                                     metrics=metric_data)

@@ -21,6 +21,7 @@ import string
 import unittest
 from arch.api import eggroll
 from arch.api import federation
+from fate_flow.manager.tracking import Tracking 
 from federatedml.feature.sampler import Sampler
 
 class TestSampler(unittest.TestCase):
@@ -48,6 +49,8 @@ class TestSampler(unittest.TestCase):
                           }
 
         sampler = Sampler()
+        tracker = Tracking("abc", "123")
+        sampler.set_tracker(tracker)
         sampler.run(component_param, self.args)
 
         self.assertTrue(np.abs(len(list(sampler.save_data().collect())) - 60) < 10)
