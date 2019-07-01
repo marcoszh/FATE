@@ -19,6 +19,7 @@ import time
 import random
 import string
 import unittest
+from fate_flow.manager.tracking import Tracking 
 
 
 from federatedml.util.data_io import DataIO
@@ -32,7 +33,7 @@ class TestDenseFeatureReader(unittest.TestCase):
         data1 = [("a", "1,2,-1,0,0,5"), ("b", "4,5,6,0,1,2")]
         self.table1 = eggroll.parallelize(data1, include_key=True)
 
-        data2 = [("a", '-1,,NA,NULL,null,2')]
+        data2 = [("a", '-1,,na,null,null,2')]
         self.table2 = eggroll.parallelize(data2, include_key=True)
         self.args1 = {"data": 
                        {"data_io_0": {
@@ -49,6 +50,8 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_dense_output_format(self):
         reader = DataIO()
+        tracker = Tracking("abc", "123")
+        reader.set_tracker(tracker)
         component_params = {"DataIOParam": 
                              {"input_format": "dense"
                              }
@@ -70,6 +73,8 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_sparse_output_format(self):
         reader = DataIO()
+        tracker = Tracking("abc", "123")
+        reader.set_tracker(tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "dense"
@@ -86,6 +91,8 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_missing_value_fill(self):
         reader = DataIO()
+        tracker = Tracking("abc", "123")
+        reader.set_tracker(tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "dense",
@@ -105,6 +112,8 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_with_label(self):
         reader = DataIO()
+        tracker = Tracking("abc", "123")
+        reader.set_tracker(tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "dense",
                               "input_format": "dense",
@@ -153,6 +162,8 @@ class TestSparseFeatureReader(unittest.TestCase):
     
     def test_sparse_output_format(self):
         reader = DataIO()
+        tracker = Tracking("abc", "123")
+        reader.set_tracker(tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "sparse",

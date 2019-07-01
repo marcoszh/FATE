@@ -42,6 +42,10 @@ class RandomSampler(object):
         self.fraction = fraction
         self.random_state = random_state
         self.method = method
+        self.tracker = None
+
+    def set_tracker(self, tracker):
+        self.tracker = tracker
 
     def sample(self, data_inst, sample_ids=None):
         """
@@ -119,7 +123,7 @@ class RandomSampler(object):
                                                 partition=data_inst._partitions)
             new_data_inst = data_inst.join(sample_dtable, lambda v1, v2: v1)
 
-            callback("random", [Metric("count", new_data_inst.count())])
+            callback(self.tracker, "random", [Metric("count", new_data_inst.count())])
 
             if return_sample_ids:
                 return new_data_inst, sample_ids
@@ -151,7 +155,7 @@ class RandomSampler(object):
                                                 include_key=True,
                                                 partition=data_inst._partitions)
 
-            callback("random", [Metric("count", new_data_inst.count())])
+            callback(self.tracker, "random", [Metric("count", new_data_inst.count())])
 
             if return_sample_ids:
                 return new_data_inst, sample_ids
@@ -189,6 +193,10 @@ class StratifiedSampler(object):
         
         self.random_state = random_state
         self.method = method
+        self.tracker = None
+
+    def set_tracker(self, tracker):
+        self.tracker = tracker
 
     def sample(self, data_inst, sample_ids=None):
         """
@@ -285,7 +293,7 @@ class StratifiedSampler(object):
                     else:
                         callback_metrics.append(Metric(label_name, 0))
 
-                callback("stratified", callback_metrics)
+                callback(self.tracker, "stratified", callback_metrics)
 
             sample_dtable = eggroll.parallelize(zip(sample_ids, range(len(sample_ids))),
                                                 include_key=True,
@@ -371,11 +379,13 @@ class Sampler(ModelBase):
             self.sampler = RandomSampler(sample_param.fractions,
                                          sample_param.random_state,
                                          sample_param.method)
+            self.sampler.set_tracker(self.tracker)
 
         elif sample_param.mode == "stratified":
             self.sampler = StratifiedSampler(sample_param.fractions,
                                              sample_param.random_state,
                                              sample_param.method)
+            self.sampler.set_tracker(self.tracker)
 
         else:
             raise ValueError("{} sampler not support yet".format(sample_param.mde))
@@ -502,9 +512,8 @@ class Sampler(ModelBase):
         return self.data_output
 
 
-def callback(method, callback_metrics):
+def callback(tracker, method, callback_metrics):
     print ("method is {}".format(method))
-    tracker = Tracking("abc", "123")
     if method == "random":
         tracker.log_metric_data("sample_count",
                                 "random",
