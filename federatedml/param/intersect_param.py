@@ -37,6 +37,7 @@ class EncodeParam(BaseParam):
     """
 
     def __init__(self, salt='', encode_method='none', base64=False):
+        super().__init__()
         self.salt = salt
         self.encode_method = encode_method
         self.base64 = base64
