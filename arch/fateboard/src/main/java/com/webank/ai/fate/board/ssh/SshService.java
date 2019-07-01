@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.util.StringUtils;
+
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -66,7 +66,7 @@ public class SshService implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         String filePath = System.getProperty(Dict.SSH_CONFIG_FILE);
-        if (StringUtils.isEmpty(filePath)) {
+        if (filePath ==null||"".equals(filePath)) {
             ClassPathResource classPathResource = new ClassPathResource("ssh.properties");
             load(classPathResource.getInputStream());
         } else {
