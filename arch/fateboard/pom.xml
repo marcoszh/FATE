@@ -9,16 +9,26 @@
 
     <packaging>jar</packaging>
 
-    <name>myborad</name>
-    <description>myborad</description>
+    <name>fateboard</name>
+    <description>fateboard</description>
 
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.4.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>com.webank.ai.fate</groupId>
+        <artifactId>fate-all</artifactId>
+        <version>${fate.version}</version>
     </parent>
+
+
+
+
+
+    <!--<parent>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-parent</artifactId>-->
+        <!--<version>2.0.4.RELEASE</version>-->
+        <!--<relativePath/> &lt;!&ndash; lookup parent from repository &ndash;&gt;-->
+    <!--</parent>-->
 
     <dependencies>
         <dependency>
