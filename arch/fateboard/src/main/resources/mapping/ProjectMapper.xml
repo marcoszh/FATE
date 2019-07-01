@@ -1,0 +1,778 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webank.ai.fate.board.dao.ProjectMapper">
+    <resultMap id="BaseResultMap" type="com.webank.ai.fate.board.pojo.Project">
+        <id column="f_pid" jdbcType="INTEGER" property="fPid"/>
+        <result column="f_name" jdbcType="VARCHAR" property="fName"/>
+        <result column="f_desc" jdbcType="VARCHAR" property="fDesc"/>
+        <result column="f_type" jdbcType="VARCHAR" property="fType"/>
+        <result column="f_status" jdbcType="SMALLINT" property="fStatus"/>
+        <result column="f_create_time" jdbcType="TIMESTAMP" property="fCreateTime"/>
+        <result column="f_update_time" jdbcType="TIMESTAMP" property="fUpdateTime"/>
+        <result column="f_content" jdbcType="VARCHAR" property="fContent"/>
+    </resultMap>
+    <sql id="Example_Where_Clause">
+        <where>
+            <foreach collection="oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Update_By_Example_Where_Clause">
+        <where>
+            <foreach collection="example.oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Base_Column_List">
+        f_pid, f_name, f_desc, f_type, f_status, f_create_time, f_update_time, f_content
+    </sql>
+    <select id="selectByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample" resultMap="BaseResultMap">
+        select
+        <if test="distinct">
+            distinct
+        </if>
+        'true' as QUERYID,
+        <include refid="Base_Column_List"/>
+        from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </delete>
+    <delete id="deleteByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample">
+        delete from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </delete>
+    <insert id="insert" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project (f_pid, f_name, f_desc,
+        f_type, f_status, f_create_time,
+        f_update_time, f_content)
+        values (#{fPid,jdbcType=INTEGER}, #{fName,jdbcType=VARCHAR}, #{fDesc,jdbcType=VARCHAR},
+        #{fType,jdbcType=VARCHAR}, #{fStatus,jdbcType=SMALLINT}, #{fCreateTime,jdbcType=TIMESTAMP},
+        #{fUpdateTime,jdbcType=TIMESTAMP}, #{fContent,jdbcType=VARCHAR})
+    </insert>
+    <insert id="insertSelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                f_pid,
+            </if>
+            <if test="fName != null">
+                f_name,
+            </if>
+            <if test="fDesc != null">
+                f_desc,
+            </if>
+            <if test="fType != null">
+                f_type,
+            </if>
+            <if test="fStatus != null">
+                f_status,
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time,
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time,
+            </if>
+            <if test="fContent != null">
+                f_content,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                #{fPid,jdbcType=INTEGER},
+            </if>
+            <if test="fName != null">
+                #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                #{fContent,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <select id="countByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample"
+            resultType="java.lang.Long">
+        select count(*) from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </select>
+    <update id="updateByExampleSelective" parameterType="map">
+        update t_project
+        <set>
+            <if test="record.fPid != null">
+                f_pid = #{record.fPid,jdbcType=INTEGER},
+            </if>
+            <if test="record.fName != null">
+                f_name = #{record.fName,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fDesc != null">
+                f_desc = #{record.fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fType != null">
+                f_type = #{record.fType,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fStatus != null">
+                f_status = #{record.fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="record.fCreateTime != null">
+                f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fUpdateTime != null">
+                f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fContent != null">
+                f_content = #{record.fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByExample" parameterType="map">
+        update t_project
+        set f_pid = #{record.fPid,jdbcType=INTEGER},
+        f_name = #{record.fName,jdbcType=VARCHAR},
+        f_desc = #{record.fDesc,jdbcType=VARCHAR},
+        f_type = #{record.fType,jdbcType=VARCHAR},
+        f_status = #{record.fStatus,jdbcType=SMALLINT},
+        f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{record.fContent,jdbcType=VARCHAR}
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByPrimaryKeySelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        <set>
+            <if test="fName != null">
+                f_name = #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                f_desc = #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                f_type = #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                f_status = #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                f_content = #{fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        set f_name = #{fName,jdbcType=VARCHAR},
+        f_desc = #{fDesc,jdbcType=VARCHAR},
+        f_type = #{fType,jdbcType=VARCHAR},
+        f_status = #{fStatus,jdbcType=SMALLINT},
+        f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{fContent,jdbcType=VARCHAR}
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+    <resultMap id="BaseResultMap" type="com.webank.ai.fate.board.pojo.Project">
+        <id column="f_pid" jdbcType="INTEGER" property="fPid"/>
+        <result column="f_name" jdbcType="VARCHAR" property="fName"/>
+        <result column="f_desc" jdbcType="VARCHAR" property="fDesc"/>
+        <result column="f_type" jdbcType="VARCHAR" property="fType"/>
+        <result column="f_status" jdbcType="SMALLINT" property="fStatus"/>
+        <result column="f_create_time" jdbcType="TIMESTAMP" property="fCreateTime"/>
+        <result column="f_update_time" jdbcType="TIMESTAMP" property="fUpdateTime"/>
+        <result column="f_content" jdbcType="VARCHAR" property="fContent"/>
+    </resultMap>
+    <sql id="Example_Where_Clause">
+        <where>
+            <foreach collection="oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Update_By_Example_Where_Clause">
+        <where>
+            <foreach collection="example.oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Base_Column_List">
+        f_pid, f_name, f_desc, f_type, f_status, f_create_time, f_update_time, f_content
+    </sql>
+    <select id="selectByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample" resultMap="BaseResultMap">
+        select
+        <if test="distinct">
+            distinct
+        </if>
+        'true' as QUERYID,
+        <include refid="Base_Column_List"/>
+        from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </delete>
+    <delete id="deleteByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample">
+        delete from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </delete>
+    <insert id="insert" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project (f_pid, f_name, f_desc,
+        f_type, f_status, f_create_time,
+        f_update_time, f_content)
+        values (#{fPid,jdbcType=INTEGER}, #{fName,jdbcType=VARCHAR}, #{fDesc,jdbcType=VARCHAR},
+        #{fType,jdbcType=VARCHAR}, #{fStatus,jdbcType=SMALLINT}, #{fCreateTime,jdbcType=TIMESTAMP},
+        #{fUpdateTime,jdbcType=TIMESTAMP}, #{fContent,jdbcType=VARCHAR})
+    </insert>
+    <insert id="insertSelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                f_pid,
+            </if>
+            <if test="fName != null">
+                f_name,
+            </if>
+            <if test="fDesc != null">
+                f_desc,
+            </if>
+            <if test="fType != null">
+                f_type,
+            </if>
+            <if test="fStatus != null">
+                f_status,
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time,
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time,
+            </if>
+            <if test="fContent != null">
+                f_content,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                #{fPid,jdbcType=INTEGER},
+            </if>
+            <if test="fName != null">
+                #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                #{fContent,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <select id="countByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample"
+            resultType="java.lang.Long">
+        select count(*) from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </select>
+    <update id="updateByExampleSelective" parameterType="map">
+        update t_project
+        <set>
+            <if test="record.fPid != null">
+                f_pid = #{record.fPid,jdbcType=INTEGER},
+            </if>
+            <if test="record.fName != null">
+                f_name = #{record.fName,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fDesc != null">
+                f_desc = #{record.fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fType != null">
+                f_type = #{record.fType,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fStatus != null">
+                f_status = #{record.fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="record.fCreateTime != null">
+                f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fUpdateTime != null">
+                f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fContent != null">
+                f_content = #{record.fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByExample" parameterType="map">
+        update t_project
+        set f_pid = #{record.fPid,jdbcType=INTEGER},
+        f_name = #{record.fName,jdbcType=VARCHAR},
+        f_desc = #{record.fDesc,jdbcType=VARCHAR},
+        f_type = #{record.fType,jdbcType=VARCHAR},
+        f_status = #{record.fStatus,jdbcType=SMALLINT},
+        f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{record.fContent,jdbcType=VARCHAR}
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByPrimaryKeySelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        <set>
+            <if test="fName != null">
+                f_name = #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                f_desc = #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                f_type = #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                f_status = #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                f_content = #{fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        set f_name = #{fName,jdbcType=VARCHAR},
+        f_desc = #{fDesc,jdbcType=VARCHAR},
+        f_type = #{fType,jdbcType=VARCHAR},
+        f_status = #{fStatus,jdbcType=SMALLINT},
+        f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{fContent,jdbcType=VARCHAR}
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+    <resultMap id="BaseResultMap" type="com.webank.ai.fate.board.pojo.Project">
+        <id column="f_pid" jdbcType="INTEGER" property="fPid"/>
+        <result column="f_name" jdbcType="VARCHAR" property="fName"/>
+        <result column="f_desc" jdbcType="VARCHAR" property="fDesc"/>
+        <result column="f_type" jdbcType="VARCHAR" property="fType"/>
+        <result column="f_status" jdbcType="SMALLINT" property="fStatus"/>
+        <result column="f_create_time" jdbcType="TIMESTAMP" property="fCreateTime"/>
+        <result column="f_update_time" jdbcType="TIMESTAMP" property="fUpdateTime"/>
+        <result column="f_content" jdbcType="VARCHAR" property="fContent"/>
+    </resultMap>
+    <sql id="Example_Where_Clause">
+        <where>
+            <foreach collection="oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Update_By_Example_Where_Clause">
+        <where>
+            <foreach collection="example.oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="("
+                                             separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Base_Column_List">
+        f_pid, f_name, f_desc, f_type, f_status, f_create_time, f_update_time, f_content
+    </sql>
+    <select id="selectByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample" resultMap="BaseResultMap">
+        select
+        <if test="distinct">
+            distinct
+        </if>
+        'true' as QUERYID,
+        <include refid="Base_Column_List"/>
+        from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from t_project
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </delete>
+    <delete id="deleteByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample">
+        delete from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </delete>
+    <insert id="insert" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project (f_pid, f_name, f_desc,
+        f_type, f_status, f_create_time,
+        f_update_time, f_content)
+        values (#{fPid,jdbcType=INTEGER}, #{fName,jdbcType=VARCHAR}, #{fDesc,jdbcType=VARCHAR},
+        #{fType,jdbcType=VARCHAR}, #{fStatus,jdbcType=SMALLINT}, #{fCreateTime,jdbcType=TIMESTAMP},
+        #{fUpdateTime,jdbcType=TIMESTAMP}, #{fContent,jdbcType=VARCHAR})
+    </insert>
+    <insert id="insertSelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        insert into t_project
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                f_pid,
+            </if>
+            <if test="fName != null">
+                f_name,
+            </if>
+            <if test="fDesc != null">
+                f_desc,
+            </if>
+            <if test="fType != null">
+                f_type,
+            </if>
+            <if test="fStatus != null">
+                f_status,
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time,
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time,
+            </if>
+            <if test="fContent != null">
+                f_content,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fPid != null">
+                #{fPid,jdbcType=INTEGER},
+            </if>
+            <if test="fName != null">
+                #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                #{fContent,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <select id="countByExample" parameterType="com.webank.ai.fate.board.pojo.ProjectExample"
+            resultType="java.lang.Long">
+        select count(*) from t_project
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause"/>
+        </if>
+    </select>
+    <update id="updateByExampleSelective" parameterType="map">
+        update t_project
+        <set>
+            <if test="record.fPid != null">
+                f_pid = #{record.fPid,jdbcType=INTEGER},
+            </if>
+            <if test="record.fName != null">
+                f_name = #{record.fName,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fDesc != null">
+                f_desc = #{record.fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fType != null">
+                f_type = #{record.fType,jdbcType=VARCHAR},
+            </if>
+            <if test="record.fStatus != null">
+                f_status = #{record.fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="record.fCreateTime != null">
+                f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fUpdateTime != null">
+                f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.fContent != null">
+                f_content = #{record.fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByExample" parameterType="map">
+        update t_project
+        set f_pid = #{record.fPid,jdbcType=INTEGER},
+        f_name = #{record.fName,jdbcType=VARCHAR},
+        f_desc = #{record.fDesc,jdbcType=VARCHAR},
+        f_type = #{record.fType,jdbcType=VARCHAR},
+        f_status = #{record.fStatus,jdbcType=SMALLINT},
+        f_create_time = #{record.fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{record.fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{record.fContent,jdbcType=VARCHAR}
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause"/>
+        </if>
+    </update>
+    <update id="updateByPrimaryKeySelective" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        <set>
+            <if test="fName != null">
+                f_name = #{fName,jdbcType=VARCHAR},
+            </if>
+            <if test="fDesc != null">
+                f_desc = #{fDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="fType != null">
+                f_type = #{fType,jdbcType=VARCHAR},
+            </if>
+            <if test="fStatus != null">
+                f_status = #{fStatus,jdbcType=SMALLINT},
+            </if>
+            <if test="fCreateTime != null">
+                f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fUpdateTime != null">
+                f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fContent != null">
+                f_content = #{fContent,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.webank.ai.fate.board.pojo.Project">
+        update t_project
+        set f_name = #{fName,jdbcType=VARCHAR},
+        f_desc = #{fDesc,jdbcType=VARCHAR},
+        f_type = #{fType,jdbcType=VARCHAR},
+        f_status = #{fStatus,jdbcType=SMALLINT},
+        f_create_time = #{fCreateTime,jdbcType=TIMESTAMP},
+        f_update_time = #{fUpdateTime,jdbcType=TIMESTAMP},
+        f_content = #{fContent,jdbcType=VARCHAR}
+        where f_pid = #{fPid,jdbcType=INTEGER}
+    </update>
+</mapper>
