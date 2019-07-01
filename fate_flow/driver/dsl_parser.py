@@ -146,7 +146,6 @@ class DSLParser(object):
         """
         self.args_input = ParameterOverride.get_args_input(runtime_conf, module="args")
 
-        print ("args_input is {}".format(self.args_input))
         for component in self.components:
             module = component.get_module()
             name = component.get_name()
@@ -376,6 +375,10 @@ class DSLParser(object):
 
         return next_components
 
+    def get_component_info(self, component_name):
+        idx = self.component_name_index.get(component_name)
+        return self.components[idx]
+
     def _get_end_of_pipeline_dsl(self, pipeline_dsl):
         has_up = {}
         has_down = {}
@@ -526,7 +529,6 @@ class DSLParser(object):
                         output_data_maps[name][output_data_str] = input_data.get("train_data")
                 elif "data" in input_data:
                     output_data_maps[name][output_data_str] = input_data.get("data")
-                    print (output_data_str, input_data.get("data"))
                 else:
                     raise ValueError("Illegal input data")
 

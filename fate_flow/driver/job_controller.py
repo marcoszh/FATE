@@ -13,14 +13,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from fate_flow.utils.job_utils import generate_job_id, save_job_conf, query_tasks
+from fate_flow.utils.job_utils import generate_job_id, save_job_conf, query_tasks, get_job_dsl_parser
 from arch.api.utils import file_utils
 from fate_flow.utils.api_utils import get_json_result, federated_api
 from arch.api.utils.core import current_timestamp, json_dumps
 from flask import Flask, request
-import os
 from fate_flow.settings import IP, logger
-from fate_flow.driver.dsl_parser import DSLParser
 import importlib
 from fate_flow.db.db_models import Task, Job
 from fate_flow.manager.tracking import Tracking
@@ -28,7 +26,6 @@ from fate_flow.manager.queue_manager import JOB_QUEUE
 from fate_flow.storage.fate_storage import FateStorage
 from fate_flow.entity.metric import Metric
 from fate_flow.settings import API_VERSION
-import traceback
 
 manager = Flask(__name__)
 
@@ -46,7 +43,7 @@ def submit_job():
     logger.info('generated job_id {}, body {}'.format(job_id, job_data))
     job_config = job_data.get('job_runtime_conf', {})
     job_dsl = job_data.get('job_dsl', {})
-    job_dsl_path, job_parameters_path = save_job_conf(job_id=job_id,
+    job_dsl_path, job_runtime_conf_path = save_job_conf(job_id=job_id,
                                                       job_dsl=job_dsl,
                                                       job_runtime_conf=job_config)
     job_initiator = job_config.get('initiator', None)
@@ -56,31 +53,27 @@ def submit_job():
     job.f_party_id = job_initiator.get('party_id', '')
     job.f_roles = json_dumps(job_config.get('role', {}))
     job.f_initiator_party_id = job_initiator.get('party_id', '')
+    job.f_is_initiator = 1
     job.f_dsl = json_dumps(job_dsl)
-    job.f_config = json_dumps(job_config)
+    job.f_runtime_conf = json_dumps(job_config)
     job.f_run_ip = IP
     job.f_status = 'waiting'
     job.f_create_time = current_timestamp()
-    Tracking(job_id=job_id).save_job_info(job.f_role, job.f_party_id, job.to_json(), create=True)
+    Tracking(job_id=job_id, role=job_initiator.get('role', ''),
+             party_id=job_initiator.get('party_id', '')).save_job_info(job.f_role, job.f_party_id, job.to_json(),
+                                                                       create=True)
     JOB_QUEUE.put_event({
         'job_id': job_id,
         "job_dsl_path": job_dsl_path,
-        "job_runtime_conf_path": job_parameters_path
+        "job_runtime_conf_path": job_runtime_conf_path
     }
     )
     return get_json_result(job_id=job_id, data={'job_dsl_path': job_dsl_path,
-                                                'job_runtime_conf_path': job_parameters_path})
+                                                'job_runtime_conf_path': job_runtime_conf_path})
 
 
 def run_job(job_id, job_dsl_path, job_runtime_conf_path):
-    dsl = DSLParser()
-    default_runtime_conf_path = os.path.join(file_utils.get_project_base_directory(),
-                                             *['federatedml', 'conf', 'default_runtime_conf'])
-    setting_conf_path = os.path.join(file_utils.get_project_base_directory(), *['federatedml', 'conf', 'setting_conf'])
-    dsl.run(dsl_json_path=job_dsl_path,
-            runtime_conf=job_runtime_conf_path,
-            default_runtime_conf_prefix=default_runtime_conf_path,
-            setting_conf_prefix=setting_conf_path)
+    dsl = get_job_dsl_parser(job_id=job_id, job_dsl_path=job_dsl_path, job_runtime_conf_path=job_runtime_conf_path)
     job_config = file_utils.load_json_conf(job_runtime_conf_path)
     job_initiator = job_config.get('initiator', None)
     job_args = dsl.get_args_input()
@@ -89,7 +82,6 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
     FateStorage.init_storage(job_id=job_id)
     job = Job()
     job.f_create_time = current_timestamp()
-    job_tracking = Tracking(job_id=job_id)
     loops = 0
     component_name = None
     while True:
@@ -102,6 +94,7 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
         for component in components:
             parameters = component.get_role_parameters()
             component_name = component.get_name()
+            module_name = component.get_module()
             task_id = '{}_{}_{}'.format(job_id, component_name, loops)
             task_ids.append(task_id)
             for role, partys_parameters in parameters.items():
@@ -122,6 +115,7 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
                                   json_body={'job_initiator': job_initiator,
                                              'job_args': party_job_args,
                                              'parameters': party_parameters,
+                                             'module_name': module_name,
                                              'input': component.get_input(),
                                              'output': component.get_output()})
         all_task_status = set()
@@ -143,6 +137,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
     task_input_dsl = request_data.get('input', {})
     task_output_dsl = request_data.get('output', {})
     parameters = request_data.get('parameters', None)
+    module_name = request_data.get('module_name', '')
     task = Task()
     task.f_job_id = job_id
     task.f_component_name = component_name
@@ -150,7 +145,8 @@ def run_task(job_id, component_name, task_id, role, party_id):
     task.f_role = role
     task.f_party_id = party_id
     task.f_create_time = current_timestamp()
-    tracking = Tracking(job_id=job_id, component_name=component_name, task_id=task_id, model_id='jarvis_test')
+    tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id,
+                       model_id='jarvis_test')
     try:
         task.f_start_time = current_timestamp()
         task.f_operator = 'python_operator'
@@ -159,15 +155,18 @@ def run_task(job_id, component_name, task_id, role, party_id):
         run_class_paths = parameters.get('CodePath').split('/')
         run_class_package = '.'.join(run_class_paths[:-2]) + '.' + run_class_paths[-2].rstrip('.py')
         run_class_name = run_class_paths[-1]
-        task_run_args = get_task_run_args(job_id=job_id, job_args=job_args, input_dsl=task_input_dsl)
+        task_run_args = get_task_run_args(job_id=job_id, role=role, party_id=party_id, job_args=job_args, input_dsl=task_input_dsl)
         run_object = getattr(importlib.import_module(run_class_package), run_class_name)()
+        run_object.set_tracker(tracker=tracker)
         run_object.run(parameters, task_run_args)
-        output_model = run_object.save_model()
+        output_model = run_object.export_model()
         output_data = run_object.save_data()
-        tracking.save_output_data_table(output_data, task_output_dsl.get('data')[0])
-        tracking.save_output_model(output_model)
+        if task_output_dsl:
+            tracker.save_output_data_table(output_data, task_output_dsl.get('data')[0])
+        tracker.save_output_model(output_model)
+        tracker.save_output_model_meta({'module_name': module_name})
         task.f_status = 'success'
-        tracking.log_metric_data('TRAIN', 'LOSS0', [Metric(key=1, value=0.1), Metric(key=2, value=0.2)])
+        tracker.log_metric_data('TRAIN', 'LOSS0', [Metric(key=1, value=0.1), Metric(key=2, value=0.2)])
     except Exception as e:
         logger.exception(e)
         task.f_status = 'failed'
@@ -176,7 +175,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
         task.f_elapsed = task.f_end_time - task.f_start_time
         task.f_update_time = current_timestamp()
         task_info = task.to_json()
-        tracking.save_task(role=role, party_id=party_id, task_info=task_info, create=True)
+        tracker.save_task(role=role, party_id=party_id, task_info=task_info, create=True)
         federated_api(job_id=job_id,
                       method='POST',
                       url=request_url_without_host.replace('run', 'status'),
@@ -185,7 +184,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
     return get_json_result(status=0, msg='success')
 
 
-def get_task_run_args(job_id, job_args, input_dsl):
+def get_task_run_args(job_id, role, party_id, job_args, input_dsl):
     task_run_args = {}
     for input_type, input_detail in input_dsl.items():
         if input_type == 'data':
@@ -193,23 +192,29 @@ def get_task_run_args(job_id, job_args, input_dsl):
             for data_type, data_list in input_detail.items():
                 for data_key in data_list:
                     data_key_item = data_key.split('.')
-                    if data_key_item[0] == 'args':
+                    search_component_name, search_data_name = data_key_item[0], data_key_item[1]
+                    if search_component_name == 'args':
                         data_table = FateStorage.table(
-                            namespace=job_args.get('data', {}).get(data_key_item[2]).get('namespace', ''),
-                            name=job_args.get('data', {}).get(data_key_item[2]).get('name', ''))
+                            namespace=job_args.get('data', {}).get(search_data_name).get('namespace', ''),
+                            name=job_args.get('data', {}).get(search_data_name).get('name', ''))
                     else:
-                        data_table = Tracking(job_id=job_id, component_name=data_key_item[0]).get_output_data_table(
-                            data_name=data_key_item[1])
-                    args_from_component = this_type_args[data_key_item[0]] = this_type_args.get(data_key_item[0], {})
+                        data_table = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=search_component_name).get_output_data_table(
+                            data_name=search_data_name)
+                    args_from_component = this_type_args[search_component_name] = this_type_args.get(search_component_name, {})
                     args_from_component[data_type] = data_table
         elif input_type == 'model':
-            pass
+            this_type_args = task_run_args[input_type] = task_run_args.get(input_type, {})
+            for model_key in input_detail:
+                model_key_items = model_key.split('.')
+                search_component_name, search_model_name = model_key_items[0], model_key_items[1]
+                models = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=search_component_name, model_id='jarvis_test').get_output_model()
+                this_type_args[search_component_name] = models
     return task_run_args
 
 
 @manager.route('/<job_id>/<component_name>/<task_id>/<role>/<party_id>/status', methods=['POST'])
 def task_status(job_id, component_name, task_id, role, party_id):
     task_info = request.json
-    tracking = Tracking(job_id=job_id, component_name=component_name, task_id=task_id)
-    tracking.save_task(role=role, party_id=party_id, task_info=task_info)
+    tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id)
+    tracker.save_task(role=role, party_id=party_id, task_info=task_info)
     return get_json_result(status=0, msg='success')

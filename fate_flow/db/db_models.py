@@ -69,8 +69,9 @@ class Job(DataBaseModel):
     f_party_id = CharField(max_length=50, index=True)
     f_roles = TextField()
     f_initiator_party_id = CharField(max_length=50, index=True)
+    f_is_initiator = IntegerField(default=0, index=True)
     f_dsl = TextField()
-    f_config = TextField()
+    f_runtime_conf = TextField()
     f_run_ip = CharField(max_length=100)
     f_status = CharField(max_length=50)  # waiting/ready/start/running/success/failed/partial/setFailed
     f_current_steps = CharField(max_length=500, null=True)  # record component id in DSL

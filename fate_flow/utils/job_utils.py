@@ -25,6 +25,7 @@ from arch.api import eggroll
 import datetime
 import json
 import threading
+from fate_flow.driver.dsl_parser import DSLParser
 
 
 class IdCounter:
@@ -54,26 +55,43 @@ def get_job_directory(job_id=None):
     return os.path.join(file_utils.get_project_base_directory(), *_paths)
 
 
-def new_runtime_conf(job_dir, role, party_id):
+def new_runtime_conf(job_dir, method, module, role, party_id):
     if role:
-        conf_path_dir = os.path.join(job_dir, role, str(party_id))
+        conf_path_dir = os.path.join(job_dir, method, module, role, str(party_id))
     else:
-        conf_path_dir = os.path.join(job_dir, str(party_id))
+        conf_path_dir = os.path.join(job_dir, method, module, str(party_id))
     os.makedirs(conf_path_dir, exist_ok=True)
     return os.path.join(conf_path_dir, 'runtime_conf.json')
 
 
 def save_job_conf(job_id, job_dsl, job_runtime_conf):
-    job_dir = get_job_directory(job_id)
-    os.makedirs(job_dir)
-    job_dsl_path = os.path.join(job_dir, 'job_dsl.json')
-    job_parameters_path = os.path.join(job_dir, 'job_parameters.json')
-    for data, conf_path in [(job_dsl, job_dsl_path), (job_runtime_conf, job_parameters_path)]:
+    job_dsl_path, job_runtime_conf_path = get_job_conf_path(job_id=job_id)
+    os.makedirs(os.path.dirname(job_dsl_path))
+    for data, conf_path in [(job_dsl, job_dsl_path), (job_runtime_conf, job_runtime_conf_path)]:
         with open(conf_path, 'w+') as f:
             f.truncate()
             f.write(json.dumps(data, indent=4))
             f.flush()
-    return job_dsl_path, job_parameters_path
+    return job_dsl_path, job_runtime_conf_path
+
+
+def get_job_conf_path(job_id):
+    job_dir = get_job_directory(job_id)
+    job_dsl_path = os.path.join(job_dir, 'job_dsl.json')
+    job_runtime_conf_path = os.path.join(job_dir, 'job_parameters.json')
+    return job_dsl_path, job_runtime_conf_path
+
+
+def get_job_dsl_parser(job_id, job_dsl_path, job_runtime_conf_path):
+    dsl = DSLParser()
+    default_runtime_conf_path = os.path.join(file_utils.get_project_base_directory(),
+                                             *['federatedml', 'conf', 'default_runtime_conf'])
+    setting_conf_path = os.path.join(file_utils.get_project_base_directory(), *['federatedml', 'conf', 'setting_conf'])
+    dsl.run(dsl_json_path=job_dsl_path,
+            runtime_conf=job_runtime_conf_path,
+            default_runtime_conf_prefix=default_runtime_conf_path,
+            setting_conf_prefix=setting_conf_path)
+    return dsl
 
 
 @DB.connection_context()

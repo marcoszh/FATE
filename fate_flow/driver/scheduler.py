@@ -54,4 +54,4 @@ class Scheduler(threading.Thread):
 
     @staticmethod
     def get_result(future):
-        print(future.result())
+        future.result()

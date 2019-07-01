@@ -19,46 +19,61 @@ from arch.api.proto.model_param_pb2 import ModelParam
 from arch.api.proto.data_transform_server_pb2 import DataTransformServer
 from arch.api.utils.core import json_loads, json_dumps, bytes_to_string, string_to_bytes
 from arch.api.utils.format_transform import camel_to_pascal
-from arch.api import eggroll
+from fate_flow.storage.fate_storage import FateStorage
 from arch.api import RuntimeInstance
 from arch.api import WorkMode
 from fate_flow.manager import version_control
 import datetime
-from arch.api.proto.data_io_meta_pb2 import DataIOMeta
-from arch.api.proto.data_io_param_pb2 import DataIOParam
-from arch.api.proto.data_io_meta_pb2 import ImputerMeta
-from arch.api.proto.data_io_param_pb2 import ImputerParam
-from arch.api.proto.data_io_meta_pb2 import OutlierMeta
-from arch.api.proto.data_io_param_pb2 import OutlierParam
+import inspect
+import importlib
 
 
 def save_model(model_key, model_buffers, model_version, model_id, version_log=None):
-    data_table = eggroll.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
-                               create_if_missing=True, error_if_exist=False)
-    for buffer_name in model_buffers:
-        model_buffers[buffer_name] = bytes_to_string(model_buffers[buffer_name].SerializeToString())
-    data_table.put(model_key, json_dumps(model_buffers, byte=True), use_serialize=False)
+    data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
+                                   create_if_missing=True, error_if_exist=False)
+    for buffer_name, buffer_object in model_buffers.items():
+        data_table.put('{}.{}'.format(model_key, buffer_name), buffer_object.SerializeToString(), use_serialize=False)
     version_log = "[AUTO] save model at %s." % datetime.datetime.now() if not version_log else version_log
     version_control.save_version(name=model_version, namespace=model_id, version_log=version_log)
 
 
 def read_model(model_key, model_version, model_id):
-    data_table = eggroll.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
-                               create_if_missing=False, error_if_exist=False)
+    data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
+                                   create_if_missing=False, error_if_exist=False)
+    model_buffers = {}
     if data_table:
-        model_buffers = data_table.get(model_key, use_serialize=False)
-        if model_buffers:
-            model_buffers = json_loads(model_buffers)
-            for buffer_name in model_buffers:
-                print(buffer_name)
-                buffer_object = buffer_name()
-                buffer_object.ParseFromString(string_to_bytes(model_buffers[buffer_name]))
+        for buffer_key, buffer_object_bytes in data_table.collect(use_serialize=False):
+            buffer_key_items = buffer_key.split('.')
+            buffer_name = buffer_key_items[-1]
+
+            current_model_key = '.'.join(buffer_key_items[:-1])
+            if current_model_key == model_key:
+                buffer_object_class = get_proto_buffer_class(buffer_name)
+                if buffer_object_class:
+                    buffer_object = buffer_object_class()
+                else:
+                    raise Exception('can not found this protobuffer class: {}'.format(buffer_name))
+                buffer_object.ParseFromString(buffer_object_bytes)
                 model_buffers[buffer_name] = buffer_object
-            return model_buffers
-        else:
-            return {}
+    return model_buffers
+
+
+def save_model_meta(kv, model_version, model_id):
+    FateStorage.save_data_table_meta(kv, namespace=model_id, name=model_version)
+
+
+def get_model_meta(model_version, model_id):
+    return FateStorage.get_data_table_meta(namespace=model_id, name=model_version)
+
+
+def get_proto_buffer_class(class_name):
+    for name, obj in inspect.getmembers(importlib.import_module('arch.api.proto')):
+        if inspect.ismodule(obj):
+            for n, o in inspect.getmembers(obj):
+                if inspect.isclass(o) and n == class_name:
+                    return o
     else:
-        return {}
+        return None
 
 
 def get_model_table_partition_count():
@@ -95,10 +110,12 @@ def test_model(role):
     data_transform.missing_replace_method = "xxxx"
     save_model("data_transform", data_transform, model_version=model_table_name, model_id=model_table_namespace)
 
+
 if __name__ == '__main__':
     import uuid
+
     job_id = str(uuid.uuid1().hex)
-    eggroll.init(job_id=job_id, mode=0)
+    FateStorage.init_storage(job_id=job_id)
 
     test_model("guest")
     test_model("host")

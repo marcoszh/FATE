@@ -23,8 +23,8 @@ import requests
 import grpc
 
 
-def get_json_result(status=0, msg='success', data=None, job_id=None):
-    return jsonify({"status": status, "msg": msg, "data": data, "jobId": job_id})
+def get_json_result(status=0, msg='success', data=None, job_id=None, meta=None):
+    return jsonify({"status": status, "msg": msg, "data": data, "jobId": job_id, "meta": meta})
 
 
 def federated_api(job_id, method, url, dest_party_id, json_body={}, overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):

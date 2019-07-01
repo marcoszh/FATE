@@ -89,6 +89,7 @@ class FateStorage(object):
         for k, v in kv.items():
             meta_data_table.put(k, json_dumps(v), use_serialize=False)
 
+
     @staticmethod
     def get_data_table_meta_value(key: str, namespace: str, name: str):
         """
@@ -130,3 +131,11 @@ class FateStorage(object):
             return metas
         else:
             return None
+
+    @staticmethod
+    def get_data_table_meta_value_by_instance(key, data_table):
+        return FateStorage.get_data_table_meta_value(key=key, namespace=data_table._namespace, name=data_table._name)
+
+    @staticmethod
+    def get_data_table_meta_by_instance(data_table):
+        return FateStorage.get_data_table_meta(namespace=data_table._namespace, name=data_table._name)

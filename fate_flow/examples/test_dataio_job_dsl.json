@@ -5,7 +5,7 @@
             "input": {
                 "data": {
                     "data": [
-                        "args.data.train_data"
+                        "args.train_data"
                     ]
                 }
             },
@@ -19,7 +19,7 @@
             "module": "DataIO",
             "input": {
                 "data": {
-                    "data": ["dataio_0.train"]
+                    "data": ["args.train_data"]
                 },
                 "model": ["dataio_0.dataio"]
             }
