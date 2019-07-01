@@ -25,7 +25,7 @@ from federatedml.evaluation.evaluation import Evaluation
 
 class TestEvaluationRun(object):
     def __init__(self):
-        self.data_num = 5
+        self.data_num = 50
         self.feature_num = 3
         final_result = []
 
