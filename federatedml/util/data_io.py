@@ -149,7 +149,6 @@ class DenseFeatureReader(object):
                     self.missing_impute = imputer_processor.get_missing_value_list()
             else:
                 input_data_features = imputer_processor.transform(input_data_features,
-                                                                  replace_method=self.missing_fill_method,
                                                                   transform_value=self.default_value)
 
             if self.missing_impute is None:
@@ -180,7 +179,6 @@ class DenseFeatureReader(object):
                     self.outlier_impute = imputer_processor.get_missing_value_list()
             else:
                 input_data_features = imputer_processor.transform(input_data_features,
-                                                                  replace_method=self.outlier_replace_method,
                                                                   transform_value=self.outlier_replace_value)
 
             outlier_replace_rate = imputer_processor.get_impute_rate(mode)
