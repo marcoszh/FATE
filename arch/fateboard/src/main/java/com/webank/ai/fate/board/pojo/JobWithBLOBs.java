@@ -5,9 +5,9 @@ public class JobWithBLOBs extends Job {
 
     private String fRoles;
 
-    private String fDagConfig;
+    private String fDsl;
 
-    private String fRunParameterConfig;
+    private String fRuntimeConf;
 
     public String getfDescription() {
         return fDescription;
@@ -25,19 +25,19 @@ public class JobWithBLOBs extends Job {
         this.fRoles = fRoles == null ? null : fRoles.trim();
     }
 
-    public String getfDagConfig() {
-        return fDagConfig;
+    public String getfDsl() {
+        return fDsl;
     }
 
-    public void setfDagConfig(String fDagConfig) {
-        this.fDagConfig = fDagConfig == null ? null : fDagConfig.trim();
+    public void setfDsl(String fDsl) {
+        this.fDsl = fDsl == null ? null : fDsl.trim();
     }
 
-    public String getfRunParameterConfig() {
-        return fRunParameterConfig;
+    public String getfRuntimeConf() {
+        return fRuntimeConf;
     }
 
-    public void setfRunParameterConfig(String fRunParameterConfig) {
-        this.fRunParameterConfig = fRunParameterConfig == null ? null : fRunParameterConfig.trim();
+    public void setfRuntimeConf(String fRuntimeConf) {
+        this.fRuntimeConf = fRuntimeConf == null ? null : fRuntimeConf.trim();
     }
 }

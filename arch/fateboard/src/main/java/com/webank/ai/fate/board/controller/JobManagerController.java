@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 @CrossOrigin
 @RestController
@@ -33,6 +34,9 @@ public class JobManagerController {
 
     @Value("${fate.url}")
     String fateUrl;
+
+
+    ExecutorService executorService = Executors.newFixedThreadPool(20);
 
     /**
      * query status of jobs
@@ -71,7 +75,7 @@ public class JobManagerController {
 
         }
 
-        String result =  httpClientPool.post(fateUrl+"/tracking/job/data_view",param);
+        String result =  httpClientPool.post(fateUrl+"/v1/pipeline/job/stop",param);
 
        // String result = "{    \"retcode\": 0,    \"retmsg\": \"OK\"}";
 
@@ -109,30 +113,8 @@ public class JobManagerController {
         }
         String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", param);
 
-//        String result = "{\n" +
-//                "    \"retcode\": 0,\n" +
-//                "    \"retmsg\": \"OK\",\n" +
-//                "    \"data\": {\n" +
-//                "        \"partner\": \"tencent\",\n" +
-//                "        \"columns\": \"3000\",\n" +
-//                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-//                "        \"row\": \"350\",\n" +
-//                "        \"dataset\": \"lib1.table1\",\n" +
-//                "        \"target\": \"outcome\",\n" +
-//                "        \"model_summary\": {\n" +
-//                "            \"TRAIN\": {\n" +
-//                "                \"AUC\": 10,\n" +
-//                "                \"ACCURACY\": 5\n" +
-//                "            },\n" +
-//                "            \"TEST\": {\n" +
-//                "                \"AUC\": 10,\n" +
-//                "                \"ACCURACY\": 5\n" +
-//                "            }\n" +
-//                "        }\n" +
-//                "    }\n" +
-//                "}\n";
 
-        logger.info("result for querying dataset：" + result);
+
 
         if (result == null || "".equals(result)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
@@ -169,28 +151,7 @@ public class JobManagerController {
         }
 
         String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-//        String result = "{\n" +
-//                "    \"retcode\": 0,\n" +
-//                "    \"retmsg\": \"OK\",\n" +
-//                "    \"data\": {\n" +
-//                "        \"partner\": \"tencent\",\n" +
-//                "        \"columns\": \"3000\",\n" +
-//                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-//                "        \"row\": \"350\",\n" +
-//                "        \"dataset\": \"lib1.table1\",\n" +
-//                "        \"target\": \"outcome\",\n" +
-//                "        \"model_summary\": {\n" +
-//                "            \"TRAIN\": {\n" +
-//                "                \"AUC\": 10,\n" +
-//                "                \"ACCURACY\": 5\n" +
-//                "            },\n" +
-//                "            \"TEST\": {\n" +
-//                "                \"AUC\": 10,\n" +
-//                "                \"ACCURACY\": 5\n" +
-//                "            }\n" +
-//                "        }\n" +
-//                "    }\n" +
-//                "}\n";
+
         logger.info("result for dataset：" + result);
 
         if (result == null || "".equals(result)) {
@@ -230,48 +191,66 @@ public class JobManagerController {
             return new ResponseResult<String>(ErrorCode.SUCCESS, "Job not exist!");
         }
 
+
+        Map<JobWithBLOBs,Future>  jobDataMap = new HashMap<JobWithBLOBs,Future>(16);
+
+
+
+
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
-            String jobId = jobWithBLOBs.getfJobId();
-            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-//            String result = "{\n" +
-//                    "    \"retcode\": 0,\n" +
-//                    "    \"retmsg\": \"OK\",\n" +
-//                    "    \"data\": {\n" +
-//                    "        \"partner\": \"tencent\",\n" +
-//                    "        \"columns\": \"3000\",\n" +
-//                    "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-//                    "        \"row\": \"350\",\n" +
-//                    "        \"dataset\": \"lib1.table1\",\n" +
-//                    "        \"target\": \"outcome\",\n" +
-//                    "        \"model_summary\": {\n" +
-//                    "            \"TRAIN\": {\n" +
-//                    "                \"AUC\": 10,\n" +
-//                    "                \"ACCURACY\": 5\n" +
-//                    "            },\n" +
-//                    "            \"TEST\": {\n" +
-//                    "                \"AUC\": 10,\n" +
-//                    "                \"ACCURACY\": 5\n" +
-//                    "            }\n" +
-//                    "        }\n" +
-//                    "    }\n" +
-//                    "}\n";
-            logger.info("result for dataset：" + result);
 
-            if (result == null || "".equals(result)) {
-                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
-            }
+            Future feature = executorService.submit(new Callable<JSONObject>() {
 
-            JSONObject data = JSON.parseObject(result).getJSONObject("data");
+                @Override
+                public JSONObject  call() throws Exception {
+                    String jobId = jobWithBLOBs.getfJobId();
+                    String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+                    JSONObject data = JSON.parseObject(result).getJSONObject("data");
+                    return data;
+                }
+            });
+            jobDataMap.put(jobWithBLOBs,feature);
 
-            logger.info("data：" + data);
-            if (data == null) {
-                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Data not exist!");
-            }
-            HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-            stringObjectHashMap.put("job", jobWithBLOBs);
-            stringObjectHashMap.put("dataset", data);
-            jobList.add(stringObjectHashMap);
+//            String jobId = jobWithBLOBs.getfJobId();
+//            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+//
+//            logger.info("result for dataset：" + result);
+//
+//            if (result == null || "".equals(result)) {
+//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+//            }
+
+
+
+//            logger.info("data：" + data);
+//            if (data == null) {
+//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Data not exist!");
+//            }
+
+
+
+
+
         }
+
+        jobDataMap.forEach((k,v)->{
+            try {
+            HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+            stringObjectHashMap.put("job", k);
+            jobList.add(stringObjectHashMap);
+            stringObjectHashMap.put("dataset", v.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+
+
+
+        });
+
+
+
         logger.info("jobList：" + jobList);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, jobList);
