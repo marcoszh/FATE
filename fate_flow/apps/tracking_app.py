@@ -28,7 +28,7 @@ manager = Flask(__name__)
 @manager.errorhandler(500)
 def internal_server_error(e):
     logger.exception(e)
-    return get_json_result(status=100, msg=str(e))
+    return get_json_result(retcode=100, retmsg=str(e))
 
 
 @manager.route('/component/metrics', methods=['post'])
@@ -39,9 +39,9 @@ def component_metrics():
                        role=request_data['role'], party_id=request_data['party_id'])
     metrics = tracker.get_metric_list()
     if metrics:
-        return get_json_result(status=0, msg='success', data=metrics)
+        return get_json_result(retcode=0, retmsg='success', data=metrics)
     else:
-        return get_json_result(status=101, msg='error')
+        return get_json_result(retcode=101, retmsg='error')
 
 
 @manager.route('/component/metric_data', methods=['post'])
@@ -55,9 +55,9 @@ def component_metric_data():
     if metric_data:
         metric_data_list = [(metric.key, metric.value) for metric in metric_data]
         metric_data_list.sort(key=lambda x: x[0])
-        return get_json_result(status=0, msg='success', data=metric_data_list)
+        return get_json_result(retcode=0, retmsg='success', data=metric_data_list)
     else:
-        return get_json_result(status=101, msg='error')
+        return get_json_result(retcode=101, retmsg='error')
 
 
 @manager.route('/component/parameters', methods=['post'])
@@ -76,11 +76,11 @@ def component_parameters():
             for party_parameters in partys_parameters:
                 if party_parameters.get('local', {}).get('role', '') == request_data['role'] and party_parameters.get(
                         'local', {}).get('party_id', '') == request_data['party_id']:
-                    return get_json_result(status=0, msg='success', data=party_parameters)
+                    return get_json_result(retcode=0, retmsg='success', data=party_parameters)
         else:
-            return get_json_result(status=102, msg='can not found this component parameters')
+            return get_json_result(retcode=102, retmsg='can not found this component parameters')
     else:
-        return get_json_result(status=101, msg='can not found this job')
+        return get_json_result(retcode=101, retmsg='can not found this job')
 
 
 @manager.route('/component/output/model', methods=['post'])
@@ -95,9 +95,9 @@ def component_output_model():
         if buffer_name.endswith('Param'):
             output_model_json = json_format.MessageToDict(buffer_object)
     if output_model_json:
-        return get_json_result(status=0, msg='success', data=output_model_json, meta=tracker.get_output_model_meta())
+        return get_json_result(retcode=0, retmsg='success', data=output_model_json, meta=tracker.get_output_model_meta())
     else:
-        return get_json_result(status=101, msg='can not found model')
+        return get_json_result(retcode=101, retmsg='can not found model')
 
 
 @manager.route('/component/output/data', methods=['post'])
@@ -118,9 +118,9 @@ def component_output_data():
         num -= 1
     if output_data:
         output_data_meta = FateStorage.get_data_table_meta_by_instance(output_data_table)
-        return get_json_result(status=0, msg='success', data=output_data, meta=output_data_meta)
+        return get_json_result(retcode=0, retmsg='success', data=output_data, meta=output_data_meta)
     else:
-        return get_json_result(status=101, msg='no data')
+        return get_json_result(retcode=101, retmsg='no data')
 
 
 def fill_request_data(request_data):

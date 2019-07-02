@@ -33,7 +33,7 @@ manager = Flask(__name__)
 @manager.errorhandler(500)
 def internal_server_error(e):
     logger.exception(e)
-    return get_json_result(status=100, msg=str(e))
+    return get_json_result(retcode=100, retmsg=str(e))
 
 
 @manager.route('/submit', methods=['POST'])
@@ -181,7 +181,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
                       url=request_url_without_host.replace('run', 'status'),
                       dest_party_id=job_initiator.get('party_id', None),
                       json_body=task_info)
-    return get_json_result(status=0, msg='success')
+    return get_json_result(retcode=0, retmsg='success')
 
 
 def get_task_run_args(job_id, role, party_id, job_args, input_dsl):
@@ -217,4 +217,4 @@ def task_status(job_id, component_name, task_id, role, party_id):
     task_info = request.json
     tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id)
     tracker.save_task(role=role, party_id=party_id, task_info=task_info)
-    return get_json_result(status=0, msg='success')
+    return get_json_result(retcode=0, retmsg='success')

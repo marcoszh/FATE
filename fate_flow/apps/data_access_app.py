@@ -27,7 +27,7 @@ manager = Flask(__name__)
 @manager.errorhandler(500)
 def internal_server_error(e):
     logger.exception(e)
-    return get_json_result(status=100, msg=str(e))
+    return get_json_result(retcode=100, retmsg=str(e))
 
 
 @manager.route('/<data_func>', methods=['post'])
@@ -45,7 +45,7 @@ def download_upload(data_func):
         request_config["work_mode"] = request_config.get('work_mode', WORK_MODE)
         table_name, namespace = dtable_utils.get_table_info(config=request_config, create=(True if module == 'upload' else False))
         if not table_name or not namespace:
-            return get_json_result(status=102, msg='no table name and namespace')
+            return get_json_result(retcode=102, retmsg='no table name and namespace')
         request_config['table_name'] = table_name
         request_config['namespace'] = namespace
         conf_file_path = new_runtime_conf(job_dir=_job_dir, method=data_func, module=module,
@@ -67,4 +67,4 @@ def download_upload(data_func):
         return get_json_result(job_id=_job_id, data={'pid': p.pid, 'table_name': request_config['table_name'], 'namespace': request_config['namespace']})
     except Exception as e:
         logger.exception(e)
-        return get_json_result(status=-104, msg="failed", job_id=_job_id)
+        return get_json_result(retcode=-104, retmsg="failed", job_id=_job_id)

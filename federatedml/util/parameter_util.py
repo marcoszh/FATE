@@ -24,13 +24,6 @@ class ParameterOverride(object):
     def override_parameter(default_runtime_conf_prefix=None, setting_conf_prefix=None, submit_conf=None, module=None,
                            module_alias=None):
 
-        default_runtime_dict = None
-        with open(os.path.join(default_runtime_conf_prefix, module + "Param.json"), "r") as fin:
-            default_runtime_dict = json.loads(fin.read())
-
-        if default_runtime_dict is None:
-            raise Exception("default runtime conf should be a json file")
-
         _module_setting_path = os.path.join(setting_conf_prefix, module + ".json")
         _module_setting = None
         with open(_module_setting_path, "r") as fin:
@@ -39,6 +32,15 @@ class ParameterOverride(object):
         if not _module_setting:
             raise Exception("{} is not set in setting_conf ".format(module))
 
+        param_class = _module_setting["param_class"]
+        default_runtime_conf_suf = _module_setting["default_runtime_conf"]
+        default_runtime_dict = None
+        with open(os.path.join(default_runtime_conf_prefix, default_runtime_conf_suf), "r") as fin:
+            default_runtime_dict = json.loads(fin.read())
+
+        if default_runtime_dict is None:
+            raise Exception("default runtime conf should be a json file")
+        
         submit_dict = None
         with open(submit_conf, "r") as fin:
             submit_dict = json.loads(fin.read())
@@ -65,7 +67,7 @@ class ParameterOverride(object):
             runtime_role_parameters[role] = []
 
             for idx in range(len(partyid_list)):
-                runtime_json = copy.deepcopy(default_runtime_dict)
+                runtime_json = {param_class : copy.deepcopy(default_runtime_dict)}
                 for key, value in submit_dict.items():
                     if key not in ["algorithm_parameters", "role_parameters"]:
                         runtime_json[key] = value
@@ -73,15 +75,15 @@ class ParameterOverride(object):
                 if "algorithm_parameters" in submit_dict:
                     if module_alias in submit_dict["algorithm_parameters"]:
                         common_parameters = submit_dict["algorithm_parameters"].get(module_alias)
-                        merge_json = ParameterOverride.merge_common_parameters(runtime_json[module + "Param"], common_parameters)
-                        runtime_json = {module + "Param": merge_json}
+                        merge_json = ParameterOverride.merge_common_parameters(runtime_json[param_class], common_parameters)
+                        runtime_json[param_class] = merge_json
                 
                 if "role_parameters" in submit_dict and role in submit_dict["role_parameters"]:
                     role_dict = submit_dict["role_parameters"][role]
                     if module_alias in role_dict:
                         role_parameters = role_dict.get(module_alias)
-                        merge_json = ParameterOverride.merge_role_parameters(runtime_json[module + "Param"], role_parameters, idx)
-                        runtime_json = {module + "Param": merge_json}
+                        merge_json = ParameterOverride.merge_role_parameters(runtime_json[param_class], role_parameters, idx)
+                        runtime_json[param_class] = merge_json
                 
                 runtime_json['local'] = submit_dict.get('local', {})
                 my_local = {
@@ -110,7 +112,7 @@ class ParameterOverride(object):
     @staticmethod
     def merge_role_parameters(runtime_json, role_parameters, idx):
         for key, val_list in role_parameters.items():
-            if len(val_list) < idx:
+            if len(val_list) <= idx:
                 continue
 
             val = val_list[idx]
