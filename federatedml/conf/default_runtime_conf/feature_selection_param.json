@@ -1,0 +1,9 @@
+{
+    "method": "fit",
+    "filter_method": ["unique_value", "iv_value_thres",
+                      "coefficient_of_variation_value_thres", "outlier_cols"],
+    "select_cols": -1,
+    "local_only": false,
+    "result_table": "feature_selection_guest_model_table",
+    "result_namespace": "feature_select_namespace"
+}
