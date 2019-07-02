@@ -20,6 +20,15 @@
             </includes>
         </fileSet>
 
+        <!--<fileSet>-->
+            <!--&lt;!&ndash;管理一组文件的存放位置&ndash;&gt;-->
+            <!--<outputDirectory>/lib</outputDirectory> &lt;!&ndash;放在哪&ndash;&gt;-->
+            <!--<directory>target/lib</directory>&lt;!&ndash;源目录&ndash;&gt;-->
+            <!--<includes>-->
+                <!--<include>*.jar</include>  &lt;!&ndash;代码的jar包&ndash;&gt;-->
+            <!--</includes>-->
+        <!--</fileSet>-->
+
         <fileSet>
             <outputDirectory>/bin</outputDirectory>
             <directory>bin</directory>

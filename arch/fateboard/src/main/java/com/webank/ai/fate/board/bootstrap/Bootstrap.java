@@ -16,10 +16,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ImportResource(locations = {
         "classpath:db-mybatis-context.xml"
 })
-@PropertySource("classpath:application.properties")
+@PropertySource(value="classpath:application.properties",ignoreResourceNotFound=true)
 @Configuration
 @EnableScheduling
 public class Bootstrap {
+
     public static void main(String[] args) {
         try {
             ConfigurableApplicationContext context = SpringApplication.run(Bootstrap.class, args);
