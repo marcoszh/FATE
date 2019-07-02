@@ -151,7 +151,7 @@
         <appender-ref ref="FLOW"/>
     </logger>
     <logger name="org.mybatis.spring" level="INFO" additivity="false"/>
-    <logger name="com.github.miemiedev.mybatis.paginator" level="INFO" additivity="false"/>
+
 
     <!-- Logger 根目录 -->
     <root level="INFO">
