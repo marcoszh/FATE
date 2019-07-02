@@ -1,9 +1,23 @@
 {
     "method": "fit",
-    "filter_method": ["unique_value", "iv_value_thres",
-                      "coefficient_of_variation_value_thres", "outlier_cols"],
+    "filter_method": ["unique_value"],
     "select_cols": -1,
     "local_only": false,
-    "result_table": "feature_selection_guest_model_table",
-    "result_namespace": "feature_select_namespace"
+    "unique_param": {
+        "eps": 1e-5
+    },
+    "iv_value_param": {
+        "value_threshold": 0.0
+    },
+    "iv_percentile_param": {
+        "percentile_threshold": 1.0
+    },
+    "coe_param": {
+        "value_threshold": 1.0
+    },
+    "outlier_param": {
+        "percentile": 1.0,
+        "upper_threshold": 1.0
+    },
+    "need_run": true
 }

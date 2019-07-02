@@ -33,9 +33,10 @@ class OneHotEncoderParam(BaseParam):
 
     """
 
-    def __init__(self, cols=-1):
+    def __init__(self, cols=-1, need_run=True):
         super(OneHotEncoderParam, self).__init__()
         self.cols = cols
+        self.need_run = need_run
 
     def check(self):
         descr = "One-hot encoder param's"

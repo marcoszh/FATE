@@ -119,7 +119,7 @@ class LogisticParam(BaseParam):
                  batch_size=-1, learning_rate=0.01, init_param=InitParam(),
                  max_iter=100, converge_func='diff',
                  encrypt_param=EncryptParam(), re_encrypt_batches=2,
-                 model_path='lr_model', encrypted_mode_calculator_param=EncryptedModeCalculatorParam(),
+                 encrypted_mode_calculator_param=EncryptedModeCalculatorParam(),
                  need_run=True, predict_param=PredictParam(), cv_param=CrossValidationParam()):
         super(LogisticParam, self).__init__()
         self.penalty = penalty
@@ -133,7 +133,6 @@ class LogisticParam(BaseParam):
         self.converge_func = converge_func
         self.encrypt_param = copy.deepcopy(encrypt_param)
         self.re_encrypt_batches = re_encrypt_batches
-        self.model_path = model_path
         self.party_weight = party_weight
         self.encrypted_mode_calculator_param = copy.deepcopy(encrypted_mode_calculator_param)
         self.need_run = need_run

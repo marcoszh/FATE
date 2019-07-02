@@ -40,12 +40,12 @@ class KFold(BaseCrossValidator):
         header = data_inst.schema.get('header')
 
         data_sids_iter, data_size = collect_index(data_inst)
-
+        print("in split, header: {}, data_size: {}, data_sids_iter: {}".format(header, data_size, data_sids_iter))
         data_sids = []
         for sid, _ in data_sids_iter:
             data_sids.append(sid)
         data_sids = np.array(data_sids)
-
+        print("In split, data_sids: {}".format(data_sids))
         if self.shuffle:
             np.random.shuffle(data_sids)
 
@@ -61,6 +61,17 @@ class KFold(BaseCrossValidator):
                                               include_key=True,
                                               partition=data_inst._partitions)
             train_data = data_inst.join(train_table, lambda x, y: x)
+
+            local_data_inst = data_inst.collect()
+            for k, v in local_data_inst:
+                print("local_data_inst, k: {}, v: {}".format(k, v))
+
+            local_train_table = train_table.collect()
+            for k, v in local_train_table:
+                print("local_train_table, k: {}, v: {}".format(k, v))
+
+            print("train_table length: {}, train_data length: {}, train_table count: {}".format(
+                train_table.count(), train_data.count(), train_table.count()))
             test_table = eggroll.parallelize(test_sids_table,
                                              include_key=True,
                                              partition=data_inst._partitions)
@@ -75,7 +86,7 @@ class KFold(BaseCrossValidator):
         if data_inst is None:
             cv_results = self._arbiter_run(original_model)
             return cv_results
-
+        print("data_inst count: {}".format(data_inst.count()))
         data_generator = self.split(data_inst)
         cv_results = []
         flowid = 0
@@ -88,6 +99,8 @@ class KFold(BaseCrossValidator):
                 LOGGER.info("Test data Synchronized")
             model = copy.deepcopy(original_model)
             model.set_flowid(flowid)
+            print("train_data count: {}".format(train_data.count()))
+
             model.fit(train_data)
             pred_res = model.predict(test_data)
             evaluation_results = self.evaluate(pred_res, model)

@@ -37,7 +37,7 @@ class TransformParam(BaseParam):
 
     """
 
-    def __init__(self, transform_cols=None, transform_type=None):
+    def __init__(self, transform_cols=None, transform_type="bin_num"):
         super(TransformParam, self).__init__()
         self.transform_cols = transform_cols
         self.transform_type = transform_type
@@ -103,6 +103,7 @@ class FeatureBinningParam(BaseParam):
                  bin_num=consts.G_BIN_NUM, cols=-1, adjustment_factor=0.5,
                  transform_param=TransformParam(),
                  local_only=False,
+                 need_run=True,
                  display_result='simple'):
         super(FeatureBinningParam, self).__init__()
         self.process_method = process_method
@@ -118,6 +119,7 @@ class FeatureBinningParam(BaseParam):
         if display_result == 'simple':
             display_result = ['iv']
         self.display_result = display_result
+        self.need_run = need_run
 
     def check(self):
         descr = "hetero binning param's"

@@ -52,7 +52,7 @@ class IVValueSelectionParam(BaseParam):
 
     """
 
-    def __init__(self, value_threshold=1.0):
+    def __init__(self, value_threshold=0.0):
         self.value_threshold = value_threshold
 
     def check(self):
@@ -178,7 +178,8 @@ class FeatureSelectionParam(BaseParam):
                  iv_value_param=IVValueSelectionParam(),
                  iv_percentile_param=IVPercentileSelectionParam(),
                  coe_param=CoeffOfVarSelectionParam(),
-                 outlier_param=OutlierColsSelectionParam()
+                 outlier_param=OutlierColsSelectionParam(),
+                 need_run=True
                  ):
         super(FeatureSelectionParam, self).__init__()
         self.method = method
@@ -194,6 +195,7 @@ class FeatureSelectionParam(BaseParam):
         self.iv_percentile_param = copy.deepcopy(iv_percentile_param)
         self.coe_param = copy.deepcopy(coe_param)
         self.outlier_param = copy.deepcopy(outlier_param)
+        self.need_run = need_run
 
     def check(self):
         descr = "hetero feature selection param's"
