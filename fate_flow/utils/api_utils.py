@@ -23,8 +23,8 @@ import requests
 import grpc
 
 
-def get_json_result(status=0, msg='success', data=None, job_id=None, meta=None):
-    return jsonify({"status": status, "msg": msg, "data": data, "jobId": job_id, "meta": meta})
+def get_json_result(retcode=0, retmsg='success', data=None, job_id=None, meta=None):
+    return jsonify({"retcode": retcode, "retmsg": retmsg, "data": data, "jobId": job_id, "meta": meta})
 
 
 def federated_api(job_id, method, url, dest_party_id, json_body={}, overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):
@@ -55,9 +55,9 @@ def new_federated_job(request, overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):
                             )
     if st == 0:
         json_body = json.loads(msg)
-        return get_json_result(status=json_body['status'], msg=json_body['msg'], data=json_body.get('data'), job_id=json_body['jobId'])
+        return get_json_result(retcode=json_body['status'], retmsg=json_body['msg'], data=json_body.get('data'), job_id=json_body['jobId'])
     else:
-        return get_json_result(status=st, msg=msg, job_id=_job_id)
+        return get_json_result(retcode=st, retmsg=msg, job_id=_job_id)
 
 
 def local_api(method, suffix, data=None, json_body=None):

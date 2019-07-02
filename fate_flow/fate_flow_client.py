@@ -23,8 +23,8 @@ MODEL_FUNC = ["load", "online", "version"]
 
 
 def get_err_result(msg, body):
-    return {"status": -1,
-            "msg": msg,
+    return {"retcode": -1,
+            "retmsg": msg,
             "created_at": time.strftime('%Y-%m-%d %H:%M:%S'),
             "data": body}
 
@@ -102,9 +102,9 @@ if __name__ == "__main__":
 
         response = call_fun(args.function, dsl_data, config_data)
         response_dict = prettify(response)
-        if response.get("status") < 0:
-            result = get_err_result(response_dict.get("msg"), response_dict.get('data'))
-            sys.exit(result.get("code"))
+        if response.get("retcode") < 0:
+            result = get_err_result(response_dict.get("retmsg"), response_dict.get('data'))
+            sys.exit(result.get("retcode"))
 
     except:
         traceback.print_exc()
