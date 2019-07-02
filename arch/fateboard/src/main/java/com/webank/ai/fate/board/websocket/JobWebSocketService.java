@@ -113,7 +113,7 @@ public class JobWebSocketService {
 
 
         jobMaps.forEach((k, v) -> {
-                    logger.info("try to query job {} process", k);
+                   // logger.info("try to query job {} process", k);
                     Job job = jobManagerService.queryJobByFJobId(k);
                     if (job != null) {
                         HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
@@ -125,7 +125,7 @@ public class JobWebSocketService {
                         stringObjectHashMap.put("time", time);
                         stringObjectHashMap.put("status", status);
 
-                        logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
+                       // logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
 
                         v.forEach(session -> {
 

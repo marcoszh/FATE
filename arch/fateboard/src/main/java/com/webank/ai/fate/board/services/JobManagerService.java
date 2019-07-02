@@ -24,7 +24,7 @@ public class JobManagerService {
 
     public List<Job> queryJobStatus() {
 
-        logger.info("Start query for JobStatus!");
+       // logger.info("Start query for JobStatus!");
 
         JobExample jobExample = new JobExample();
 
@@ -40,7 +40,7 @@ public class JobManagerService {
 
         jobExample.setOrderByClause("f_status, f_start_time desc");
 
-        logger.info("jobExample:" + jobExample);
+        //logger.info("jobExample:" + jobExample);
 
         return jobMapper.selectByExample(jobExample);
 
@@ -48,13 +48,13 @@ public class JobManagerService {
 
 
     public List<JobWithBLOBs> queryJob() {
-        logger.info("Start querying for job!");
+        //logger.info("Start querying for job!");
 
         JobExample jobExample = new JobExample();
 
         jobExample.setOrderByClause("f_start_time desc");
 
-        logger.info("jobExample：" + jobExample);
+        //logger.info("jobExample：" + jobExample);
 
         List<JobWithBLOBs> jobWithBLOBsList = jobMapper.selectByExampleWithBLOBs(jobExample);
 
@@ -65,7 +65,7 @@ public class JobManagerService {
 
     public JobWithBLOBs queryJobByFJobId(String jobId) {
 
-        logger.info("jobId:" + jobId);
+        //logger.info("jobId:" + jobId);
 
         JobExample jobExample = new JobExample();
 
@@ -75,7 +75,7 @@ public class JobManagerService {
 
         criteria.andFJobIdEqualTo(jobId);
 
-        logger.info("jobExample：" + jobExample);
+       // logger.info("jobExample：" + jobExample);
 
 
         List<JobWithBLOBs> jobWithBLOBsList = jobMapper.selectByExampleWithBLOBs(jobExample);
