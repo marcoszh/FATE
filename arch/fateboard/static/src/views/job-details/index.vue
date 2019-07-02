@@ -80,11 +80,13 @@
         <!--DAG-->
         <div class="output-wrapper">
           <h4 class="output-title">main graph<span>Click component to view details</span></h4>
-          <echart-container
-            :class="'echarts'"
-            :options="graphOptions"
-            @getEchartInstance="getGraphEchartInstance"
-          />
+          <div v-if="DAGData" :style="{height:DAGData.componentList.length * 60+'px'}">
+            <echart-container
+              :class="'echarts'"
+              :options="graphOptions"
+              @getEchartInstance="getGraphEchartInstance"
+            />
+          </div>
         </div>
         <!--参数-->
         <div v-loading="paraLoading" class="output-wrapper">

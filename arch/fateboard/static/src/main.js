@@ -15,7 +15,6 @@ import '@/icons' // icon
 
 import '@/iconfont/iconfont.css' // iconfont
 // import '@/permission' // permission control
-
 /**
  * This project originally used easy-mock to simulate data,
  * but its official service is very unstable,
