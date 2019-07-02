@@ -44,7 +44,7 @@ public class JobDetailController {
     @Autowired
     TaskManagerService taskManagerService;
 
-    @Value("${fate.url:dddddddd}")
+    @Value("${fate.url}")
     String fateUrl;
 
 

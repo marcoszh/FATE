@@ -31,7 +31,7 @@ public class JobManagerController {
     @Autowired
     HttpClientPool httpClientPool;
 
-    @Value("${fate.url:dddddddd}")
+    @Value("${fate.url}")
     String fateUrl;
 
     /**
@@ -71,9 +71,9 @@ public class JobManagerController {
 
         }
 
-//        String result =  httpClientPool.post(fateUrl+"/tracking/job/data_view",param);
+        String result =  httpClientPool.post(fateUrl+"/tracking/job/data_view",param);
 
-        String result = "{    \"retcode\": 0,    \"retmsg\": \"OK\"}";
+       // String result = "{    \"retcode\": 0,    \"retmsg\": \"OK\"}";
 
         logger.info("result for killing job：" + result);
         if (result == null || "".equals(result)) {
@@ -107,30 +107,30 @@ public class JobManagerController {
         if ((job_id == null) || "".equals(job_id)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
         }
-//        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", param);
+        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", param);
 
-        String result = "{\n" +
-                "    \"retcode\": 0,\n" +
-                "    \"retmsg\": \"OK\",\n" +
-                "    \"data\": {\n" +
-                "        \"partner\": \"tencent\",\n" +
-                "        \"columns\": \"3000\",\n" +
-                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-                "        \"row\": \"350\",\n" +
-                "        \"dataset\": \"lib1.table1\",\n" +
-                "        \"target\": \"outcome\",\n" +
-                "        \"model_summary\": {\n" +
-                "            \"TRAIN\": {\n" +
-                "                \"AUC\": 10,\n" +
-                "                \"ACCURACY\": 5\n" +
-                "            },\n" +
-                "            \"TEST\": {\n" +
-                "                \"AUC\": 10,\n" +
-                "                \"ACCURACY\": 5\n" +
-                "            }\n" +
-                "        }\n" +
-                "    }\n" +
-                "}\n";
+//        String result = "{\n" +
+//                "    \"retcode\": 0,\n" +
+//                "    \"retmsg\": \"OK\",\n" +
+//                "    \"data\": {\n" +
+//                "        \"partner\": \"tencent\",\n" +
+//                "        \"columns\": \"3000\",\n" +
+//                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
+//                "        \"row\": \"350\",\n" +
+//                "        \"dataset\": \"lib1.table1\",\n" +
+//                "        \"target\": \"outcome\",\n" +
+//                "        \"model_summary\": {\n" +
+//                "            \"TRAIN\": {\n" +
+//                "                \"AUC\": 10,\n" +
+//                "                \"ACCURACY\": 5\n" +
+//                "            },\n" +
+//                "            \"TEST\": {\n" +
+//                "                \"AUC\": 10,\n" +
+//                "                \"ACCURACY\": 5\n" +
+//                "            }\n" +
+//                "        }\n" +
+//                "    }\n" +
+//                "}\n";
 
         logger.info("result for querying dataset：" + result);
 
@@ -168,29 +168,29 @@ public class JobManagerController {
             return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
         }
 
-//        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-        String result = "{\n" +
-                "    \"retcode\": 0,\n" +
-                "    \"retmsg\": \"OK\",\n" +
-                "    \"data\": {\n" +
-                "        \"partner\": \"tencent\",\n" +
-                "        \"columns\": \"3000\",\n" +
-                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-                "        \"row\": \"350\",\n" +
-                "        \"dataset\": \"lib1.table1\",\n" +
-                "        \"target\": \"outcome\",\n" +
-                "        \"model_summary\": {\n" +
-                "            \"TRAIN\": {\n" +
-                "                \"AUC\": 10,\n" +
-                "                \"ACCURACY\": 5\n" +
-                "            },\n" +
-                "            \"TEST\": {\n" +
-                "                \"AUC\": 10,\n" +
-                "                \"ACCURACY\": 5\n" +
-                "            }\n" +
-                "        }\n" +
-                "    }\n" +
-                "}\n";
+        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+//        String result = "{\n" +
+//                "    \"retcode\": 0,\n" +
+//                "    \"retmsg\": \"OK\",\n" +
+//                "    \"data\": {\n" +
+//                "        \"partner\": \"tencent\",\n" +
+//                "        \"columns\": \"3000\",\n" +
+//                "        \"pnr_dataset\": \"libh.beacondata\",\n" +
+//                "        \"row\": \"350\",\n" +
+//                "        \"dataset\": \"lib1.table1\",\n" +
+//                "        \"target\": \"outcome\",\n" +
+//                "        \"model_summary\": {\n" +
+//                "            \"TRAIN\": {\n" +
+//                "                \"AUC\": 10,\n" +
+//                "                \"ACCURACY\": 5\n" +
+//                "            },\n" +
+//                "            \"TEST\": {\n" +
+//                "                \"AUC\": 10,\n" +
+//                "                \"ACCURACY\": 5\n" +
+//                "            }\n" +
+//                "        }\n" +
+//                "    }\n" +
+//                "}\n";
         logger.info("result for dataset：" + result);
 
         if (result == null || "".equals(result)) {
@@ -231,30 +231,30 @@ public class JobManagerController {
         }
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
-//            String jobId = jobWithBLOBs.getfJobId();
-//            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-            String result = "{\n" +
-                    "    \"retcode\": 0,\n" +
-                    "    \"retmsg\": \"OK\",\n" +
-                    "    \"data\": {\n" +
-                    "        \"partner\": \"tencent\",\n" +
-                    "        \"columns\": \"3000\",\n" +
-                    "        \"pnr_dataset\": \"libh.beacondata\",\n" +
-                    "        \"row\": \"350\",\n" +
-                    "        \"dataset\": \"lib1.table1\",\n" +
-                    "        \"target\": \"outcome\",\n" +
-                    "        \"model_summary\": {\n" +
-                    "            \"TRAIN\": {\n" +
-                    "                \"AUC\": 10,\n" +
-                    "                \"ACCURACY\": 5\n" +
-                    "            },\n" +
-                    "            \"TEST\": {\n" +
-                    "                \"AUC\": 10,\n" +
-                    "                \"ACCURACY\": 5\n" +
-                    "            }\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "}\n";
+            String jobId = jobWithBLOBs.getfJobId();
+            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+//            String result = "{\n" +
+//                    "    \"retcode\": 0,\n" +
+//                    "    \"retmsg\": \"OK\",\n" +
+//                    "    \"data\": {\n" +
+//                    "        \"partner\": \"tencent\",\n" +
+//                    "        \"columns\": \"3000\",\n" +
+//                    "        \"pnr_dataset\": \"libh.beacondata\",\n" +
+//                    "        \"row\": \"350\",\n" +
+//                    "        \"dataset\": \"lib1.table1\",\n" +
+//                    "        \"target\": \"outcome\",\n" +
+//                    "        \"model_summary\": {\n" +
+//                    "            \"TRAIN\": {\n" +
+//                    "                \"AUC\": 10,\n" +
+//                    "                \"ACCURACY\": 5\n" +
+//                    "            },\n" +
+//                    "            \"TEST\": {\n" +
+//                    "                \"AUC\": 10,\n" +
+//                    "                \"ACCURACY\": 5\n" +
+//                    "            }\n" +
+//                    "        }\n" +
+//                    "    }\n" +
+//                    "}\n";
             logger.info("result for dataset：" + result);
 
             if (result == null || "".equals(result)) {
