@@ -4,8 +4,8 @@
         xsi:noNamespaceSchemaLocation="http://www.padual.com/java/logback.xsd"
         debug="false" scan="true" scanPeriod="30 second">
 
-    <property name="PROJECT" value="borad"/>
-    <property name="ROOT" value="logs/${PROJECT}/"/>
+    <property name="PROJECT" value=""/>
+    <property name="ROOT" value="logs/"/>
     <property name="FILESIZE" value="50MB"/>
     <property name="MAXHISTORY" value="100"/>
     <timestamp key="DATETIME" datePattern="yyyy-MM-dd HH:mm:ss"/>
@@ -28,7 +28,7 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/error.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}/ERROR.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
@@ -49,7 +49,7 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/warn.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}/WARN.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${FILESIZE}</maxFileSize>
@@ -69,7 +69,7 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/info.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}/INFO.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${FILESIZE}</maxFileSize>
@@ -88,7 +88,7 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/debug.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}/DEBUG.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
@@ -98,27 +98,27 @@
     </appender>
 
 
-    <!-- FLOW 输入到文件，按日期和文件大小 -->
-    <appender name="FLOW" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <encoder charset="utf-8">
-            <pattern>%m%n
-            </pattern>
-        </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>INFO</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
-        </filter>
-        <rollingPolicy
-                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/flow.%i.log</fileNamePattern>
-            <maxHistory>${MAXHISTORY}</maxHistory>
-            <timeBasedFileNamingAndTriggeringPolicy
-                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>${FILESIZE}</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-        </rollingPolicy>
-    </appender>
+    <!--&lt;!&ndash; FLOW 输入到文件，按日期和文件大小 &ndash;&gt;-->
+    <!--<appender name="FLOW" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+        <!--<encoder charset="utf-8">-->
+            <!--<pattern>%m%n-->
+            <!--</pattern>-->
+        <!--</encoder>-->
+        <!--<filter class="ch.qos.logback.classic.filter.LevelFilter">-->
+            <!--<level>INFO</level>-->
+            <!--<onMatch>ACCEPT</onMatch>-->
+            <!--<onMismatch>DENY</onMismatch>-->
+        <!--</filter>-->
+        <!--<rollingPolicy-->
+                <!--class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+            <!--<fileNamePattern>${ROOT}%d/flow.%i.log</fileNamePattern>-->
+            <!--<maxHistory>${MAXHISTORY}</maxHistory>-->
+            <!--<timeBasedFileNamingAndTriggeringPolicy-->
+                    <!--class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">-->
+                <!--<maxFileSize>${FILESIZE}</maxFileSize>-->
+            <!--</timeBasedFileNamingAndTriggeringPolicy>-->
+        <!--</rollingPolicy>-->
+    <!--</appender>-->
 
 
     <!-- FLOW 输入到文件，按日期和文件大小 -->
@@ -134,7 +134,7 @@
         </filter>
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/httpclient.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}/httpclient.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
@@ -148,7 +148,7 @@
         <appender-ref ref="httpclient"/>
     </logger>
 
-    <logger name="org.mybatis.spring" level="INFO" additivity="false"/>
+    <!--<logger name="org.mybatis.spring" level="INFO" additivity="false"/>-->
 
 
     <!-- Logger 根目录 -->
