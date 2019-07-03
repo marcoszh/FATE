@@ -88,6 +88,24 @@ public class LogController {
 
     }
 
+    public long getLineNumber(File file) {
+        if (file.exists()) {
+            try {
+                FileReader fileReader = new FileReader(file);
+                LineNumberReader lineNumberReader = new LineNumberReader(fileReader);
+                lineNumberReader.skip(Long.MAX_VALUE);
+
+                long lines = lineNumberReader.getLineNumber() + 1;
+                fileReader.close();
+                lineNumberReader.close();
+                return lines;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
+    }
+
     List<Map>  queryLog( String componentId,  String jobId, String type,
                          Integer begin,
                          Integer end) throws Exception {
@@ -103,39 +121,78 @@ public class LogController {
 //            if (begin > end || begin <= 0) {
 //                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
 //            }
+
+
+            String  cmd ="tail -n +" + begin + " " + filePath + " | head -n " + (end -begin);
+
+
+            logger.error("===========execute cmd {}",cmd);
+
+            Process process =Runtime.getRuntime().exec(cmd);
+
+            InputStream inputStream= process.getInputStream();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             try {
-                int lineCount = 0;
-                int byteSize = 0;
 
-                file = new RandomAccessFile(filePath, "r");
-
-                String line = null;
+                String content = null;
+                int index = 0;
                 do {
-                    line = file.readLine();
-                    if (line != null) {
-                        lineCount++;
-                        byteSize += line.getBytes().length;
-                        if (lineCount >= begin) {
-                            Map logMap = LogFileService.toLogMap(line, lineCount);
-                            result.add(logMap);
-                            logger.info("wrapped log information：" + logMap);
-                        }
+                    content = reader.readLine();
+                    if (content != null) {
+                        result.add(LogFileService.toLogMap(content, begin + index));
                     }
+                    index++;
+
+                } while (content != null);
+            }finally {
+                if(inputStream!=null) {
+                    inputStream.close();
                 }
-                while (line != null && lineCount < end);
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.error("Exception for building file stream!", e);
-            } finally {
-                if (file != null) {
-                    try {
-                        file.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        logger.error("Exception for closing file stream!", e);
-                    }
+                if(process!=null){
+                    process.destroyForcibly();
                 }
+
+
             }
+//            try {
+//                int lineCount = 0;
+//                int byteSize = 0;
+//
+//                file = new RandomAccessFile(filePath, "r");
+//
+//                String line = null;
+//                do {
+//                    line = file.readLine();
+//                    if (line != null) {
+//                        lineCount++;
+//                        byteSize += line.getBytes().length;
+//                        if (lineCount >= begin) {
+//                            Map logMap = LogFileService.toLogMap(line, lineCount);
+//                            result.add(logMap);
+//                            logger.info("wrapped log information：" + logMap);
+//                        }
+//                    }
+//                }
+//                while (line != null && lineCount < end);
+
+
+
+
+
+//            } catch (Throwable e) {
+//                e.printStackTrace();
+//                logger.error("Exception for building file stream!", e);
+//            } finally {
+//                if (file != null) {
+//                    try {
+//                        file.close();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        logger.error("Exception for closing file stream!", e);
+//                    }
+//                }
+//            }
 
             return  result;
 
@@ -168,7 +225,9 @@ public class LogController {
         StringBuilder  sb = new  StringBuilder();
         String  key =sb.append(componentId).append("|").append(jobId).append("|").append(type).append("|").
                 append(begin).append("|").append(end).toString();
-        List<Map> result = cache.get(key);
+//        List<Map> result = cache.get(key);
+
+        List<Map> result = this.queryLog(componentId, jobId, type, begin, end);
 
 //        String filePath = logFileService.buildFilePath(jobId, componentId, type);
 //
@@ -216,6 +275,9 @@ public class LogController {
 //                }
 //            }
 //        }
+
+
+      //  logger.info("===================log result : {}",result);
         return new ResponseResult<>(ErrorCode.SUCCESS, result);
     }
 
