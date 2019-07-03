@@ -36,6 +36,8 @@ public class LogController {
         return new com.google.common.cache.CacheLoader<String, List<Map>>() {
             @Override
             public List<Map> load(String key) throws Exception {
+
+                long  begin = System.currentTimeMillis();
                 logger.info("===================load key: {}",key);
                 String[] args = key.split("\\|");
                 try {
@@ -44,6 +46,11 @@ public class LogController {
                 }catch(Exception e){
                     e.printStackTrace();
                     logger.error("============== load cache error",e);
+                }
+                finally {
+                    long  end = System.currentTimeMillis();
+
+                    logger.info("============load cache cost {}",end-begin);
                 }
                 return null;
 
