@@ -30,8 +30,8 @@ from fate_flow.entity.metric import MetricMeta
 #from federatedml.feature.quantile import Quantile
 from federatedml.feature.binning.quantile_binning import QuantileBinning
 from federatedml.param.feature_binning_param import FeatureBinningParam
-from federatedml.util import ClassifyLabelChecker
-from federatedml.util import RegressionLabelChecker
+from federatedml.util.classfiy_label_checker import ClassifyLabelChecker
+from federatedml.util.classfiy_label_checker import RegressionLabelChecker
 from federatedml.tree import HeteroDecisionTreeGuest
 from federatedml.optim import DiffConverge
 from federatedml.tree import BoostingTree
