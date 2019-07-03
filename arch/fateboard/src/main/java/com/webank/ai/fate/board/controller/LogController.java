@@ -38,8 +38,14 @@ public class LogController {
             public List<Map> load(String key) throws Exception {
                 logger.info("===================load key: {}",key);
                 String[] args = key.split("\\|");
+                try {
 
-                return queryLog(args[0],args[1],args[2],new Integer(args[3]),new Integer(args[4]));
+                    return queryLog(args[0], args[1], args[2], new Integer(args[3]), new Integer(args[4]));
+                }catch(Exception e){
+                    e.printStackTrace();
+                    logger.error("============== load cache error",e);
+                }
+                return null;
 
             }
         };
