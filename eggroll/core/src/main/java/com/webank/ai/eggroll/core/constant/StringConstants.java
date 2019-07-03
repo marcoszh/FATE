@@ -31,5 +31,5 @@ public class StringConstants {
 
     public static final String ROLE_EGG = "egg";
     public static final String ROLE_ROLL = "roll";
-    public static final String ROLE_CLUSTERCOMM = "clustercomm";
+    public static final String ROLE_EGGROLL = "eggroll";
 }
