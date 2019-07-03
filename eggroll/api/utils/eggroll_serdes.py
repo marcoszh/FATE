@@ -88,7 +88,6 @@ def is_in_blacklist(_bytes):
         if _bytes.find(item) != -1:
             LOGGER.info('blacklist found: {}'.format(item))
             return item
-    LOGGER.info('blacklist not found')
     return None
 
 
