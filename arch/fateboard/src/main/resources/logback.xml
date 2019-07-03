@@ -4,8 +4,8 @@
         xsi:noNamespaceSchemaLocation="http://www.padual.com/java/logback.xsd"
         debug="false" scan="true" scanPeriod="30 second">
 
-    <property name="PROJECT" value="borad"/>
-    <property name="ROOT" value="logs/${PROJECT}/"/>
+    <property name="PROJECT" value="fateboard"/>
+    <property name="ROOT" value="logs/"/>
     <property name="FILESIZE" value="50MB"/>
     <property name="MAXHISTORY" value="100"/>
     <timestamp key="DATETIME" datePattern="yyyy-MM-dd HH:mm:ss"/>

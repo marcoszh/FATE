@@ -92,23 +92,25 @@ public class LogFileService {
 
 
     public String buildFilePath(String jobId, String componentId, String type) {
-        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
-        String filePath = "";
-        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
+//        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
+//        String filePath = "";
+//        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
+//
+//            filePath = jobLogPath.replace("$job_id", jobId);
+//
+//        } else {
+//            filePath = taskLogPath.replace("$job_id", jobId).replace("$component_id", componentId);
+//        }
+//
+//        if (type.equals(DEFAULT_LOG_TYPE)) {
+//            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
+//        } else {
+//            filePath = filePath.replace("$file_name", type);
+//        }
+//        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
+//        return fate_deploy_prefix + filePath;
 
-            filePath = jobLogPath.replace("$job_id", jobId);
-
-        } else {
-            filePath = taskLogPath.replace("$job_id", jobId).replace("$component_id", componentId);
-        }
-
-        if (type.equals(DEFAULT_LOG_TYPE)) {
-            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
-        } else {
-            filePath = filePath.replace("$file_name", type);
-        }
-        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
-        return fate_deploy_prefix + filePath;
+          return  "/data/projects/fateboard/bin/nohup.out";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {
