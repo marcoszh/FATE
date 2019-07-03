@@ -24,9 +24,9 @@
     },
     "encrypt_param": {
         "method": "paillier"
-    }
+    },
     "predict_param": {
         "with_proba": true,
         "threshold": 0.5 
-    },
+    }
 }
