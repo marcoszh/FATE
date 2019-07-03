@@ -4,8 +4,8 @@
         xsi:noNamespaceSchemaLocation="http://www.padual.com/java/logback.xsd"
         debug="false" scan="true" scanPeriod="30 second">
 
-    <property name="PROJECT" value="borad"/>
-    <property name="ROOT" value="logs/${PROJECT}/"/>
+    <property name="PROJECT" value="fateboard"/>
+    <property name="ROOT" value="logs/"/>
     <property name="FILESIZE" value="50MB"/>
     <property name="MAXHISTORY" value="100"/>
     <timestamp key="DATETIME" datePattern="yyyy-MM-dd HH:mm:ss"/>
@@ -122,19 +122,19 @@
 
 
     <!-- FLOW 输入到文件，按日期和文件大小 -->
-    <appender name="OVERLOAD" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="httpclient" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder charset="utf-8">
             <pattern>%m%n
             </pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
+            <level>INFO</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${ROOT}%d/overLoad.%i.log</fileNamePattern>
+            <fileNamePattern>${ROOT}%d/httpclient.%i.log</fileNamePattern>
             <maxHistory>${MAXHISTORY}</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
@@ -144,12 +144,10 @@
     </appender>
 
 
-    <logger name="com.webank.gateway.services.OverLoadLogger" level="INFO" additivity="true">
-        <appender-ref ref="OVERLOAD"/>
+    <logger name="com.webank.ai.fate.board.utils.HttpClientPool" level="INFO" additivity="true">
+        <appender-ref ref="httpclient"/>
     </logger>
-    <logger name="com.webank.gateway.services.DefaultServiceAdaptor" level="INFO" additivity="true">
-        <appender-ref ref="FLOW"/>
-    </logger>
+
     <logger name="org.mybatis.spring" level="INFO" additivity="false"/>
 
 

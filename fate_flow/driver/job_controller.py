@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 from fate_flow.utils.job_utils import generate_job_id, save_job_conf, query_tasks, get_job_dsl_parser
-from arch.api.utils import file_utils
+from arch.api.utils import file_utils, log_utils
 from fate_flow.utils.api_utils import get_json_result, federated_api
 from arch.api.utils.core import current_timestamp, json_dumps
 from flask import Flask, request
@@ -26,6 +26,7 @@ from fate_flow.manager.queue_manager import JOB_QUEUE
 from fate_flow.storage.fate_storage import FateStorage
 from fate_flow.entity.metric import Metric
 from fate_flow.settings import API_VERSION
+import os
 
 manager = Flask(__name__)
 
@@ -33,7 +34,7 @@ manager = Flask(__name__)
 @manager.errorhandler(500)
 def internal_server_error(e):
     logger.exception(e)
-    return get_json_result(status=100, msg=str(e))
+    return get_json_result(retcode=100, retmsg=str(e))
 
 
 @manager.route('/submit', methods=['POST'])
@@ -102,6 +103,7 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
                     party_parameters = partys_parameters[party_index]
                     party_job_args = job_args[role][party_index]['args']
                     dest_party_id = party_parameters.get('local', {}).get('party_id')
+                    print(role, dest_party_id)
                     federated_api(job_id=job_id,
                                   method='POST',
                                   url='/{}/job/{}/{}/{}/{}/{}/run'.format(
@@ -130,6 +132,8 @@ def run_job(job_id, job_dsl_path, job_runtime_conf_path):
 
 @manager.route('/<job_id>/<component_name>/<task_id>/<role>/<party_id>/run', methods=['POST'])
 def run_task(job_id, component_name, task_id, role, party_id):
+    print('run task')
+    log_utils.LoggerFactory.setDirectory(os.path.join(file_utils.get_project_base_directory(), 'logs', job_id))
     request_data = request.json
     request_url_without_host = request.url.lstrip(request.host_url)
     job_initiator = request_data.get('job_initiator', None)
@@ -156,6 +160,7 @@ def run_task(job_id, component_name, task_id, role, party_id):
         run_class_package = '.'.join(run_class_paths[:-2]) + '.' + run_class_paths[-2].rstrip('.py')
         run_class_name = run_class_paths[-1]
         task_run_args = get_task_run_args(job_id=job_id, role=role, party_id=party_id, job_args=job_args, input_dsl=task_input_dsl)
+        print(run_class_package, run_class_name)
         run_object = getattr(importlib.import_module(run_class_package), run_class_name)()
         run_object.set_tracker(tracker=tracker)
         run_object.run(parameters, task_run_args)
@@ -181,7 +186,9 @@ def run_task(job_id, component_name, task_id, role, party_id):
                       url=request_url_without_host.replace('run', 'status'),
                       dest_party_id=job_initiator.get('party_id', None),
                       json_body=task_info)
-    return get_json_result(status=0, msg='success')
+        log_utils.LoggerFactory.setDirectory(os.path.join(file_utils.get_project_base_directory(), 'logs'))
+        print('finish run task')
+    return get_json_result(retcode=0, retmsg='success')
 
 
 def get_task_run_args(job_id, role, party_id, job_args, input_dsl):
@@ -217,4 +224,4 @@ def task_status(job_id, component_name, task_id, role, party_id):
     task_info = request.json
     tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id)
     tracker.save_task(role=role, party_id=party_id, task_info=task_info)
-    return get_json_result(status=0, msg='success')
+    return get_json_result(retcode=0, retmsg='success')

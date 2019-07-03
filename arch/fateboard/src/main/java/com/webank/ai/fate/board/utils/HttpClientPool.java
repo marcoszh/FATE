@@ -21,6 +21,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
@@ -35,12 +37,13 @@ public class HttpClientPool implements InitializingBean {
     private PoolingHttpClientConnectionManager poolConnManager;
     private RequestConfig requestConfig;
     private CloseableHttpClient httpClient;
+    Logger logger  = LoggerFactory.getLogger(HttpClientPool.class);
 
     private static void config(HttpRequestBase httpRequestBase) {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectionRequestTimeout(60)
-                .setConnectTimeout(60)
-                .setSocketTimeout(60).build();
+                .setConnectionRequestTimeout(2000)
+                .setConnectTimeout(2000)
+                .setSocketTimeout(2000).build();
         httpRequestBase.addHeader("Content-Type", "application/json;charset=UTF-8");
         httpRequestBase.setConfig(requestConfig);
     }
@@ -90,6 +93,7 @@ public class HttpClientPool implements InitializingBean {
 
 
     public String post(String url, String requestData) {
+
         HttpPost httpPost = new HttpPost(url);
         config(httpPost);
         StringEntity stringEntity = new StringEntity(requestData, "UTF-8");
@@ -112,6 +116,8 @@ public class HttpClientPool implements InitializingBean {
             HttpEntity entity = response.getEntity();
             String result = EntityUtils.toString(entity, "utf-8");
             EntityUtils.consume(entity);
+
+            logger.info("httpclient sent request {} result: {}",request,result);
             return result;
         } catch (IOException e) {
             e.printStackTrace();

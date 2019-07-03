@@ -25,7 +25,7 @@ manager = Flask(__name__)
 @manager.errorhandler(500)
 def internal_server_error(e):
     logger.exception(e)
-    return get_json_result(status=100, msg=str(e))
+    return get_json_result(retcode=100, retmsg=str(e))
 
 
 @manager.route('/dag/dependency', methods=['post'])
@@ -37,6 +37,6 @@ def pipeline_dag_dependency():
         job_dsl_path, job_runtime_conf_path = job_utils.get_job_conf_path(job_id=job_id)
         job_dsl_parser = job_utils.get_job_dsl_parser(job_id=job_id, job_dsl_path=job_dsl_path,
                                                       job_runtime_conf_path=job_runtime_conf_path)
-        return get_json_result(status=0, msg='success', data=job_dsl_parser.get_dependency())
+        return get_json_result(retcode=0, retmsg='success', data=job_dsl_parser.get_dependency())
     else:
-        return get_json_result(status=101, msg='can not found this job')
+        return get_json_result(retcode=101, retmsg='can not found this job')
