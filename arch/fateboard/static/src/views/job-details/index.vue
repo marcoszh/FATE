@@ -76,11 +76,12 @@
     <!--DAG图和参数及输出展示-->
     <section class="section-wrapper">
       <h3 class="section-title">OUTPUTS FROM JOB</h3>
-      <div class="section-view shadow flex">
+      <div class="output-wrapper shadow flex">
         <!--DAG-->
-        <div class="output-wrapper">
-          <h4 class="output-title">main graph<span>Click component to view details</span></h4>
-          <div v-if="DAGData" :style="{height:DAGData.componentList.length * 60+'px'}">
+        <div class="dag-wrapper">
+          <h4 class="output-title">Main Ggraph</h4>
+          <p class="output-desc">Click component to view details</p>
+          <div v-if="DAGData" :style="{'min-height':DAGData.componentList.length * 60+'px'}" class="echart-wrapper">
             <echart-container
               :class="'echarts'"
               :options="graphOptions"
@@ -89,9 +90,9 @@
           </div>
         </div>
         <!--参数-->
-        <div v-loading="paraLoading" class="output-wrapper">
+        <div v-loading="paraLoading" class="para-wrapper">
           <h4 class="output-title">statistics</h4>
-          <div v-loading="msgLoading" class="msg">
+          <div v-loading="msgLoading" class="msg bg-dark">
             <div v-show="paraList.length>0" class="flex">
               <h4 class="msg-title">Parameters({{ paraList.length }})</h4>
               <ul class="para-list">
@@ -157,35 +158,13 @@
             <data-output :t-header="dataOutputHeader" :t-body="dataOutputBody"/>
           </div>
           <div v-show="currentTab === 'log'">
-            <ul class="log-list">
+            <ul v-loading="logLoading" class="log-list" @mousewheel="logOnMousewheel">
               <li v-for="(log,index) in logList" :key="index">
                 <span style="color:#999;margin-right: 5px;">{{ log.lineNum }}</span>
                 {{ log.content }}
               </li>
             </ul>
           </div>
-          <!--<el-tabs type="border-card" style="width: 100%;">-->
-          <!--&lt;!&ndash;module-output&ndash;&gt;-->
-          <!--<el-tab-pane class="tab">-->
-          <!--<span slot="label">Model_output</span>-->
-          <!--<model-output-->
-          <!--:metric-output-list="metricOutputList"-->
-          <!--:model-output-type="modelOutputType"-->
-          <!--:model-output="modelOutput"-->
-          <!--/>-->
-          <!--</el-tab-pane>-->
-
-          <!--&lt;!&ndash;data-output&ndash;&gt;-->
-          <!--<el-tab-pane class="tab">-->
-          <!--<span slot="label">Data_output</span>-->
-          <!--<data-output :t-header="dataOutputHeader" :t-body="dataOutputBody"/>-->
-          <!--</el-tab-pane>-->
-          <!--&lt;!&ndash;日志&ndash;&gt;-->
-          <!--<el-tab-pane class="tab">-->
-          <!--<span slot="label">Log</span>-->
-          <!--Log-->
-          <!--</el-tab-pane>-->
-          <!--</el-tabs>-->
         </div>
       </section>
     </el-dialog>
@@ -193,8 +172,8 @@
 </template>
 
 <script>
-import { parseTime, formatSeconds, jsonToTableHeader, deepClone } from '@/utils'
-import { getJobDetails, getDAGDpencencies, getComponentPara } from '@/api/job'
+import { parseTime, formatSeconds, jsonToTableHeader, deepClone, initWebSocket } from '@/utils'
+import { getJobDetails, getDAGDpencencies, getComponentPara, queryLog } from '@/api/job'
 import { getMetrics, getMetricData, getDataOutput, getModelOutput } from '@/api/chart'
 import EchartContainer from '@/components/EchartContainer'
 import graphChartHandle from '@/utils/vendor/graphChartHandle'
@@ -204,6 +183,7 @@ import graphOptions from '@/utils/chart-options/graph'
 import stackBarOptions from '@/utils/chart-options/stackBar'
 import treeOptions from '@/utils/chart-options/tree'
 import lineOptions from '@/utils/chart-options/line'
+import KSOptions from '@/utils/chart-options/KS'
 import doubleBarOptions from '@/utils/chart-options/doubleBar'
 
 // import axios from 'axios'
@@ -227,6 +207,7 @@ export default {
       guest: {},
       jobInfo: {},
       componentName: '',
+      logLoading: false,
       graphOptions,
       treeOptions,
       lineOptions,
@@ -287,23 +268,6 @@ export default {
         this.modelSummaryData = jsonToTableHeader(dataset.model_summary, '')
       })
     },
-
-    initWebSocket(url, onopen, onmessage, onclose = null) {
-      // 创建一个websocket连接
-      const instance = new WebSocket(process.env.WEBSOCKET_BASE_API + url)
-      // websocket建立连接时会触发此方法
-      instance.onopen = onopen
-      // 客户端接收服务端数据时触发
-      instance.onmessage = onmessage
-      // 通信发生错误时触发
-      instance.onerror = () => { // 如果请求出错则再次连接
-        this.initWebSocket(url, instance)
-      }
-      instance.onclose = function() {
-        // console.log('关闭websocket连接')
-      }
-      return instance
-    },
     toPrevPage() {
       console.log(this.$route)
       let path = null
@@ -352,7 +316,7 @@ export default {
       this.getModelOutput(component_name)
       // this.getDataOutput(component_name)
       this.outputVisible = true
-      this.outputTitle = component_name
+      // this.outputTitle = `${component_name}`
     },
     initOutput() {
       this.metricOutputList = []
@@ -363,6 +327,7 @@ export default {
       this.currentTab = 'model'
       this.logList = []
       this.componentName = ''
+      this.outputTitle = ''
       this.closeWebsocket()
     },
     switchLogTab(tab) {
@@ -371,12 +336,50 @@ export default {
         this.getDataOutput(this.componentName)
       }
       if (tab === 'log' && !this.logWebsocket) {
-        this.logWebsocket = this.initWebSocket(`/log/${this.componentName}/${this.jobId}/1`, res => {
+        this.logWebsocket = initWebSocket(`/log/${this.jobId}/${this.componentName}/default`, res => {
           // console.log('日志推送websocket连接成功')
         }, res => {
           // console.log('websocket请求回来的数据:', JSON.parse(res.data))
           this.logList.push(JSON.parse(res.data))
         })
+      }
+    },
+    logOnMousewheel(e) {
+      // console.log(e.target.parentNode.parentNode.scrollTop)
+      // console.log(e.wheelDelta)
+      const topLog = this.logList[0]
+      if (!topLog) {
+        return
+      }
+      const end = topLog.lineNum - 1
+      if (end > 0) {
+        if (e.target.parentNode.parentNode.scrollTop === 0 && (e.wheelDelta > 0 || e.detail > 0)) {
+          // console.log('鼠标滚轮往上滑，加载前面的日志')
+          const begin = end - 10 > 1 ? end - 10 : 1
+          if (!this.logLoading) {
+            this.logLoading = true
+
+            const fn = () => {
+              queryLog({
+                componentId: this.componentName,
+                jobId: this.jobId,
+                begin,
+                end
+              }).then(res => {
+                const newLogs = []
+                res.data.map(log => {
+                  newLogs.push(log)
+                })
+                this.logList = [...newLogs, ...this.logList]
+                this.logLoading = false
+              }).catch(() => {
+                this.logLoading = false
+              })
+            }
+
+            window.setTimeout(fn, 1000)
+          }
+        }
       }
     },
     closeWebsocket() {
@@ -413,9 +416,8 @@ export default {
                 this.modelOutputLoading = false
                 const { data, meta } = res.data
                 if (data && meta) {
-                  const { metric_type, unit_name } = meta
+                  const { metric_type, unit_name, curve_name } = meta
                   let type = ''
-
                   if (metric_type === 'LOSS') {
                     type = 'line'
                     const outputData = deepClone(lineOptions)
@@ -430,27 +432,40 @@ export default {
                   }
                   // KS曲线
                   if (metric_type === 'KS') {
-                    // let KSIndex = -1
+                    const outputData = deepClone(KSOptions)
+                    outputData.xAxis.data = Object.keys(data)
+                    outputData.xAxis.name = unit_name
+                    outputData.series.push({
+                      name: curve_name,
+                      type: 'line',
+                      symbol: 'none',
+                      data: Object.values(data)
+                    })
                     if (this.metricOutputList.length === 0) {
                       this.metricOutputList.push({
                         type: 'KS',
                         nameSpace: metric_namespace,
-                        data: [1]
+                        data: outputData
                       })
                     } else {
                       this.metricOutputList.forEach((item, index) => {
                         if (item.type === 'KS' && item.nameSpace === metric_namespace) {
-                          console.log(item)
-                          this.metricOutputList[index].data.push(2)
+                          this.metricOutputList[index].data.series.push({
+                            name: curve_name,
+                            type: 'line',
+                            symbol: 'none',
+                            data: Object.values(data)
+                          })
                         } else {
                           this.metricOutputList.push({
                             type: 'KS',
                             nameSpace: metric_namespace,
-                            data: [1]
+                            data: outputData
                           })
                         }
                       })
                     }
+                    console.log(this.metricOutputList)
                   }
                 }
               })
@@ -464,7 +479,6 @@ export default {
         job_id: this.jobId,
         component_name: component_name
       }).then(res => {
-        console.log(res)
         const header = []
         const body = []
         res.data.meta.header.forEach(item => {
@@ -490,7 +504,12 @@ export default {
         component_name: component_name
       }).then(res => {
         this.modelOutputLoading = false
-        this.modelOutputType = res.data.meta && res.data.meta ? res.data.meta.module_name : ''
+        this.modelOutputType = res.data.meta ? res.data.meta.module_name : ''
+        this.outputTitle = this.modelOutputType || ''
+        if (this.outputTitle) {
+          this.outputTitle += ': '
+        }
+        this.outputTitle += component_name
         const responseData = res.data.data ? res.data.data : ''
         if (this.modelOutputType === 'HeteroSecureBoost') {
           this.modelOutput = {
