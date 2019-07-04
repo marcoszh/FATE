@@ -47,11 +47,11 @@ class TestDenseFeatureReader(unittest.TestCase):
                          }
                        }
                      }
-
+        self.tracker = Tracking("jobid", "guest", 9999, "abc", "123")
+        
     def test_dense_output_format(self):
         reader = DataIO()
-        tracker = Tracking("abc", "123")
-        reader.set_tracker(tracker)
+        reader.set_tracker(self.tracker)
         component_params = {"DataIOParam": 
                              {"input_format": "dense"
                              }
@@ -73,8 +73,7 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_sparse_output_format(self):
         reader = DataIO()
-        tracker = Tracking("abc", "123")
-        reader.set_tracker(tracker)
+        reader.set_tracker(self.tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "dense"
@@ -91,8 +90,7 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_missing_value_fill(self):
         reader = DataIO()
-        tracker = Tracking("abc", "123")
-        reader.set_tracker(tracker)
+        reader.set_tracker(self.tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "dense",
@@ -112,8 +110,7 @@ class TestDenseFeatureReader(unittest.TestCase):
 
     def test_with_label(self):
         reader = DataIO()
-        tracker = Tracking("abc", "123")
-        reader.set_tracker(tracker)
+        reader.set_tracker(self.tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "dense",
                               "input_format": "dense",
@@ -159,11 +156,12 @@ class TestSparseFeatureReader(unittest.TestCase):
                         }
                       }
                     }
+        
+        self.tracker = Tracking("jobid", "guest", 9999, "abc", "123")
     
     def test_sparse_output_format(self):
         reader = DataIO()
-        tracker = Tracking("abc", "123")
-        reader.set_tracker(tracker)
+        reader.set_tracker(self.tracker)
         component_params = {"DataIOParam": 
                              {"output_format": "sparse",
                               "input_format": "sparse",
@@ -264,6 +262,8 @@ class TestSparseTagReader(unittest.TestCase):
                          }
                        }
                      }
+        
+        self.tracker = Tracking("jobid", "guest", 9999, "abc", "123")
 
     def test_tag_sparse_output_format(self):
         reader = DataIO()

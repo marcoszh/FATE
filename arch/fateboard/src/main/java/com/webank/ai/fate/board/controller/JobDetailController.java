@@ -269,7 +269,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
         }
 
-        String result = httpClientPool.post(fateUrl + "/v1/pipeline/dag/dependency", param);
+        String result = httpClientPool.post(fateUrl + "/v1/tracking/component/output/model", param);
 
 
         logger.info("result: " + result);

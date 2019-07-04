@@ -63,9 +63,9 @@ export function getModelOutput(data) {
 }
 
 // 查询日志
-export function queryLog({ componentId, jobId, begin, end }) {
+export function queryLog({ componentId, jobId, begin, end, type = 'default' }) {
   return request({
-    url: `/queryLogWithSize/${componentId}/${jobId}/${begin}/${end}  `,
+    url: `/queryLogWithSize/${componentId}/${jobId}/${type}/${begin}/${end}  `,
     method: 'get'
   })
 }

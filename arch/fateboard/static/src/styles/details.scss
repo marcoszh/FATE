@@ -56,6 +56,8 @@
           }
         }
         .log-list {
+          max-height: 500px;
+          overflow: auto;
           > li {
             /*height: 25px;*/
             line-height: 25px;
@@ -91,25 +93,39 @@
             font-weight: bold;
             color: #7f7d8e;
             overflow: hidden;
-            text-overflow:ellipsis;
+            text-overflow: ellipsis;
             white-space: nowrap;
           }
         }
       }
     }
-    .output-wrapper {
-      height: 400px;
-      width: 50%;
-      padding: 0 20px;
-      overflow: auto;
-      &:nth-child(1) {
-        border-right: 1px solid #999;
-      }
+  }
+  .output-wrapper{
+    height: 800px;
+    padding: 32px;
+    background: #fff;
+    .dag-wrapper {
+      width: 100%;
       .output-title {
-
+        margin-bottom: 8px;
+        font-size: 16px;
+        color: #7f7d8e;
       }
-      .echarts {
-        height: 100%;
+      .output-desc{
+        color: #bbbbc8;
+      }
+      .echart-wrapper {
+        height: 400px;
+        .echarts {
+          height: 100%;
+        }
+      }
+    }
+    .para-wrapper{
+      width: 316px;
+      .title {
+        font-size: 16px;
+        color: #7f7d8e;
       }
       .msg {
         .msg-title {

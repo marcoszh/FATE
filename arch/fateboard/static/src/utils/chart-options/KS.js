@@ -9,6 +9,14 @@ export default {
       type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
     }
   },
+  legend: {
+    show: true,
+    right: 0,
+    top: '3%',
+    orient: 'horizontal',
+    itemWidth: 15,
+    itemHeight: 15
+  },
   grid: {
     left: '3%',
     right: '10%',
@@ -25,23 +33,23 @@ export default {
     nameLocation: 'end',
     nameCap: 10
   },
-  yAxis: [{
+  yAxis: {
     type: 'value'
-  }],
+  },
   series: [
-    {
-      name: 'value',
-      type: 'line',
-      // 线转折变平滑
-      smooth: true,
-      // 去掉点
-      symbol: 'none',
-      // 面积
-      // areaStyle: {
-      //   color: '#3398DB',
-      //   opacity: 0.5
-      // },
-      data: []
-    }
+    // {
+    //   name: 'value',
+    //   type: 'line',
+    //   // 线转折变平滑
+    //   smooth: true,
+    //   // 去掉点
+    //   symbol: 'none',
+    //   // 面积
+    //   // areaStyle: {
+    //   //   color: '#3398DB',
+    //   //   opacity: 0.5
+    //   // },
+    //   data: []
+    // }
   ]
 }
