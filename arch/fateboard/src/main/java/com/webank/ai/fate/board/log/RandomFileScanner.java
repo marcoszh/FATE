@@ -66,7 +66,6 @@ public class RandomFileScanner implements Runnable, LogScanner {
     public void run() {
         try {
             logger.info("roll file start");
-
             while (true) {
 
                 try {

@@ -7,6 +7,7 @@ import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.pojo.JobWithBLOBs;
 import com.webank.ai.fate.board.services.JobManagerService;
+import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,7 @@ public class JobManagerController {
         if ((job_id == null) || "".equals(job_id)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
         }
-        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", param);
+        String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, param);
 
 
 
@@ -142,6 +143,7 @@ public class JobManagerController {
 
         logger.info("jobId：" + jobId);
 
+        HashMap<String, Object> resultMap = new HashMap<>();
 
         JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
         logger.info("jobWithBLOBs：" + jobWithBLOBs);
@@ -150,26 +152,24 @@ public class JobManagerController {
             return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
         }
 
-        String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+        String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, jobId);
 
         logger.info("result for dataset：" + result);
 
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
         }
 
         JSONObject data = JSON.parseObject(result).getJSONObject("data");
 
         logger.info("data：" + data);
 
+        resultMap.put("job", jobWithBLOBs);
+        resultMap.put("dataset", data);
 
-        HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-        stringObjectHashMap.put("job", jobWithBLOBs);
-        stringObjectHashMap.put("dataset", data);
+        logger.info("stringObjectHashMap：" + resultMap);
 
-        logger.info("stringObjectHashMap：" + stringObjectHashMap);
-
-        return new ResponseResult<>(ErrorCode.SUCCESS, stringObjectHashMap);
+        return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
     }
 
 
@@ -204,7 +204,7 @@ public class JobManagerController {
                 @Override
                 public JSONObject  call() throws Exception {
                     String jobId = jobWithBLOBs.getfJobId();
-                    String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, jobId);
                     JSONObject data = JSON.parseObject(result).getJSONObject("data");
                     return data;
                 }

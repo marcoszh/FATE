@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.webank.ai.fate.board.global.ErrorCode;
 import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.services.TaskManagerService;
+import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
 import com.webank.ai.fate.board.utils.ReadJson;
 import org.slf4j.Logger;
@@ -118,9 +119,8 @@ public class JobDetailController {
 
         }
 
-        String result = httpClientPool.post(fateUrl + " /v1/tracking/component/metric_data", param);
+        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, param);
 
-        logger.info("result: " + result);
         if (result == null || "".equals(result)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
         }
@@ -157,11 +157,7 @@ public class JobDetailController {
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
         }
-
-
-        String result = httpClientPool.post(fateUrl + "/v1/tracking/component/parameters", param);
-
-
+        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, param);
         logger.info("result: " + result);
         if (result == null || "".equals(result)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
@@ -207,9 +203,7 @@ public class JobDetailController {
         }
 
 
-        String result = httpClientPool.post(fateUrl + "/v1/pipeline/dag/dependency", param);
-
-
+        String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, param);
 
 
         if (result == null || "".equals(result)) {
@@ -269,7 +263,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
         }
 
-        String result = httpClientPool.post(fateUrl + "/v1/tracking/component/output/model", param);
+        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_MODEL, param);
 
 
         logger.info("result: " + result);
@@ -314,7 +308,7 @@ public class JobDetailController {
         }
 
 
-        String result = httpClientPool.post(fateUrl + "/v1/tracking/component/output/data", param);
+        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_DATA, param);
 
         logger.info(result);
         if (result == null || "".equals(result)) {

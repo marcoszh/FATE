@@ -124,8 +124,7 @@ public class JobWebSocketService {
                         stringObjectHashMap.put("process", process);
                         stringObjectHashMap.put("time", time);
                         stringObjectHashMap.put("status", status);
-
-                       // logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
+                        logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
 
                         v.forEach(session -> {
 
