@@ -30,6 +30,7 @@ class ModelBase(object):
         self.flowid = ''
         self.taskid = ''
         self.need_run = True
+        self.need_cv = False
         self.tracker = None
 
     def _init_runtime_parameters(self, component_parameters):
@@ -41,7 +42,7 @@ class ModelBase(object):
             need_cv = param.cv_param.need_cv
         except AttributeError:
             need_cv = False
-
+        self.need_cv = need_cv
         try:
             need_run = param.need_run
         except AttributeError:
@@ -158,6 +159,12 @@ class ModelBase(object):
         self.taskid = taskid
         if self.transfer_variable is not None:
             self.transfer_variable.set_taskid(self.taskid)
+
+    def get_metric_name(self, name_prefix):
+        if not self.need_cv:
+            return name_prefix
+
+        return '_'.join(map(str, [name_prefix, self.flowid]))
 
     def set_tracker(self, tracker):
         self.tracker = tracker

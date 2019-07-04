@@ -213,11 +213,6 @@ class LogisticParam(BaseParam):
             raise ValueError(
                 "logistic_param's re_encrypt_batches must be greater or equal to 0")
 
-        if type(self.model_path).__name__ != "str":
-            raise ValueError(
-                "logistic_param's model_path {} not supported, should be str type".format(
-                    self.model_path))
-
         if type(self.party_weight).__name__ not in ["int", 'float']:
             raise ValueError(
                 "logistic_param's party_weight {} not supported, should be 'int' or 'float'".format(

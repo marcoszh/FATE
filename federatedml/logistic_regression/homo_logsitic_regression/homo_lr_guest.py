@@ -101,7 +101,7 @@ class HomoLRGuest(HomoLRBase):
                                      extra_metas={
                                          "unit_name": "homo_lr"
                                      })
-            metric_name = 'loss_' + self.flowid
+            metric_name = self.get_metric_name('loss')
             self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
             self.callback_metric(metric_name=metric_name,
                                  metric_namespace='train',

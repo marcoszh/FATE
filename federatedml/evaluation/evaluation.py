@@ -89,7 +89,7 @@ class Evaluation(ModelBase):
         ]
 
         FateStorage.init_storage()
-        self.tracker = Tracking('123456', 'hetero_lr')
+        # self.tracker = Tracking('123456', 'hetero_lr')
 
     def _init_model(self, model):
         self.model_param = model
