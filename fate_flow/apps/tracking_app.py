@@ -65,10 +65,11 @@ def component_metric_data():
                        role=request_data['role'], party_id=request_data['party_id'])
     metric_data = tracker.read_metric_data(metric_namespace=request_data['metric_namespace'],
                                            metric_name=request_data['metric_name'])
+    metric_meta = tracker.get_metric_meta(metric_namespace=request_data['metric_namespace'], metric_name=request_data['metric_name'])
     if metric_data:
         metric_data_list = [(metric.key, metric.value) for metric in metric_data]
         metric_data_list.sort(key=lambda x: x[0])
-        return get_json_result(retcode=0, retmsg='success', data=metric_data_list)
+        return get_json_result(retcode=0, retmsg='success', data=metric_data_list, meta=metric_meta.to_dict() if metric_meta else {})
     else:
         return get_json_result(retcode=101, retmsg='error')
 

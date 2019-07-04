@@ -94,7 +94,7 @@ class JobController(object):
         job_tracker.save_job_info(role=job.f_role, party_id=job.f_party_id, job_info=job.to_json())
         loops = 0
         component_name = None
-        while job.f_status == 'running':
+        while job.f_status != 'failed':
             components = dsl.get_next_components(component_name)
             if not components:
                 break
@@ -147,6 +147,7 @@ class JobController(object):
                     job.f_status = 'failed'
                     break
                 elif len(all_task_status) == 1 and 'success' in all_task_status:
+                    job.f_status = 'success'
                     break
                 time.sleep(2)
         job.f_end_time = current_timestamp()
@@ -243,7 +244,6 @@ class JobController(object):
                     output_model = run_object.export_model()
                     tracker.save_output_model(output_model, module_name)
             task.f_status = 'success'
-            tracker.log_metric_data('TRAIN', 'LOSS0', [Metric(key=1, value=0.1), Metric(key=2, value=0.2)])
         except Exception as e:
             logger.exception(e)
             task.f_status = 'failed'

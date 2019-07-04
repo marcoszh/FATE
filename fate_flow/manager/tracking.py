@@ -129,9 +129,10 @@ class Tracking(object):
             self.save_output_model_meta({'module_name': module_name})
 
     def get_output_model(self):
-        return model_manager.read_model(model_key=self.component_name,
+        model_buffers = model_manager.read_model(model_key=self.component_name,
                                         model_version=self.model_version,
                                         model_id=self.model_id)
+        return model_buffers
 
     def save_output_model_meta(self, kv: dict):
         model_manager.save_model_meta(kv=kv,

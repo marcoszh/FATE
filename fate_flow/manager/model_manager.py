@@ -33,8 +33,13 @@ from arch.api.utils import file_utils
 def save_model(model_key, model_buffers, model_version, model_id, version_log=None):
     data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
                                    create_if_missing=True, error_if_exist=False)
+    model_class_map = {}
     for buffer_name, buffer_object in model_buffers.items():
-        data_table.put('{}.{}'.format(model_key, buffer_name), buffer_object.SerializeToString(), use_serialize=False)
+        storage_key = '{}.{}'.format(model_key, buffer_name)
+        data_table.put(storage_key, buffer_object.SerializeToString(), use_serialize=False)
+        model_class_map[storage_key] = type(buffer_object).__name__
+        logger.info(model_class_map[storage_key])
+    FateStorage.save_data_table_meta(model_class_map, namespace=model_id, name=model_version)
     version_log = "[AUTO] save model at %s." % datetime.datetime.now() if not version_log else version_log
     version_control.save_version(name=model_version, namespace=model_id, version_log=version_log)
 
@@ -44,13 +49,15 @@ def read_model(model_key, model_version, model_id):
                                    create_if_missing=False, error_if_exist=False)
     model_buffers = {}
     if data_table:
-        for buffer_key, buffer_object_bytes in data_table.collect(use_serialize=False):
-            buffer_key_items = buffer_key.split('.')
-            buffer_name = buffer_key_items[-1]
+        model_class_map = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
+        logger.info(model_class_map)
+        for storage_key, buffer_object_bytes in data_table.collect(use_serialize=False):
+            storage_key_items = storage_key.split('.')
+            buffer_name = storage_key_items[-1]
 
-            current_model_key = '.'.join(buffer_key_items[:-1])
+            current_model_key = '.'.join(storage_key_items[:-1])
             if current_model_key == model_key:
-                buffer_object_class = get_proto_buffer_class(buffer_name)
+                buffer_object_class = get_proto_buffer_class(model_class_map.get(storage_key, ''))
                 if buffer_object_class:
                     buffer_object = buffer_object_class()
                 else:
