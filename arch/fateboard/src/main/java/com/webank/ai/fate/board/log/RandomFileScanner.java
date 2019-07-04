@@ -65,16 +65,22 @@ public class RandomFileScanner implements Runnable, LogScanner {
     @Override
     public void run() {
         try {
+            logger.info("roll file start");
+
             while (true) {
 
                 try {
                     if (needStop) {
+                        logger.info("roll file thread return");
                         return;
                     }
                     List<String> lines = tailFile.readEvents(100);
+
+
                     if (lines == null) {
                         throw new Exception("lines not exist");
                     }
+                    logger.info("roll file ============ ",lines.size());
                     if (lines.size() == 0) {
                         Thread.sleep(500);
                     } else {

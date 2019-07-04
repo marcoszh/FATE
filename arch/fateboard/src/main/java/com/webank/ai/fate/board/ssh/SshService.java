@@ -104,7 +104,6 @@ public class SshService implements InitializingBean {
 
             e.printStackTrace();
             channel.disconnect();
-
             throw e;
 
         }
@@ -148,9 +147,10 @@ public class SshService implements InitializingBean {
                 session.connect(30000);
             } catch (Exception e) {
                 e.printStackTrace();
+
+                logger.error("ssh connect error {} password {}",sessionKey,passwd);
                 throw new Exception("连接远程端口无效或用户名密码错误");
             }
-
             sessionMap.put(sessionKey, session);
         }
         return session;

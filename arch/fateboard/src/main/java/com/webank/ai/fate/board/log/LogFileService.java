@@ -109,8 +109,8 @@ public class LogFileService {
 //        }
 //        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
 //        return fate_deploy_prefix + filePath;
-
-          return  "/data/projects/fateboard/bin/nohup.out";
+          return "/data/project/fdn/nginx/logs/access.log";
+          //return  "/data/projects/fateboard/bin/nohup.out";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {
@@ -146,6 +146,7 @@ public class LogFileService {
         String filePath = this.buildFilePath(jobId, componentId, type);
         Session session = this.sshService.connect(sshInfo);
         Channel channel = this.sshService.executeCmd(session, "tail -n +" + begin + " " + filePath + " | head -n " + count);
+
         InputStream inputStream = channel.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         try {

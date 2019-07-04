@@ -99,8 +99,8 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
         /**
          * 本地文件
          */
-         if(LogFileService.checkFileIsExist(filePath)){
-       //if (false) {
+         //if(LogFileService.checkFileIsExist(filePath)){
+       if (false) {
             File file = new File(filePath);
 
             long lines = LogFileService.getLocalFileLineCount(file);
@@ -127,12 +127,14 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              * 远程文件
              */
 
-            LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId);
+            //LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId);
 
-            SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
+           // SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
+           SshInfo  sshInfo =  sshService.getSSHInfo("10.107.116.39");
 
-            Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""));
 
+//            Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""));
+//
             Preconditions.checkArgument(sshInfo != null);
 
 
@@ -141,13 +143,13 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              *   success/failed/partial/setFailed
              */
 
-            logger.info("job stauts {}",jobTaskInfo.jobStatus);
-             if(jobFinishStatus.contains(jobTaskInfo.jobStatus)){
-            //if (true) {
-                String jobDir = logFileService.getJobDir(jobId);
-                logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
-
-            }
+            //logger.info("job stauts {}",jobTaskInfo.jobStatus);
+            // if(jobFinishStatus.contains(jobTaskInfo.jobStatus)){
+//            if (true) {
+//                String jobDir = logFileService.getJobDir(jobId);
+//                logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
+//
+//            }
 
             SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type);
 
