@@ -1,12 +1,16 @@
 <template>
   <div class="dashboard-container bg-dark app-container">
+    <!--标题-->
     <h3 class="app-title flex space-between">
       <span>Dashboard</span>
       <p>Job: <span class="text-primary pointer" @click="toDetails(jobId)">{{ jobId }}</span></p>
     </h3>
+    <!--上方三个模块-->
     <el-row :gutter="24" class="dash-board-list">
       <el-col :span="8">
         <div v-loading="datasetLoading" class="col dataset-info shadow">
+
+          <!--左上角 job info 模块-->
           <h3 class="list-title">DATASET INFO</h3>
           <el-row :gutter="4" class="dataset-row">
             <el-col :span="6" :offset="2" class="dataset-title">GUEST</el-col>
@@ -49,10 +53,12 @@
           </el-row>
         </div>
       </el-col>
+
       <!--仪表盘job进度图-->
       <el-col :span="8">
         <div class="col job flex-center justify-center shadow">
           <h3 class="list-title">JOB</h3>
+          <!--在faied或complete状态不展示仪表，展示数据，和进入details的按钮-->
           <div v-if="jobStatus==='faied' || jobStatus==='complete'" class="job-end-container flex flex-col flex-center">
             <i
               v-if="jobStatus === 'faied'"
@@ -74,6 +80,7 @@
             </ul>
             <el-button type="primary" round @click="toDetails(jobId)">VIEW THIS JOB</el-button>
           </div>
+          <!--仪表盘图-->
           <div v-else class="echarts-container">
             <div v-if="elapsed" class="elapsed">
               <p class="elapsed-title">elapsed</p>
@@ -85,9 +92,6 @@
               <div style="width: 100%;" class="flex space-around">
                 <el-button class="btn text-primary" round @click="killJob">KILL</el-button>
                 <!--<el-button class="btn text-primary" round @click="completeJob">COMPLETE</el-button>-->
-                <!--<el-button class="btn" @click="tWaitJob">WAITING</el-button>-->
-                <!--<el-button class="btn" @click="tRunJob">RUNNING</el-button>-->
-                <!--<el-button class="btn" @click="tCompJob">COMPLETE</el-button>-->
               </div>
             </div>
           </div>
@@ -97,7 +101,7 @@
       <el-col :span="8">
         <div v-loading="!DAGData" class="col graph flex-center justify-center shadow">
           <h3 class="list-title">GRAPH</h3>
-          <div v-if="DAGData" :style="{height:DAGData.componentList.length * 60+'px'}" class="wrapper w-100">
+          <div v-if="DAGData" :style="{'min-height':DAGData.componentList.length * 60+'px'}" class="wrapper w-100">
             <echart-container
               :class="'echarts'"
               :options="graphOptions"
@@ -107,35 +111,30 @@
         </div>
       </el-col>
     </el-row>
+
+    <!--日志-->
     <div class="log-wrapper shadow">
       <h3 class="title">LOG</h3>
-      <div class="tab-bar flex">
-        <div :class="{'tab-btn-active':currentLogTab === 'all'}" class="tab-btn" @click="switchLogTab('all')">
-          <span class="text">all</span>
-        </div>
-        <div :class="{'tab-btn-active':currentLogTab === 'error'}" class="tab-btn" @click="switchLogTab('error')">
-          <span class="text">error</span>
-          <span class="count error">5</span>
-        </div>
-        <div :class="{'tab-btn-active':currentLogTab === 'warning'}" class="tab-btn" @click="switchLogTab('warning')">
-          <span class="text">warning</span>
-          <span class="count warning">5</span>
-        </div>
-        <div :class="{'tab-btn-active':currentLogTab === 'info'}" class="tab-btn" @click="switchLogTab('info')">
-          <span class="text">info</span>
-          <span
-            class="count info">5</span>
-        </div>
-        <div :class="{'tab-btn-active':currentLogTab === 'debug'}" class="tab-btn" @click="switchLogTab('debug')">
-          <span class="text">debug</span>
-        </div>
+      <ul class="tab-bar flex">
+        <li
+          v-for="(tab,index) in Object.keys(logsMap)"
+          :key="index"
+          :class="{'tab-btn-active':currentLogTab === tab}"
+          class="tab-btn"
+          @click="switchLogTab(tab)"
+        >
+          <span class="text">{{ tab }}</span>
+          <span v-if="tab!=='all'" :class="[tab]" class="count">{{ logsMap[tab].length }}</span>
+        </li>
         <!--<div class="tab-search">debug</div>-->
-      </div>
+      </ul>
       <div v-loading="logLoading" class="log-container" @mousewheel="logOnMousewheel">
-        <ul class="log-list">
-          <li v-for="(log,index) in logs" :key="index">
-            <span style="color:#999;margin-right: 5px;">{{ log.lineNum }}</span>
-            {{ log.content }}
+        <ul class="log-list overflow-hidden">
+          <li v-for="(log,index) in logsMap[currentLogTab].list" :key="index">
+            <div class="flex">
+              <span style="color:#999;margin-right: 5px;">{{ log.lineNum }}</span>
+              <span> {{ log.content }}</span>
+            </div>
           </li>
         </ul>
       </div>
@@ -148,7 +147,7 @@ import EchartContainer from '@/components/EchartContainer'
 import jobOptions from '@/utils/chart-options/gauge'
 import graphOptions from '@/utils/chart-options/graph'
 import graphChartHandle from '@/utils/vendor/graphChartHandle'
-import { formatSeconds } from '@/utils'
+import { formatSeconds, initWebSocket } from '@/utils'
 
 import { getJobDetails, getDAGDpencencies, queryLog } from '@/api/job'
 
@@ -174,7 +173,13 @@ export default {
       jobTimer: null,
       logWebsocket: null,
       jobWebsocket: null,
-      logs: [],
+      logsMap: {
+        'all': { list: [], length: 0 },
+        'error': { list: [], length: 0 },
+        'warning': { list: [], length: 0 },
+        'info': { list: [], length: 0 },
+        'debug': { list: [], length: 0 }
+      },
       jobId: this.$route.query.jobId,
       DAGData: null,
       gaugeInstance: null,
@@ -193,17 +198,31 @@ export default {
       this.DAGData = res.data
     })
 
-    // console.log(process.env.WEBSOCKET_BASE_API)
-    this.logWebsocket = this.initWebSocket(`/log/default/${this.jobId}/1`, res => {
-      // console.log('日志推送websocket连接成功')
-    }, res => {
-      // console.log('websocket请求回来的数据:', res)
-      this.logs.push(JSON.parse(res.data))
-      // console.log(res.data)
+    // this.logWebsocket = initWebSocket(`/log/${this.jobId}/default/default`, res => {
+    //   // console.log('日志推送websocket连接成功')
+    // }, res => {
+    //   // console.log('websocket请求回来的数据:', res)
+    //   this.allLogs.push(JSON.parse(res.data))
+    //   // console.log(res.data)
+    // })
+
+    Object.keys(this.logsMap).forEach(item => {
+      const type = item === 'all' ? 'default' : item
+      this.logWebsocket = initWebSocket(`/log/${this.jobId}/default/${type}`, res => {
+        // console.log('日志推送websocket连接成功')
+      }, res => {
+        // console.log('websocket请求回来的数据:', res)
+        const data = JSON.parse(res.data)
+        this.logsMap[item].list.push(data)
+        if (item !== 'all') {
+          this.logsMap[item].length = data.lineNum
+        }
+        // console.log(res.data)
+      })
     })
 
-    this.jobWebsocket = this.initWebSocket(`/websocket/progress/${this.jobId}`, res => {
-      // console.log('job推送websocket连接成功')
+    this.jobWebsocket = initWebSocket(`/websocket/progress/${this.jobId}`, res => {
+      console.log('job推送websocket连接成功')
     }, res => {
       // console.log(res.data)
       if (this.jobStatus !== 'faied' && this.jobStatus !== 'complete') {
@@ -229,11 +248,13 @@ export default {
       this.gaugeInstance = echartInstance
     },
 
+    // 关闭所有websocket
     closeWebsocket() {
       console.log('close Websocket')
       this.logWebsocket.close()
       this.jobWebsocket.close()
     },
+    // stop job
     killJob() {
       console.log(this.jobWebsocket)
       this.$confirm('You can\'t undo this action', 'Are you sure you want to kill this job?', {
@@ -250,69 +271,44 @@ export default {
     completeJob() {
       this.jobStatus = 'complete'
     },
-    tWaitJob() {
-      clearInterval(this.jobTimer)
-      this.jobStatus = 'waiting...'
-      this.jobOptions.series[0].pointer.show = false
-      this.jobOptions.series[0].detail.show = false
-      this.gaugeInstance.setOption(this.jobOptions, true)
-    },
-    tRunJob() {
-      this.jobStatus = 'running...'
-      this.jobOptions.series[0].pointer.show = true
-      this.jobOptions.series[0].detail.show = true
-      this.jobTimer = setInterval(() => {
-        this.jobOptions.series[0].data[0].value = (Math.random() * 100).toFixed(2) - 0
-        this.gaugeInstance.setOption(this.jobOptions, true)
-      }, 2000)
-    },
     // 获取graph树状图图echart实例
     getGraphEchartInstance(echartInstance) {
       let fnInterval = null
       const fn = () => {
+        // 2. 如果有，则取消定时器，开始画图
         if (this.DAGData) {
           window.clearInterval(fnInterval)
+          // 3. 根据自定义处理流程图中间件，获取流程节点和连接信息
           const { dataList, linksList } = graphChartHandle(this.DAGData)
+          // console.log(dataList, linksList)
           this.graphOptions.series[0].data = dataList
           this.graphOptions.series[0].links = linksList
           echartInstance.setOption(this.graphOptions, true)
-          // 点击交互
+          // 4. 设置点击交互（暂无交互）
           echartInstance.on('click', { dataType: 'node' }, nodeData => {
             console.log(nodeData)
           })
         }
       }
+      // 1. 开个定时器监听DAGData
       fnInterval = window.setInterval(fn, 100)
     },
-    initWebSocket(url, onopen, onmessage, onclose = null) {
-      // 创建一个websocket连接
-      const instance = new WebSocket(process.env.WEBSOCKET_BASE_API + url)
-      // websocket建立连接时会触发此方法
-      instance.onopen = onopen
-      // 客户端接收服务端数据时触发
-      instance.onmessage = onmessage
-      // 通信发生错误时触发
-      instance.onerror = () => { // 如果请求出错则再次连接
-        this.initWebSocket(url, instance)
-      }
-      instance.onclose = function() {
-        // console.log('关闭websocket连接')
-      }
-      return instance
-    },
+    // 跳转到job详情
     toDetails(jobId) {
       this.$router.push({
         path: '/details',
         query: { jobId, 'from': 'Dashboard' }
       })
     },
+    // 切换日志tab
     switchLogTab(tab) {
       this.currentLogTab = tab
     },
+    // 鼠标滚轮上划加载前面日志
     logOnMousewheel(e) {
       // console.log(e.target.parentNode.parentNode.scrollTop)
       // console.log(e.wheelDelta)
-      const topLog = this.logs[0]
+      const topLog = this.logsMap[this.currentLogTab].list[0]
       if (!topLog) {
         return
       }
@@ -320,22 +316,34 @@ export default {
       if (end > 0) {
         if (e.target.parentNode.parentNode.scrollTop === 0 && (e.wheelDelta > 0 || e.detail > 0)) {
           // console.log('鼠标滚轮往上滑，加载前面的日志')
-          this.logLoading = true
           const begin = end - 10 > 1 ? end - 10 : 1
-          queryLog({
-            componentId: 'default',
-            jobId: this.jobId,
-            begin,
-            end
-          }).then(res => {
-            const newLogs = []
-            res.data.map(log => {
-              newLogs.push(JSON.parse(log))
-            })
-            console.log(newLogs)
-            this.logs = [...newLogs, ...this.logs]
-            this.logLoading = false
-          })
+          if (!this.logLoading) {
+            this.logLoading = true
+
+            const fn = () => {
+              queryLog({
+                componentId: 'default',
+                jobId: this.jobId,
+                begin,
+                end
+              }).then(res => {
+                // console.log(res)
+                const newLogs = []
+                res.data.map(log => {
+                  // console.log(log)
+                  if (log) {
+                    newLogs.push(log)
+                  }
+                })
+                this.logsMap[this.currentLogTab].list = [...newLogs, ...this.logsMap[this.currentLogTab].list]
+                this.logLoading = false
+              }).catch(() => {
+                this.logLoading = false
+              })
+            }
+
+            window.setTimeout(fn, 1000)
+          }
         }
       }
     }

@@ -2,9 +2,14 @@
 
   <section>
     <!--metric(进行中状态，只有部分模型有)-->
+    <!--{{ metricOutputList.length }}-->
     <ul>
       <li v-for="(output,index) in metricOutputList" :key="index">
         <div v-if="output.type==='line'">
+          <echart-container :class="'echart'" :options="output.data"/>
+        </div>
+        <div v-if="output.type==='KS'">
+          <p>{{ output.nameSpace }}</p>
           <echart-container :class="'echart'" :options="output.data"/>
         </div>
       </li>
@@ -190,6 +195,7 @@ export default {
   mounted() {
   },
   updated() {
+    console.log(this.metricOutputList)
     if (this.modelOutputType === 'HeteroFeatureBinning' && this.modelOutput.options && !this.binningSelectValue) {
       this.binningSelectValue = this.modelOutput.options[0].value
       this.stackBarInstance.setOption(this.modelOutput.stackBarData[this.binningSelectValue], true)
