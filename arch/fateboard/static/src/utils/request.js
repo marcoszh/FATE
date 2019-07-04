@@ -1,15 +1,17 @@
 import axios from 'axios'
-import store from '@/store'
+// import store from '@/store'
 import { Message } from 'element-ui'
 // import store from '@/store'
 // import { getToken } from '@/utils/auth'
 
 // axios.defaults.headers.common['Authorization'] = getToken()
 // create an axios instance
+// console.log(window.location.origin)
 const service = axios.create({
   // baseURL: 'http://10.107.117.81:8081/scvmadm/api',
   baseURL: process.env.BASE_API, // api 的 base_url
-  withCredentials: true, // 跨域请求时发送 cookies
+  // baseURL: window.location.origin, // api 的 base_url
+  withCredentials: false, // 跨域请求时发送 cookies
   timeout: 5000 // request timeout
 })
 // request interceptor
@@ -64,15 +66,15 @@ service.interceptors.response.use(
       return Promise.reject('error')
     } else {
       return new Promise(resolve => {
-        if (store.getters.isOpenReqSimulate) {
-          setTimeout(function() {
-            resolve(res)
-            // console.log('util.request: response:', res)
-          }, 1000)
-        } else {
-          resolve(res)
-          // console.log('util.request: response:', res)
-        }
+        // if (store.getters.isOpenReqSimulate) {
+        //   setTimeout(function() {
+        //     resolve(res)
+        //     // console.log('util.request: response:', res)
+        //   }, 1000)
+        // } else {
+        resolve(res)
+        // console.log('util.request: response:', res)
+        // }
       })
     }
   },

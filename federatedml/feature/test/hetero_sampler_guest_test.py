@@ -49,7 +49,7 @@ class TestSampler(unittest.TestCase):
                           }
 
         sampler = Sampler()
-        tracker = Tracking("abc", "123")
+        tracker = Tracking("jobid", "host", 10000, "abc", "123")
         sampler.set_tracker(tracker)
         sampler.run(component_param, self.args)
 

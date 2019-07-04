@@ -231,26 +231,28 @@ class DSLParser(object):
             self.components[idx].set_input(upstream_input)
             self.components[idx].set_output(downstream_output)
 
-            if "model" in upstream_input:
-                model_list = upstream_input.get("model")
-                for model in model_list:
-                    module_name = model.split(".", -1)[0]
-                    if module_name in ["args", "pipeline"]:
-                        continue
+            input_model_keyword = ["model", "isometric_model"]
+            for model_key in input_model_keyword:
+                if model_key in upstream_input:
+                    model_list = upstream_input.get(model_key)
+                    for model in model_list:
+                        module_name = model.split(".", -1)[0]
+                        if module_name in ["args", "pipeline"]:
+                            continue
 
-                    if module_name not in self.component_name_index:
-                        raise ValueError("unknown module input {}".format(model))
-                    else:
-                        if module_name == self.pipeline_module_alias:
-                            raise ValueError("Pipeline Model can not be used")
+                        if module_name not in self.component_name_index:
+                            raise ValueError("unknown module input {}".format(model))
+                        else:
+                            if module_name == self.pipeline_module_alias:
+                                raise ValueError("Pipeline Model can not be used")
 
-                        if name not in self.pipeline_modules and module_name in self.pipeline_modules:
-                            raise ValueError("Pipeline Model can not be used")
+                            if name not in self.pipeline_modules and module_name in self.pipeline_modules:
+                                raise ValueError("Pipeline Model can not be used")
 
-                        idx_dependendy = self.component_name_index.get(module_name)
-                        # self.in_degree[idx] += 1
-                        self.component_downstream[idx_dependendy].append(name)
-                        self.component_upstream[idx].append(module_name)
+                            idx_dependendy = self.component_name_index.get(module_name)
+                            # self.in_degree[idx] += 1
+                            self.component_downstream[idx_dependendy].append(name)
+                            self.component_upstream[idx].append(module_name)
 
             if "data" in upstream_input:
                 data_dict = upstream_input.get("data")
@@ -385,13 +387,15 @@ class DSLParser(object):
         component_details = pipeline_dsl.get("components")
         for component in component_details:
             if component_details[component].get("input", None):
-                if component_details[component]["input"].get("model", None):
-                    model_list = component_details[component]["input"]["model"]
-                    for model in model_list:
-                        model_name = model.split(".", -1)
-                        if model_name[0] == "args":
-                            continue
-                        has_down[model_name[0]] = True
+                model_input_keyword = ["model", "isometric_model"]
+                for model_key in model_input_keyword:
+                    if component_details[component]["input"].get(model_key, None):
+                        model_list = component_details[component]["input"][model_key]
+                        for model in model_list:
+                            model_name = model.split(".", -1)
+                            if model_name[0] == "args":
+                                continue
+                            has_down[model_name[0]] = True
 
                 if component_details[component]["input"].get("data", None):
                     for data_set in component_details[component]["input"]["data"]:
@@ -417,7 +421,16 @@ class DSLParser(object):
             if upstream:
                 dependence_dict[name] = upstream
 
-        return {"component_list": list(self.component_name_index.keys()),
+        component_list = [None for i in range(len(self.components))]
+        topo_rak_reverse_mapping = {}
+        for i in range(len(self.topo_rak)):
+            topo_rak_reverse_mapping[self.topo_rak[i]] = i
+
+        for key, value in self.component_name_index.items():
+            topo_rak_idx = topo_rak_reverse_mapping[value]
+            component_list[topo_rak_idx] = key
+
+        return {"component_list": component_list,
                 "dependencies": dependence_dict}
 
     def _auto_deduction(self):

@@ -21,27 +21,40 @@
       <div v-if="total>0" class="pagination flex flex-center">
         <span>Total: {{ total }}</span>
         <i class="el-icon-arrow-left icon-arrow pointer" @click="changePage('minus')"/>
-        <div v-if="total<=5" class="flex flex-center">
+        <div class="flex flex-center">
+          <span
+            v-if="page-1>=4"
+            :class="{'page-count-active':page===1}"
+            class="page-count pointer"
+            @click="page=1">1</span>
+          <span v-if="page-1>=4">...</span>
           <span
             v-for="(item,index) in totalArray"
+            v-if="Math.abs(page-item)<=2"
             :key="index"
             :class="{'page-count-active':page===item}"
             class="page-count pointer"
             @click="page=item"
-          >{{ item }}
+          >
+            {{ item }}
           </span>
-        </div>
-        <div v-else class="flex flex-center">
-          <span :class="{'page-count-active':page===1}" class="page-count pointer" @click="page=1">1</span>
-          <span :class="{'page-count-active':page===2}" class="page-count pointer" @click="page=2">2</span>
-          <span :class="{'page-count-active':page===3}" class="page-count pointer" @click="page=3">3</span>
-          <span> ... </span>
-          <span :class="{'page-count-active':page===total}" class="page-count pointer" @click="page=total">{{ total }}</span>
+          <span v-if="total-page>=4">...</span>
+          <span
+            v-if="total-page>=4"
+            :class="{'page-count-active':page===total}"
+            class="page-count pointer"
+            @click="page=total">{{ total }}</span>
         </div>
         <i class="el-icon-arrow-right icon-arrow pointer" @click="changePage('plus')"/>
-        <!--<div class="skip-wrapper">-->
-        <!--<span>Skip To: </span>-->
-        <!--</div>-->
+        <div class="skip-wrapper flex flex-center">
+          <span>Skip To: </span>
+          <el-input
+            v-model="paginationPage"
+            :max="total"
+            min="1"
+            type="number"
+            @keyup.enter.native="changePage(paginationPage)"/>
+        </div>
       </div>
     </div>
     <!--<pagination/>-->
@@ -82,7 +95,8 @@ export default {
     return {
       page: 1,
       skip: '',
-      pageSize: 10
+      pageSize: 10,
+      paginationPage: 1
     }
   },
   computed: {
@@ -120,13 +134,28 @@ export default {
         if (this.page > 1) {
           --this.page
         }
+      } else {
+        op = Number.parseInt(op)
+        if (op < 1) {
+          this.page = 1
+          this.paginationPage = 1
+        } else if (op > this.total) {
+          // this.$message({
+          //   type: 'warning',
+          //   message: ''
+          // })
+          this.page = this.total
+          this.paginationPage = this.total
+        } else {
+          this.page = op
+        }
       }
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
   .pagination {
     margin-top: 24px;
     font-size: 16px;
@@ -157,6 +186,16 @@ export default {
       color: #fff;
     }
     .skip-wrapper {
+      > span {
+        margin-right: 5px;
+        white-space: nowrap;
+      }
+      .el-input__inner {
+        min-width: 50px;
+        height: 28px;
+        padding: 0;
+        padding-left: 5px;
+      }
     }
   }
 </style>

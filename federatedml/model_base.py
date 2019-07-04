@@ -145,8 +145,8 @@ class ModelBase(object):
         return self.data_output
 
     def export_model(self):
-        self.model_output = {"XXXMeta": "model_meta",
-                             "XXXParam": "model_param"}
+        # self.model_output = {"XXXMeta": "model_meta",
+        #                     "XXXParam": "model_param"}
         return self.model_output
 
     def set_flowid(self, flowid=0):

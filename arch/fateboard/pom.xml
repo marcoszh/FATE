@@ -22,7 +22,6 @@
 
 
 
-
     <!--<parent>-->
         <!--<groupId>org.springframework.boot</groupId>-->
         <!--<artifactId>spring-boot-starter-parent</artifactId>-->
@@ -50,9 +49,9 @@
         </dependency>
 
         <!--<dependency>-->
-            <!--<groupId>org.springframework.boot</groupId>-->
-            <!--<artifactId>spring-boot-starter-test</artifactId>-->
-            <!--&lt;!&ndash;<scope>test</scope>&ndash;&gt;-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-test</artifactId>-->
+        <!--&lt;!&ndash;<scope>test</scope>&ndash;&gt;-->
         <!--</dependency>-->
 
 

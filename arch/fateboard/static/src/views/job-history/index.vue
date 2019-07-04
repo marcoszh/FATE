@@ -33,11 +33,7 @@
             </template>
           </el-table-column>
         </template>
-        <!--<el-table-column label="OPTIONS" align="center" width="150">-->
-        <!--<template slot-scope="scope">-->
-        <!--<el-button type="danger" size="small" @click="deleteExp(scope.row)">DELETE</el-button>-->
-        <!--</template>-->
-        <!--</el-table-column>-->
+
       </el-table>
       <!--分页器-->
       <pagination
@@ -50,29 +46,6 @@
       />
     </div>
 
-    <!--新增界面 start-->
-    <!--<el-dialog-->
-    <!--:visible.sync="dialogVisible"-->
-    <!--:close-on-click-modal="false"-->
-    <!--title="Add dataset"-->
-    <!--width="35%">-->
-    <!--<el-form ref="form" :model="form" :rules="formRules" label-width="200px" label-position="left">-->
-    <!--<el-form-item label="Choose experiment" prop="experiment" class="el-form-item-required">-->
-    <!--<el-input :maxlength="20" v-model="form.experiment"/>-->
-    <!--</el-form-item>-->
-    <!--<el-form-item label="Type" prop="type" class="el-form-item-required">-->
-    <!--<el-input :maxlength="20" v-model="form.type"/>-->
-    <!--</el-form-item>-->
-    <!--<el-form-item label="Description" prop="desc" class="el-form-item-required">-->
-    <!--<el-input :maxlength="50" v-model="form.desc"/>-->
-    <!--</el-form-item>-->
-    <!--</el-form>-->
-    <!--<div slot="footer" class="dialog-footer">-->
-    <!--<el-button :loading="formLoading" @click="handleAdd">Create</el-button>-->
-    <!--<el-button @click.native="dialogVisible = false">cancel</el-button>-->
-    <!--</div>-->
-    <!--</el-dialog>-->
-    <!--新增界面 end-->
   </div>
 </template>
 
@@ -192,17 +165,41 @@ export default {
         const pno = this.page
         let data = []
         res.data.forEach(item => {
+          let jobId = ''
+          let _dataset = ''
+          let partner = ''
+          let pnr_dataset = ''
+          let start_time = ''
+          let end_time = ''
+          let duration = ''
+          let status = ''
+          let progress = ''
+
           const { job, dataset } = item
+
+          if (job) {
+            jobId = job.fJobId || ''
+            start_time = job.fStartTime ? parseTime(new Date(job.fStartTime)) : ''
+            end_time = job.fEndTime ? parseTime(job.fEndTime) : ''
+            duration = job.fStartTime ? parseTime(job.fStartTime, '{h}:{i}:{s}') : ''
+            status = job.fStatus || ''
+            progress = job.fStatus || job.fStatus === 'running' ? job.fProgress : null
+          }
+          if (dataset) {
+            _dataset = dataset.dataset || ''
+            partner = dataset.partner || ''
+            pnr_dataset = dataset.pnr_dataset || ''
+          }
           data.push({
-            jobId: job.fJobId,
-            dataset: dataset.dataset,
-            partner: dataset.partner,
-            pnr_dataset: dataset.pnr_dataset,
-            start_time: parseTime(new Date(job.fStartTime)),
-            end_time: parseTime(job.fEndTime),
-            duration: parseTime(job.fStartTime, '{h}:{i}:{s}'),
-            status: job.fStatus,
-            progress: job.fStatus === 'running' ? job.fProgress : null
+            jobId,
+            dataset: _dataset,
+            partner,
+            pnr_dataset,
+            start_time,
+            end_time,
+            duration,
+            status,
+            progress
           })
         })
         if (Array.isArray(data)) {

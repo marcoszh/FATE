@@ -130,9 +130,11 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
             LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId);
 
             SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
+          // SshInfo  sshInfo =  sshService.getSSHInfo("10.107.116.39");
+
 
             Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""));
-
+//
             Preconditions.checkArgument(sshInfo != null);
 
 
@@ -141,7 +143,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              *   success/failed/partial/setFailed
              */
 
-            logger.info("job stauts {}",jobTaskInfo.jobStatus);
+            //logger.info("job stauts {}",jobTaskInfo.jobStatus);
              if(jobFinishStatus.contains(jobTaskInfo.jobStatus)){
             //if (true) {
                 String jobDir = logFileService.getJobDir(jobId);
