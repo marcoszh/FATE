@@ -64,21 +64,21 @@ public class JobDetailController {
         String job_id = jsonObject.getString("job_id");
         String component_name = jsonObject.getString("component_name");
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
 
         }
 
         String result = httpClientPool.post(fateUrl + "/v1/tracking/component/metrics", param);
 
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger("retcode");
 
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
         if (retcode == 0) {
 
@@ -87,7 +87,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.SUCCESS, data);
 
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
 
 
@@ -114,7 +114,7 @@ public class JobDetailController {
 
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)
                 || metric_namespace == null || "".equals(metric_namespace) || metric_name == null || "".equals(metric_name)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
 
         }
 
@@ -122,21 +122,21 @@ public class JobDetailController {
 
         logger.info("result: " + result);
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger("retcode");
 
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
         if (retcode == 0) {
 
             return new ResponseResult<>(ErrorCode.SUCCESS, resultObject);
 
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
     }
 
@@ -155,7 +155,7 @@ public class JobDetailController {
         String job_id = jsonObject.getString("job_id");
         String component_name = jsonObject.getString("component_name");
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
         }
 
 
@@ -164,7 +164,7 @@ public class JobDetailController {
 
         logger.info("result: " + result);
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
 
@@ -172,7 +172,7 @@ public class JobDetailController {
         Integer retcode = resultObject.getInteger("retcode");
 
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
         if (retcode == 0) {
 
@@ -181,7 +181,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.SUCCESS, data);
 
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
 
     }
@@ -202,7 +202,7 @@ public class JobDetailController {
 
         String job_id = jsonObject.getString("job_id");
         if (job_id == null || "".equals(job_id)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
 
         }
 
@@ -213,14 +213,14 @@ public class JobDetailController {
 
 
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
 
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger("retcode");
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
 
 
@@ -246,7 +246,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.SUCCESS, data);
 
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
 
     }
@@ -266,7 +266,7 @@ public class JobDetailController {
         String job_id = jsonObject.getString("job_id");
         String component_name = jsonObject.getString("component_name");
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
         }
 
         String result = httpClientPool.post(fateUrl + "/v1/tracking/component/output/model", param);
@@ -274,13 +274,13 @@ public class JobDetailController {
 
         logger.info("result: " + result);
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger("retcode");
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
         if (retcode == 0) {
 
@@ -288,7 +288,7 @@ public class JobDetailController {
             return new ResponseResult<>(ErrorCode.SUCCESS, resultObject);
 
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
 
     }
@@ -310,7 +310,7 @@ public class JobDetailController {
 
 
         if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR, null);
         }
 
 
@@ -318,19 +318,19 @@ public class JobDetailController {
 
         logger.info(result);
         if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, null);
         }
 
 
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger("retcode");
         if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+            return new ResponseResult<>(ErrorCode.RETURNED_PARAM_ERROR, null);
         }
         if (retcode == 0) {
             return new ResponseResult<>(ErrorCode.SUCCESS, resultObject);
         } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
+            return new ResponseResult<>(ErrorCode.RUNNING_ERROR, null);
         }
 
 

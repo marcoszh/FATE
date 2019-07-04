@@ -110,7 +110,8 @@ public class LogFileService {
 //        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
 //        return fate_deploy_prefix + filePath;
 
-          return  "/data/projects/fateboard/bin/nohup.out";
+//          return  "/data/projects/fateboard/bin/nohup.out";
+          return  "/home/app/httpclient.0.log";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {
