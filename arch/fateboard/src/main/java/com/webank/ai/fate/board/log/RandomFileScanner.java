@@ -80,7 +80,7 @@ public class RandomFileScanner implements Runnable, LogScanner {
                     if (lines == null) {
                         throw new Exception("lines not exist");
                     }
-                    logger.info("roll file ============ ",lines.size());
+                   // logger.info("roll file ============ {} ",lines.size());
                     if (lines.size() == 0) {
                         Thread.sleep(500);
                     } else {
