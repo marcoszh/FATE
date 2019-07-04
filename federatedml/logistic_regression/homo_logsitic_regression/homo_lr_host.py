@@ -108,8 +108,10 @@ class HomoLRHost(HomoLRBase):
                                              extra_metas={
                                                  "unit_name": "homo_lr"
                                              })
-                    self.callback_meta(metric_name='loss', metric_namespace='train', metric_meta=metric_meta)
-                    self.callback_metric(metric_name='loss',
+                    metric_name = self.get_metric_name('loss')
+
+                    self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
+                    self.callback_metric(metric_name=metric_name,
                                          metric_namespace='train',
                                          metric_data=[Metric(iter_num, total_loss)])
 
