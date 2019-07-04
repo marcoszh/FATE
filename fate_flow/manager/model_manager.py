@@ -13,11 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import os
 from arch.api.proto.model_meta_pb2 import ModelMeta
 from arch.api.proto.model_param_pb2 import ModelParam
 from arch.api.proto.data_transform_server_pb2 import DataTransformServer
-from arch.api.utils.core import json_loads, json_dumps, bytes_to_string, string_to_bytes
+from arch.api.utils.core import json_loads
 from arch.api.utils.format_transform import camel_to_pascal
 from fate_flow.storage.fate_storage import FateStorage
 from arch.api import RuntimeInstance
@@ -26,6 +26,8 @@ from fate_flow.manager import version_control
 import datetime
 import inspect
 import importlib
+from fate_flow.settings import logger
+from arch.api.utils import file_utils
 
 
 def save_model(model_key, model_buffers, model_version, model_id, version_log=None):
@@ -67,11 +69,13 @@ def get_model_meta(model_version, model_id):
 
 
 def get_proto_buffer_class(class_name):
-    for name, obj in inspect.getmembers(importlib.import_module('arch.api.proto')):
-        if inspect.ismodule(obj):
-            for n, o in inspect.getmembers(obj):
-                if inspect.isclass(o) and n == class_name:
-                    return o
+    package_path = os.path.join(file_utils.get_project_base_directory(), 'arch', 'api', 'proto')
+    package_python_path = 'arch.api.proto'
+    for f in os.listdir(package_path):
+        proto_module = importlib.import_module(package_python_path + '.' + f.rstrip('.py'))
+        for name, obj in inspect.getmembers(proto_module):
+            if inspect.isclass(obj) and name == class_name:
+                return obj
     else:
         return None
 

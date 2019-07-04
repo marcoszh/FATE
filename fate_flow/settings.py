@@ -17,7 +17,7 @@
 from arch.api.utils import file_utils
 from arch.api.utils.log_utils import LoggerFactory
 LoggerFactory.setDirectory()
-logger = LoggerFactory.getLogger("task_manager")
+logger = LoggerFactory.getLogger("fate_flow_server")
 
 '''
 Constants

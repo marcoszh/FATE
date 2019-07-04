@@ -177,7 +177,7 @@ def run_subprocess(job_dir, job_role, progs):
     if not os.path.exists(std_dir):
         os.makedirs(os.path.join(job_dir, job_role))
     std_log = open(os.path.join(std_dir, 'std.log'), 'w')
-    task_pid_path = os.path.join(job_dir, 'pids')
+    job_pid_path = os.path.join(job_dir, 'pids')
 
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
@@ -190,8 +190,8 @@ def run_subprocess(job_dir, job_role, progs):
                          stderr=std_log,
                          startupinfo=startupinfo
                          )
-    os.makedirs(task_pid_path, exist_ok=True)
-    with open(os.path.join(task_pid_path, job_role + ".pid"), 'w') as f:
+    os.makedirs(job_pid_path, exist_ok=True)
+    with open(os.path.join(job_pid_path, job_role + ".pid"), 'w') as f:
         f.truncate()
         f.write(str(p.pid) + "\n")
         f.flush()

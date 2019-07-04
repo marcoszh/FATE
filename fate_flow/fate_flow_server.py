@@ -10,13 +10,14 @@ from werkzeug.serving import run_simple
 from fate_flow.utils.grpc_utils import UnaryServicer
 from fate_flow.apps.data_access_app import manager as data_access_app_manager
 from fate_flow.apps.data_access_app import manager as model_app_manager
-from fate_flow.driver.job_controller import manager as job_controller_manager
+from fate_flow.apps.job_apps import manager as job_app_manager
 from fate_flow.apps.data_table_app import manager as data_table_app_manager
 from fate_flow.apps.tracking_app import manager as tracking_app_manager
 from fate_flow.apps.pipeline_app import manager as pipeline_app_manager
 from fate_flow.driver.scheduler import Scheduler
 from fate_flow.manager.queue_manager import JOB_QUEUE
 from fate_flow.storage.fate_storage import FateStorage
+from fate_flow.driver.job_controller import JobController
 
 '''
 Initialize the manager
@@ -46,7 +47,7 @@ if __name__ == '__main__':
         {
             '/{}/data'.format(API_VERSION): data_access_app_manager,
             '/{}/model'.format(API_VERSION): model_app_manager,
-            '/{}/job'.format(API_VERSION): job_controller_manager,
+            '/{}/job'.format(API_VERSION): job_app_manager,
             '/{}/datatable'.format(API_VERSION): data_table_app_manager,
             '/{}/tracking'.format(API_VERSION): tracking_app_manager,
             '/{}/pipeline'.format(API_VERSION): pipeline_app_manager,
@@ -54,6 +55,7 @@ if __name__ == '__main__':
     )
     scheduler = Scheduler(queue=JOB_QUEUE, concurrent_num=MAX_CONCURRENT_JOB_RUN)
     scheduler.start()
+    JobController.init()
     run_simple(hostname=IP, port=HTTP_PORT, application=app, threaded=True)
 
     try:

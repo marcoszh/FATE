@@ -19,11 +19,13 @@ from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.storage.fate_storage import FateStorage
 from fate_flow.entity.metric import Metric, MetricMeta
 from arch.api.utils.core import current_timestamp
+from fate_flow.settings import logger
 
 
 class Tracking(object):
     METRIC_DATA_PARTITION = 48
     METRIC_LIST_PARTITION = 48
+    JOB_VIEW_PARTITION = 8
 
     def __init__(self, job_id: str, role: str, party_id: int, component_name: str = None, task_id: str = None,
                  model_id: str = None):
@@ -79,10 +81,21 @@ class Tracking(object):
             metrics[metric_namespace].append(v)
         return metrics
 
+    def log_job_view(self, view_data: dict):
+        FateStorage.save_data(view_data.items(), namespace=self.table_namespace, name=Tracking.job_view_table_name(),
+                              partition=Tracking.JOB_VIEW_PARTITION, create_if_missing=True, error_if_exist=True)
+
+    def get_job_view(self):
+        kv = FateStorage.read_data(namespace=self.table_namespace, name=Tracking.job_view_table_name())
+        view_data = {}
+        for k, v in kv:
+            view_data[k] = v
+        return view_data
+
     def save_output_data_table(self, data_table, data_name: str = 'component'):
         if data_table:
             persistent_table = data_table.save_as(namespace=data_table._namespace, name=data_table._name)
-            FateStorage.save_data_table_meta({'header': data_table.schema.get('header', [])}, namespace=persistent_table._namespace, name=persistent_table._name)
+            FateStorage.save_data_table_meta({'schema': data_table.schema, 'header': data_table.schema.get('header', [])}, namespace=persistent_table._namespace, name=persistent_table._name)
             data_table_info = {
                 data_name: {'name': persistent_table._name, 'namespace': persistent_table._namespace}}
         else:
@@ -98,16 +111,22 @@ class Tracking(object):
                                                    namespace=self.table_namespace)
         data_table_info = output_data_info_table.get(data_name)
         if data_table_info:
-            return FateStorage.table(name=data_table_info.get('name', ''),
-                                     namespace=data_table_info.get('namespace', ''))
+            data_table = FateStorage.table(name=data_table_info.get('name', ''),
+                                           namespace=data_table_info.get('namespace', ''))
+            data_table_meta = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
+            if data_table_meta.get('schema', None):
+                data_table.schema = data_table_meta['schema']
+            return data_table
         else:
             return None
 
-    def save_output_model(self, model_buffers: dict):
-        model_manager.save_model(model_key=self.component_name,
-                                 model_buffers=model_buffers,
-                                 model_version=self.model_version,
-                                 model_id=self.model_id)
+    def save_output_model(self, model_buffers: dict, module_name: str):
+        if model_buffers:
+            model_manager.save_model(model_key=self.component_name,
+                                     model_buffers=model_buffers,
+                                     model_version=self.model_version,
+                                     model_id=self.model_id)
+            self.save_output_model_meta({'module_name': module_name})
 
     def get_output_model(self):
         return model_manager.read_model(model_key=self.component_name,
@@ -200,6 +219,10 @@ class Tracking(object):
     @staticmethod
     def output_table_name(output_type: str):
         return '_'.join(['output', output_type])
+
+    @staticmethod
+    def job_view_table_name():
+        return '_'.join(['job', 'view'])
 
 
 if __name__ == '__main__':

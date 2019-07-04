@@ -19,6 +19,7 @@ from flask import Flask, request
 from fate_flow.manager.tracking import Tracking
 from fate_flow.db.db_models import Job
 from fate_flow.utils import job_utils, data_utils
+from arch.api.utils.core import json_loads
 from google.protobuf import json_format
 from fate_flow.storage.fate_storage import FateStorage
 
@@ -31,10 +32,22 @@ def internal_server_error(e):
     return get_json_result(retcode=100, retmsg=str(e))
 
 
+@manager.route('/job/data_view', methods=['post'])
+def job_view():
+    request_data = request.json
+    check_request_parameters(request_data)
+    job_tracker = Tracking(job_id=request_data['job_id'], role=request_data['role'], party_id=request_data['party_id'])
+    job_view_data = job_tracker.get_job_view()
+    if job_view_data:
+        return get_json_result(retcode=0, retmsg='success', data=job_view_data)
+    else:
+        return get_json_result(retcode=101, retmsg='error')
+
+
 @manager.route('/component/metrics', methods=['post'])
 def component_metrics():
     request_data = request.json
-    fill_request_data(request_data)
+    check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'])
     metrics = tracker.get_metric_list()
@@ -47,7 +60,7 @@ def component_metrics():
 @manager.route('/component/metric_data', methods=['post'])
 def component_metric_data():
     request_data = request.json
-    fill_request_data(request_data)
+    check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'])
     metric_data = tracker.read_metric_data(metric_namespace=request_data['metric_namespace'],
@@ -63,7 +76,7 @@ def component_metric_data():
 @manager.route('/component/parameters', methods=['post'])
 def component_parameters():
     request_data = request.json
-    fill_request_data(request_data)
+    check_request_parameters(request_data)
     job_id = request_data.get('job_id', '')
     jobs = Job.select(Job.f_dsl, Job.f_runtime_conf).where(Job.f_job_id == job_id, Job.f_is_initiator == 1)
     if jobs:
@@ -86,7 +99,7 @@ def component_parameters():
 @manager.route('/component/output/model', methods=['post'])
 def component_output_model():
     request_data = request.json
-    fill_request_data(request_data)
+    check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'], model_id='jarvis_test')
     output_model = tracker.get_output_model()
@@ -103,7 +116,7 @@ def component_output_model():
 @manager.route('/component/output/data', methods=['post'])
 def component_output_data():
     request_data = request.json
-    fill_request_data(request_data)
+    check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'])
     output_data_table = tracker.get_output_data_table('train')
@@ -123,6 +136,14 @@ def component_output_data():
         return get_json_result(retcode=101, retmsg='no data')
 
 
-def fill_request_data(request_data):
-    request_data['role'] = request_data.get('role', 'guest')
-    request_data['party_id'] = int(request_data.get('party_id', 9999))
+def check_request_parameters(request_data):
+    if 'role' not in request_data and 'party_id' not in request_data:
+        jobs = Job.select(Job.f_runtime_conf).where(Job.f_job_id == request_data.get('job_id', ''), Job.f_is_initiator == 1)
+        if jobs:
+            job = jobs[0]
+            job_runtime_conf = json_loads(job.f_runtime_conf)
+            job_initiator = job_runtime_conf.get('initiator', {})
+            role = job_initiator.get('role', '')
+            party_id = job_initiator.get('party_id', 0)
+            request_data['role'] = role
+            request_data['party_id'] = party_id
