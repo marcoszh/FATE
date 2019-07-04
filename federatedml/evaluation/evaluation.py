@@ -164,11 +164,15 @@ class Evaluation(ModelBase):
 
             eval_result = defaultdict(list)
             for eval_metric in self.model_param.metrics:
+                if None in pred_results:
+                    continue
                 res = getattr(self, eval_metric)(labels, pred_results)
                 if res:
                     eval_result[eval_metric].append(mode)
                     eval_result[eval_metric].append(res)
 
+            if 'auc' in eval_result:
+                LOGGER.info("Model auc: {}".format(eval_result['auc']))
             self.eval_results[data_type] = eval_result
 
     def __save_single_value(self, result, metric_name, metric_namespace, eval_name):
