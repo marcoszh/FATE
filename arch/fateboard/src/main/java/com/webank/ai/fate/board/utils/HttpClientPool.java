@@ -117,7 +117,7 @@ public class HttpClientPool implements InitializingBean {
             String result = EntityUtils.toString(entity, "utf-8");
             EntityUtils.consume(entity);
 
-            logger.info("httpclient sent request {} result: {}",request,result);
+            logger.info("httpclient sent request {} params {} result: {}",request,request.getParams(),result);
             return result;
         } catch (IOException e) {
             e.printStackTrace();

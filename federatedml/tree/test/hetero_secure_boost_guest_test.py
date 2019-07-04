@@ -72,7 +72,7 @@ class TestHeteroSecureBoostGuest(unittest.TestCase):
                           }
        
         tree_guest = HeteroSecureBoostingTreeGuest()
-        tracker = Tracking("abc", "123")
+        tracker = Tracking("jobid", "host", 10000, "abc", "123")
         tree_guest.set_tracker(tracker)
         tree_guest.run(component_param, self.args)
         tree_guest.save_model()
