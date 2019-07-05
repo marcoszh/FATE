@@ -68,15 +68,6 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
     Map<Session, LogScanner> sessionMap = Maps.newHashMap();
 
 
-    public void test() {
-
-        SshInfo sshInfo = sshService.getSSHInfo("localhost");
-
-        SftpUtils.batchDownLoadFile(sshInfo, "/Users/kaideng/test/", "/Users/kaideng/test2/", null, null, false);
-
-
-    }
-
 
     /**
      * call method when connection build

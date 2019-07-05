@@ -272,18 +272,18 @@ public class JobDetailController {
         }
 
         JSONObject resultObject = JSON.parseObject(result);
-        Integer retcode = resultObject.getInteger("retcode");
-        if (retcode == null) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
-        }
-        if (retcode == 0) {
+//        Integer retcode = resultObject.getInteger("retcode");
+//        if (retcode == null) {
+//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
+//        }
+//        if (retcode == 0) {
 
 
             return new ResponseResult<>(ErrorCode.SUCCESS, resultObject);
 
-        } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
-        }
+//        } else {
+//            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, "errorcode: " + retcode);
+//        }
 
     }
 

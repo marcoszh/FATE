@@ -119,21 +119,14 @@ public class LogController {
             RandomAccessFile file = null;
             List<Map> result = Lists.newArrayList();
 
-//            if (begin > end || begin <= 0) {
-//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
-//            }
+            if (begin > end || begin <= 0) {
+
+                throw  new Exception();
+            }
 
             String[] cmd = { "sh", "-c", "tail -n +" + begin + " " + filePath +" | head -n " + (end -begin) };
 
-
-
             Process process =Runtime.getRuntime().exec(cmd);
-
-
-
-
-
-            logger.error("process {}",process.toString());
 
             InputStream inputStream= process.getInputStream();
 
@@ -149,11 +142,10 @@ public class LogController {
                     }
                     index++;
 
-
-
                 } while (content != null);
-
-                logger.error("===========execute 1 cmd {} return count {}",cmd,index);
+                if(logger.isDebugEnabled()) {
+                    logger.error("execute  cmd {} return count {}",cmd,index);
+                }
             }finally {
                 if(inputStream!=null) {
                     inputStream.close();
@@ -162,52 +154,11 @@ public class LogController {
                     process.destroyForcibly();
                 }
 
-
             }
-//            try {
-//                int lineCount = 0;
-//                int byteSize = 0;
-//
-//                file = new RandomAccessFile(filePath, "r");
-//
-//                String line = null;
-//                do {
-//                    line = file.readLine();
-//                    if (line != null) {
-//                        lineCount++;
-//                        byteSize += line.getBytes().length;
-//                        if (lineCount >= begin) {
-//                            Map logMap = LogFileService.toLogMap(line, lineCount);
-//                            result.add(logMap);
-//                            logger.info("wrapped log information：" + logMap);
-//                        }
-//                    }
-//                }
-//                while (line != null && lineCount < end);
-
-
-
-
-
-//            } catch (Throwable e) {
-//                e.printStackTrace();
-//                logger.error("Exception for building file stream!", e);
-//            } finally {
-//                if (file != null) {
-//                    try {
-//                        file.close();
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                        logger.error("Exception for closing file stream!", e);
-//                    }
-//                }
-//            }
 
             return  result;
 
         }else{
-
-
 
             String ip = logFileService.getJobTaskInfo(jobId, componentId).ip;
 
@@ -230,88 +181,9 @@ public class LogController {
 
         logger.info("parameters for " + "componentId:" + componentId + ", jobId:" + jobId + ", begin;" + begin + ", end:" + end);
 
-       // List<Map> result = queryLog(componentId,jobId,type,begin,end);
-        StringBuilder  sb = new  StringBuilder();
-        String  key =sb.append(componentId).append("|").append(jobId).append("|").append(type).append("|").
-                append(begin).append("|").append(end).toString();
-//        List<Map> result = cache.get(key);
-
         List<Map> result = this.queryLog(componentId, jobId, type, begin, end);
 
-//        String filePath = logFileService.buildFilePath(jobId, componentId, type);
-//
-//        Preconditions.checkArgument(filePath != null && !filePath.equals(""));
-//
-//        logger.info("path for logfile：" + filePath);
-//
-//
-//        RandomAccessFile file = null;
-//        List<Map> result = Lists.newArrayList();
-//
-//        if (begin > end || begin <= 0) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
-//        }
-//        try {
-//            int lineCount = 0;
-//            int byteSize = 0;
-//
-//            file = new RandomAccessFile(filePath, "r");
-//
-//            String line = null;
-//            do {
-//                line = file.readLine();
-//                if (line != null) {
-//                    lineCount++;
-//                    byteSize += line.getBytes().length;
-//                    if (lineCount >= begin) {
-//                        Map logMap = LogFileService.toLogMap(line, lineCount);
-//                        result.add(logMap);
-//                        logger.info("wrapped log information：" + logMap);
-//                    }
-//                }
-//            }
-//            while (line != null && lineCount < end);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            logger.error("Exception for building file stream!", e);
-//        } finally {
-//            if (file != null) {
-//                try {
-//                    file.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                    logger.error("Exception for closing file stream!", e);
-//                }
-//            }
-//        }
-
-
-      //  logger.info("===================log result : {}",result);
         return new ResponseResult<>(ErrorCode.SUCCESS, result);
     }
 
-//    private String getFilePath(String j) {
-//
-//        LogFileUtil.buildFilePath()
-//
-//        return "/data/projects/fate/serving-server/logs/console.log";
-////            return "/Users/kaideng/work/webank/code/fate-board/logs/borad/2019-05-30/info.0.log";
-////        return "E:\\workspace\\console.log";
-//    }
-
-
-//    public  static  void main(String[] args){
-//
-//        String  cmd ="tail -n +" + 100 + " " + "/tmp/test" +" | head -n " + 10;
-//
-//
-//
-//
-//        try {
-//            Runtime.getRuntime().e(cmd);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
 }

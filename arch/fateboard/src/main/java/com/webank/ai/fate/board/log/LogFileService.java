@@ -21,6 +21,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -110,7 +112,12 @@ public class LogFileService {
 //        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
 //        return fate_deploy_prefix + filePath;
 //          return "/data/project/fdn/nginx/logs/access.log";
-          return  "/data/projects/fateboard/bin/nohup.out";
+
+        SimpleDateFormat  simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+         Date  date  = new Date();
+
+         String  temp =  simpleDateFormat.format(date);
+          return  "/data/projects/fateboard/bin/logs/"+temp+"/httpclient.0.log";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {

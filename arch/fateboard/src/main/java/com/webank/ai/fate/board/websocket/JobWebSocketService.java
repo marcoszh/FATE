@@ -118,13 +118,24 @@ public class JobWebSocketService {
                     if (job != null) {
                         HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
                         Integer process = job.getfProgress();
-                        Long time = job.getfElapsed();
+                        long  now=  System.currentTimeMillis();
+                        long duration =0;
+                        Long startTime = job.getfStartTime();
+                        Long endTime =job.getfEndTime();
+                        if(endTime!=null)
+                        {
+                            duration= endTime-startTime;
+
+                        }else{
+                            duration = now - startTime;
+                        }
+
                         String status = job.getfStatus();
 
                         stringObjectHashMap.put("process", process);
-                        stringObjectHashMap.put("time", time);
+                        stringObjectHashMap.put("duration", duration);
                         stringObjectHashMap.put("status", status);
-                        logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
+
 
                         v.forEach(session -> {
 

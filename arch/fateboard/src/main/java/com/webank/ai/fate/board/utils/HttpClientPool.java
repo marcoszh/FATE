@@ -99,7 +99,9 @@ public class HttpClientPool implements InitializingBean {
         StringEntity stringEntity = new StringEntity(requestData, "UTF-8");
         stringEntity.setContentEncoding("UTF-8");
         httpPost.setEntity(stringEntity);
-        return getResponse(httpPost);
+        String  result = getResponse(httpPost);
+        logger.info("httpclient sent url {} request {} result: {}",url,requestData,result);
+        return  result;
     }
 
     public String get(String url) {
@@ -117,8 +119,7 @@ public class HttpClientPool implements InitializingBean {
             String result = EntityUtils.toString(entity, "utf-8");
             EntityUtils.consume(entity);
 
-            logger.info("httpclient sent request {} params {} result: {}",request,request.getParams(),result);
-            return result;
+                       return result;
         } catch (IOException e) {
             e.printStackTrace();
             return null;

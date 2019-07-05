@@ -2,6 +2,7 @@ package com.webank.ai.fate.board.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.global.ErrorCode;
 import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.pojo.Job;
@@ -114,14 +115,12 @@ public class JobManagerController {
         }
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, param);
 
-
-
-
         if (result == null || "".equals(result)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
         }
 
         JSONObject resultObject = JSON.parseObject(result);
+
         Integer retcode = resultObject.getInteger("retcode");
         if (retcode == 0) {
             Object data = resultObject.get("data");
@@ -141,33 +140,28 @@ public class JobManagerController {
     @RequestMapping(value = "/query/{jobId}", method = RequestMethod.GET)
     public ResponseResult queryJobById(@PathVariable("jobId") String jobId) {
 
-        logger.info("jobId：" + jobId);
-
         HashMap<String, Object> resultMap = new HashMap<>();
 
         JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
-        logger.info("jobWithBLOBs：" + jobWithBLOBs);
 
         if (jobWithBLOBs == null) {
             return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
         }
 
-        String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, jobId);
+        Map  params = Maps.newHashMap();
+        params.put("job_id",jobId);
+        String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
 
-        logger.info("result for dataset：" + result);
-
-        if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
+//        if (result == null || "".equals(result)) {
+//            return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
+//        }
+        if(result!=null&&!result.equals("")){
+            JSONObject data = JSON.parseObject(result).getJSONObject("data");
+            resultMap.put("dataset", data);
         }
-
-        JSONObject data = JSON.parseObject(result).getJSONObject("data");
-
-        logger.info("data：" + data);
-
         resultMap.put("job", jobWithBLOBs);
-        resultMap.put("dataset", data);
 
-        logger.info("stringObjectHashMap：" + resultMap);
+        logger.info("queryJobById {} result：{}" ,jobId, resultMap);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
     }
@@ -181,20 +175,15 @@ public class JobManagerController {
     @RequestMapping(value = "/query/all", method = RequestMethod.GET)
     public ResponseResult queryJob() {
 
-        logger.info("Start querying all jobs!");
         ArrayList<Map> jobList = new ArrayList<>();
 
         List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJob();
-        logger.info("jobWithBLOBsList：" + jobWithBLOBsList);
 
         if (jobWithBLOBsList.size() == 0) {
             return new ResponseResult<String>(ErrorCode.SUCCESS, "Job not exist!");
         }
 
-
         Map<JobWithBLOBs,Future>  jobDataMap = new HashMap<JobWithBLOBs,Future>(16);
-
-
 
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
@@ -204,33 +193,14 @@ public class JobManagerController {
                 @Override
                 public JSONObject  call() throws Exception {
                     String jobId = jobWithBLOBs.getfJobId();
-                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, jobId);
+                    Map  params =Maps.newHashMap();
+                    params.put("job_id",jobId);
+                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
                     JSONObject data = JSON.parseObject(result).getJSONObject("data");
                     return data;
                 }
             });
             jobDataMap.put(jobWithBLOBs,feature);
-
-//            String jobId = jobWithBLOBs.getfJobId();
-//            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-//
-//            logger.info("result for dataset：" + result);
-//
-//            if (result == null || "".equals(result)) {
-//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
-//            }
-
-
-
-//            logger.info("data：" + data);
-//            if (data == null) {
-//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Data not exist!");
-//            }
-
-
-
-
-
         }
 
         jobDataMap.forEach((k,v)->{
@@ -245,11 +215,7 @@ public class JobManagerController {
                 e.printStackTrace();
             }
 
-
-
         });
-
-
 
         logger.info("jobList：" + jobList);
 

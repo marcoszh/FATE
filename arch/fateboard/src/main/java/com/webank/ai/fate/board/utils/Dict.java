@@ -19,6 +19,6 @@ public class Dict {
     static public String URL_DAG_DEPENDENCY="/v1/pipeline/dag/dependency";
     static public String URL_OUTPUT_MODEL="/v1/tracking/component/output/model";
     static public String URL_OUTPUT_DATA= "/v1/tracking/component/output/data";
-    static public String URL_JOB_DATAVIEW="/tracking/job/data_view";
+    static public String URL_JOB_DATAVIEW="/v1/tracking/job/data_view";
 
 }
