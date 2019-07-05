@@ -22,6 +22,7 @@ from fate_flow.utils import job_utils, data_utils
 from arch.api.utils.core import json_loads
 from google.protobuf import json_format
 from fate_flow.storage.fate_storage import FateStorage
+from federatedml.feature.instance import Instance
 
 manager = Flask(__name__)
 
@@ -127,7 +128,10 @@ def component_output_data():
         if num == 0:
             break
         l = [k]
-        l.extend(data_utils.dataset_to_list(v.features))
+        if isinstance(v, Instance):
+            l.extend(data_utils.dataset_to_list(v.features))
+        else:
+            l.extend(data_utils.dataset_to_list(v))
         output_data.append(l)
         num -= 1
     if output_data:

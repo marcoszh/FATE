@@ -126,6 +126,7 @@ class JobController(object):
                                           task_id,
                                           role,
                                           dest_party_id),
+                                      src_party_id=job_initiator['party_id'],
                                       dest_party_id=dest_party_id,
                                       json_body={'job_initiator': job_initiator,
                                                  'job_args': party_job_args,
@@ -256,6 +257,7 @@ class JobController(object):
             federated_api(job_id=job_id,
                           method='POST',
                           url=request_url_without_host.replace('run', 'status'),
+                          src_party_id=task.f_party_id,
                           dest_party_id=job_initiator.get('party_id', None),
                           json_body=task_info)
         logger.info('finish task {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))

@@ -36,7 +36,7 @@ class Tracking(object):
         self.task_id = task_id
         self.table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
-        self.model_id = model_id
+        self.model_id = '{}_{}_{}'.format(model_id, role, party_id)
         self.model_version = self.job_id
 
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
@@ -95,7 +95,9 @@ class Tracking(object):
     def save_output_data_table(self, data_table, data_name: str = 'component'):
         if data_table:
             persistent_table = data_table.save_as(namespace=data_table._namespace, name=data_table._name)
-            FateStorage.save_data_table_meta({'schema': data_table.schema, 'header': data_table.schema.get('header', [])}, namespace=persistent_table._namespace, name=persistent_table._name)
+            FateStorage.save_data_table_meta(
+                {'schema': data_table.schema, 'header': data_table.schema.get('header', [])},
+                namespace=persistent_table._namespace, name=persistent_table._name)
             data_table_info = {
                 data_name: {'name': persistent_table._name, 'namespace': persistent_table._namespace}}
         else:
@@ -130,8 +132,8 @@ class Tracking(object):
 
     def get_output_model(self):
         model_buffers = model_manager.read_model(model_key=self.component_name,
-                                        model_version=self.model_version,
-                                        model_id=self.model_id)
+                                                 model_version=self.model_version,
+                                                 model_id=self.model_id)
         return model_buffers
 
     def save_output_model_meta(self, kv: dict):
