@@ -50,7 +50,6 @@
         }
       }
     }
-    /*仪表盘job进度图*/
     .job {
       .echarts {
         width: 100%;
@@ -87,9 +86,10 @@
           font-size: 50px;
         }
         .job-info {
+          padding: 0 10px;
           > li {
             width: 28%;
-            padding: 0 5%;
+            //padding: 0 5%;
             margin-bottom: 20px;
             .name {
               font-size: 12px;
@@ -115,7 +115,7 @@
     }
   }
   .graph {
-    overflow: auto;
+    overflow-y: auto;
     .wrapper{
       height: $echart-height;
       .echarts {

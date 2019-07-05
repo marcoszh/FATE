@@ -66,10 +66,10 @@ export function formatSeconds(seconds) {
 // 建立websocket连接，初始化各个钩子函数
 export function initWebSocket(url, onopen, onmessage, onclose = null) {
   // 创建一个websocket连接
-  const instance = new WebSocket(process.env.WEBSOCKET_BASE_API + url)
-  // const baseUrl = window.location.origin
-  // const baseWsUrl = baseUrl.replace(/http|https/g, 'ws')
-  // const instance = new WebSocket(baseWsUrl + url)
+  // const instance = new WebSocket(process.env.WEBSOCKET_BASE_API + url)
+  const baseUrl = window.location.origin
+  const baseWsUrl = baseUrl.replace(/http|https/g, 'ws')
+  const instance = new WebSocket(baseWsUrl + url)
   // websocket建立连接时会触发此方法
   instance.onopen = onopen
   // 客户端接收服务端数据时触发

@@ -51,7 +51,8 @@ export default {
       getAllJobsStatus().then(res => {
         this.loading = false
         res.data.forEach(job => {
-          const { fJobId: jobId, fStatus: status, fProgress: progress } = job
+          const { fJobId: jobId, fStatus: status } = job
+          const progress = job.fProgress || 0
           const statusDisplay = status === 'running' ? `${progress}%` : status
           this.jobList.push({
             jobId,
