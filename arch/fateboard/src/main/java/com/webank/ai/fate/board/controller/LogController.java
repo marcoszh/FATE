@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+
 import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.util.List;
@@ -122,13 +123,17 @@ public class LogController {
 //                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
 //            }
 
+            String[] cmd = { "sh", "-c", "tail -n +" + begin + " " + filePath +" | head -n " + (end -begin) };
 
-            String  cmd ="tail -n +" + begin + " " + filePath + " | head -n " + (end -begin);
 
-
-            logger.error("===========execute cmd {}",cmd);
 
             Process process =Runtime.getRuntime().exec(cmd);
+
+
+
+
+
+            logger.error("process {}",process.toString());
 
             InputStream inputStream= process.getInputStream();
 
@@ -144,7 +149,11 @@ public class LogController {
                     }
                     index++;
 
+
+
                 } while (content != null);
+
+                logger.error("===========execute 1 cmd {} return count {}",cmd,index);
             }finally {
                 if(inputStream!=null) {
                     inputStream.close();
@@ -288,5 +297,21 @@ public class LogController {
 //        return "/data/projects/fate/serving-server/logs/console.log";
 ////            return "/Users/kaideng/work/webank/code/fate-board/logs/borad/2019-05-30/info.0.log";
 ////        return "E:\\workspace\\console.log";
+//    }
+
+
+//    public  static  void main(String[] args){
+//
+//        String  cmd ="tail -n +" + 100 + " " + "/tmp/test" +" | head -n " + 10;
+//
+//
+//
+//
+//        try {
+//            Runtime.getRuntime().e(cmd);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
 //    }
 }

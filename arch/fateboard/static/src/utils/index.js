@@ -63,6 +63,27 @@ export function formatSeconds(seconds) {
   return `${h}:${m}:${s}`
 }
 
+// 建立websocket连接，初始化各个钩子函数
+export function initWebSocket(url, onopen, onmessage, onclose = null) {
+  // 创建一个websocket连接
+  const instance = new WebSocket(process.env.WEBSOCKET_BASE_API + url)
+  // const baseUrl = window.location.origin
+  // const baseWsUrl = baseUrl.replace(/http|https/g, 'ws')
+  // const instance = new WebSocket(baseWsUrl + url)
+  // websocket建立连接时会触发此方法
+  instance.onopen = onopen
+  // 客户端接收服务端数据时触发
+  instance.onmessage = onmessage
+  // 通信发生错误时触发
+  instance.onerror = () => { // 如果请求出错则再次连接
+    this.initWebSocket(url, instance)
+  }
+  instance.onclose = function() {
+    // console.log('关闭websocket连接')
+  }
+  return instance
+}
+
 export function formatTime(time, option) {
   if (('' + time).length === 10) {
     time = parseInt(time) * 1000

@@ -83,8 +83,9 @@ class HomoLRArbiter(HomoLRBase):
                                      extra_metas={
                                          "unit_name": "homo_lr"
                                      })
-            self.callback_meta(metric_name='loss', metric_namespace='train', metric_meta=metric_meta)
-            self.callback_metric(metric_name='loss',
+            metric_name = self.get_metric_name('loss')
+            self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
+            self.callback_metric(metric_name=metric_name,
                                  metric_namespace='train',
                                  metric_data=[Metric(iter_num, total_loss)])
 
@@ -304,7 +305,7 @@ class HomoLRArbiter(HomoLRBase):
         """
         Rewrite run function so that it can start fit and predict without input data.
         """
-        need_cv = self._init_runtime_parameters(component_parameters)
+        self._init_runtime_parameters(component_parameters)
         data_sets = args["data"]
 
         need_eval = False
@@ -315,7 +316,7 @@ class HomoLRArbiter(HomoLRBase):
             else:
                 need_eval = False
 
-        if need_cv:
+        if self.need_cv:
             self.cross_validation(None)
 
         elif "model" in args:

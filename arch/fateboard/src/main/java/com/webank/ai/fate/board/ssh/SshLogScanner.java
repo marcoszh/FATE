@@ -56,7 +56,7 @@ public class SshLogScanner implements Runnable, LogScanner {
 
 
     public void pullLog() throws IOException {
-
+        logger.info("begin pull remote log file ");
         BufferedReader reader = null;
         Channel wcChannel = null;
         Channel tailChannel = null;
@@ -78,6 +78,7 @@ public class SshLogScanner implements Runnable, LogScanner {
                     String content = reader.readLine();
                     while ((content = reader.readLine()) != null && !needStop) {
                         readLine++;
+                        logger.info("remote file readline {}",readLine);
                         String jsonContent = LogFileService.toJsonString(content, 0, readLine);
                         // System.err.println("=======================" + jsonContent);
                         if (webSocketSession.isOpen()) {
