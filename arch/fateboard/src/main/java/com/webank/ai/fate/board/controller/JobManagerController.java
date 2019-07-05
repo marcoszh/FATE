@@ -8,6 +8,7 @@ import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.pojo.JobWithBLOBs;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.HttpClientPool;
+import com.webank.ai.fate.board.utils.PageBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,7 @@ public class JobManagerController {
 
         }
 
-        String result =  httpClientPool.post(fateUrl+"/v1/pipeline/job/stop",param);
+        String result = httpClientPool.post(fateUrl + "/v1/pipeline/job/stop", param);
 
 
         logger.info("http result for stopping job：" + result);
@@ -183,24 +184,106 @@ public class JobManagerController {
      *
      * @return
      */
+    @RequestMapping(value = "/query/totalRecord", method = RequestMethod.GET)
+    public ResponseResult queryTotalRecord() {
+        logger.info("Start querying totalRecord!");
+
+        long count = jobManagerService.count();
+        return new ResponseResult<>(ErrorCode.SUCCESS, count);
+    }
+
+    @RequestMapping(value = "/query/all/{totalRecord}/{pageNum}/{pageSize}", method = RequestMethod.GET)
+
+    public ResponseResult queryJob(@PathVariable(value = "totalRecord") long totalRecord, @PathVariable(value = "pageNum") long pageNum, @PathVariable(value = "pageSize") long pageSize) {
+
+        logger.info("Start querying jobs:totalRecord={}, pageNum={},pageSize={}.",totalRecord, pageNum, pageSize);
+
+        PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
+        System.out.println(listPageBean);
+
+        long startIndex = listPageBean.getStartIndex();
+        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJobByPage(startIndex, pageSize);
+
+        ArrayList<Map> jobList = new ArrayList<>();
+
+        Map<JobWithBLOBs, Future> jobDataMap = new HashMap<JobWithBLOBs, Future>(16);
+
+        for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
+
+            Future feature = executorService.submit(new Callable<JSONObject>() {
+
+                @Override
+                public JSONObject call() throws Exception {
+                    String jobId = jobWithBLOBs.getfJobId();
+                    String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+                    logger.info("http result for data_view:" + result);
+
+                    JSONObject data = JSON.parseObject(result).getJSONObject("data");
+                    return data;
+                }
+            });
+            jobDataMap.put(jobWithBLOBs, feature);
+
+//            String jobId = jobWithBLOBs.getfJobId();
+//            String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
+//
+//            logger.info("result for dataset：" + result);
+//
+//            if (result == null || "".equals(result)) {
+//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+//            }
+
+
+//            logger.info("data：" + data);
+//            if (data == null) {
+//                return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Data not exist!");
+//            }
+
+        }
+
+        jobDataMap.forEach((k, v) -> {
+            try {
+                HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+                stringObjectHashMap.put("job", k);
+                jobList.add(stringObjectHashMap);
+                stringObjectHashMap.put("dataset", v.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+
+        });
+
+
+        logger.info("jobList：" + jobList);
+        listPageBean.setList(jobList);
+        System.out.println("111111111111");
+        logger.info("11111111111111"+listPageBean.toString());
+
+        return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
+    }
+
+
+    /*  *//**
+     * query all jobs
+     *
+     * @return
+     *//*
     @RequestMapping(value = "/query/all", method = RequestMethod.GET)
     public ResponseResult queryJob() {
 
         logger.info("Start querying all jobs!");
-        ArrayList<Map> jobList = new ArrayList<>();
 
         List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJob();
         logger.info("jobWithBLOBsList：" + jobWithBLOBsList);
 
         if (jobWithBLOBsList.size() == 0) {
-            return new ResponseResult<String>(ErrorCode.PARAM_ERROR, null);
+            return new ResponseResult<List<JobWithBLOBs>>(ErrorCode.SUCCESS, jobWithBLOBsList);
         }
-
+        ArrayList<Map> jobList = new ArrayList<>();
 
         Map<JobWithBLOBs,Future>  jobDataMap = new HashMap<JobWithBLOBs,Future>(16);
-
-
-
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
 
@@ -239,10 +322,10 @@ public class JobManagerController {
 
         jobDataMap.forEach((k,v)->{
             try {
-            HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-            stringObjectHashMap.put("job", k);
-            jobList.add(stringObjectHashMap);
-            stringObjectHashMap.put("dataset", v.get());
+                HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+                stringObjectHashMap.put("job", k);
+                jobList.add(stringObjectHashMap);
+                stringObjectHashMap.put("dataset", v.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -256,5 +339,5 @@ public class JobManagerController {
         logger.info("jobList：" + jobList);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, jobList);
-    }
+    }*/
 }
