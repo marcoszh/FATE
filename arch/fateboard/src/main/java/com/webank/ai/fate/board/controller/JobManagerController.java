@@ -265,12 +265,10 @@ public class JobManagerController {
     }
 
 
-    /*  *//**
-     * query all jobs
+    /**
      *
      * @return
      */
-    /*
     @RequestMapping(value = "/query/all", method = RequestMethod.GET)
     public ResponseResult queryJob() {
 
@@ -337,5 +335,5 @@ public class JobManagerController {
         logger.info("jobList：" + jobList);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, jobList);
-    }*/
+    }
 }
