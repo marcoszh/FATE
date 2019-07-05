@@ -3,11 +3,11 @@
     <!--头部-->
     <h3 class="app-title">Job Overview</h3>
     <!--表格-->
-    <div class="table-wrapper">
+    <div v-loading="listLoading" class="table-wrapper">
       <el-table
-        v-loading="listLoading"
         :data="list"
         :row-class-name="tableRowClassName"
+        :header-row-class-name="'t-header'"
         element-loading-text="Loading"
         highlight-current-row
         height="70vh"
@@ -20,7 +20,6 @@
             :label="item.label"
             :sortable="item.sortable"
             show-overflow-tooltip
-            align="center"
             border
           >
             <template slot-scope="scope">
@@ -37,13 +36,13 @@
       </el-table>
       <!--分页器-->
       <pagination
-        v-show="total>0"
         :total="total"
         :page.sync="page"
         :layout="'prev, pager, next'"
         :limit.sync="pageSize"
-        @pagination="getList"
+        @pagination="handlePageChange"
       />
+
     </div>
 
   </div>
@@ -53,7 +52,7 @@
 import Pagination from '@/components/Pagination'
 import { parseTime } from '@/utils'
 
-import { getAllJobs } from '@/api/job'
+import { getAllJobs, getJobsTotal } from '@/api/job'
 
 export default {
   name: 'Job',
@@ -155,16 +154,34 @@ export default {
     }
   },
   mounted() {
-    this.getList()
+    this.getTotal()
+    // this.getList()
   },
   methods: {
-    // 查询表格数据
+    getTotal() {
+      getJobsTotal().then(res => {
+        this.total = res.data
+        if (!this.list) {
+          this.getList()
+        }
+      })
+    },
+    handlePageChange({ page }) {
+      this.page = page
+      this.getList()
+    },
+
     getList() {
-      getAllJobs().then(res => {
+      this.listLoading = true
+      const para = {
+        total: this.total,
+        pno: this.page,
+        psize: this.pageSize
+      }
+      getAllJobs(para).then(res => {
         this.listLoading = false
-        const pno = this.page
-        let data = []
-        res.data.forEach(item => {
+        const data = []
+        res.data.list.forEach(item => {
           let jobId = ''
           let _dataset = ''
           let partner = ''
@@ -202,18 +219,18 @@ export default {
             progress
           })
         })
-        if (Array.isArray(data)) {
-          // 分页
-          this.total = data.length
-          data = data.filter((row, index) => {
-            return index < this.pageSize * pno && index >= this.pageSize * (pno - 1)
-          })
-          // console.log(data)
-          this.list = data
-        }
+        this.list = data
+        // if (Array.isArray(data)) {
+        //   this.total = data.length
+        //   data = data.filter((row, index) => {
+        //     return index < this.pageSize * pno && index >= this.pageSize * (pno - 1)
+        //   })
+        //   // console.log(data)
+        //   this.list = data
+        // }
       })
     },
-    // 删除job
+
     deleteExp(row) {
       this.$message({ message: '删除成功' })
     },
@@ -226,9 +243,9 @@ export default {
     tableRowClassName({ row, rowIndex }) {
       if (rowIndex % 2 === 0) {
         // console.log(rowIndex)
-        return 'history-stripe'
+        return 't-row history-stripe'
       }
-      return ''
+      return 't-row'
     }
   }
 }
@@ -241,9 +258,24 @@ export default {
       /*height: 70vh;*/
       box-shadow: 0 3px 10px 1px #ddd;
     }
+    .t-header {
+      height: 64px;
+      color: #494ece;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: left;
+    }
+    .t-row {
+      height: 56px;
+      font-size: 16px;
+      color: #7f7f8e;
+    }
+    .el-table {
+      padding: 0 30px;
+    }
+    .el-table .history-stripe {
+      background: #f8f8fa;
+    }
   }
 
-  .el-table .history-stripe {
-    background: #f8f8fa;
-  }
 </style>

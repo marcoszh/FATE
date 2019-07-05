@@ -33,7 +33,7 @@ export default {
       name: 'value',
       type: 'line',
       // 线转折变平滑
-      smooth: true,
+      // smooth: true,
       // 去掉点
       symbol: 'none',
       // 面积

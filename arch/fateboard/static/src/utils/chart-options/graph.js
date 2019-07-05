@@ -23,16 +23,16 @@ export default {
         padding: 5,
         lineHeight: 20
       },
-      symbol: 'roundRect',
-      symbolSize: [60, 20],
+      // rect,circle,roundRect,triangle,diamond,pin,arrow,none
+      symbol: 'rect',
+      symbolSize: [60, 30],
       symbolOffset: [0, 0],
       edgeSymbol: ['circle', 'arrow'],
-      edgeSymbolSize: [6, 10],
+      edgeSymbolSize: [3, 10],
       // edgeLabel: {
-      //   normal: {
-      //     textStyle: {
-      //       fontSize: 20
-      //     }
+      //   show: true,
+      //   textStyle: {
+      //     fontSize: 20
       //   }
       // },
       data: [],
