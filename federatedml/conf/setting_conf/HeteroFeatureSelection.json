@@ -1,6 +1,6 @@
 {
     "module_path":  "federatedml/feature/hetero_feature_selection",
-    "default_runtime_conf": "feature_selection_param",
+    "default_runtime_conf": "feature_selection_param.json",
     "param_class" : "FeatureSelectionParam",
     "role":
     {

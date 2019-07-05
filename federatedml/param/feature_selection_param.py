@@ -57,7 +57,7 @@ class IVValueSelectionParam(BaseParam):
 
     def check(self):
         descr = "IV selection param's"
-        self.check_positive_number(self.value_threshold, descr)
+        self.check_decimal_float(self.value_threshold, descr)
         return True
 
 
