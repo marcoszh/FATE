@@ -21,10 +21,21 @@ public class JobManagerService {
     @Autowired
     JobMapper jobMapper;
 
+    public long count() {
+
+        JobExample jobExample = new JobExample();
+        return jobMapper.countByExample(jobExample);
+    }
+
+    public List<JobWithBLOBs> queryJobByPage(long startIndex, long pageSize) {
+        List<JobWithBLOBs> jobWithBLOBs = jobMapper.selectByPage(startIndex, pageSize);
+        return jobWithBLOBs;
+    }
+
 
     public List<Job> queryJobStatus() {
 
-       // logger.info("Start query for JobStatus!");
+        // logger.info("Start query for JobStatus!");
 
         JobExample jobExample = new JobExample();
 
@@ -75,7 +86,7 @@ public class JobManagerService {
 
         criteria.andFJobIdEqualTo(jobId);
 
-       // logger.info("jobExample：" + jobExample);
+        // logger.info("jobExample：" + jobExample);
 
 
         List<JobWithBLOBs> jobWithBLOBsList = jobMapper.selectByExampleWithBLOBs(jobExample);

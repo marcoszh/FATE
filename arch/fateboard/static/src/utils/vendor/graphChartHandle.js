@@ -104,6 +104,7 @@ export default function(data) {
     }
     dataList.push({
       name: list[i].componentName,
+      symbolSize: [list[i].componentName.length * 6 + 10, 30],
       level: variableLevel,
       index: variableIndex,
       label: {

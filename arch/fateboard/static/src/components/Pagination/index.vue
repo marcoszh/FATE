@@ -1,5 +1,5 @@
 <template>
-  <div :class="{'hidden':hidden}" class="pagination-container flex flex-end">
+  <div v-if="total>0" :class="{'hidden':hidden}" class="pagination-container flex flex-end">
     <el-pagination
       :background="background"
       :current-page.sync="currentPage"
@@ -91,11 +91,12 @@ export default {
 </script>
 
 <style scoped>
-.pagination-container {
-  background: #fff;
-  padding: 32px 16px;
-}
-.pagination-container.hidden {
-  display: none;
-}
+  .pagination-container {
+    background: #fff;
+    padding: 32px 16px;
+  }
+
+  .pagination-container.hidden {
+    display: none;
+  }
 </style>

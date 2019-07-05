@@ -1,11 +1,10 @@
 <template>
   <div class="app-container details-container bg-dark">
-    <!--标题-->
+
     <h3 class="app-title">
       <span class="text-primary pointer" @click="toPrevPage">{{ jobFrom }}</span> > {{ jobId }}
     </h3>
-    <!--各个模块-->
-    <!--Job summary模块-->
+
     <section class="section-wrapper">
       <div class="flex space-between" style="padding-top: 12px;">
         <h3 class="section-title">JOB SUMMARY</h3>
@@ -73,7 +72,6 @@
       </div>
     </section>
 
-    <!--DAG图和参数及输出展示-->
     <section class="section-wrapper">
       <h3 class="section-title">OUTPUTS FROM JOB</h3>
       <div class="output-wrapper shadow flex">
@@ -89,22 +87,26 @@
             />
           </div>
         </div>
-        <!--参数-->
+
         <div v-loading="paraLoading" class="para-wrapper">
-          <h4 class="output-title">statistics</h4>
+          <h4 class="para-title">Parameter({{ paraData ?Object.keys(paraData).length:0 }})</h4>
           <div v-loading="msgLoading" class="msg bg-dark">
-            <div v-show="paraList.length>0" class="flex">
-              <h4 class="msg-title">Parameters({{ paraList.length }})</h4>
-              <ul class="para-list">
-                <li v-for="(item,index) in paraList" :key="index">{{ item }}</li>
-              </ul>
+            <div v-show="paraData" class="flex">
+              <pre> {{ JSON.stringify(paraData, null, 2) }} </pre>
             </div>
           </div>
+          <el-button
+            :disabled="!componentName"
+            type="primary"
+            round
+            @click="visualization"
+          >
+            visualization
+          </el-button>
         </div>
       </div>
     </section>
 
-    <!--Model summary模块-->
     <section v-if="modelSummaryData" class="section-wrapper">
       <h3 class="section-title">MODEL SUMMARY</h3>
       <div class="section-view flex shadow">
@@ -121,7 +123,6 @@
       </div>
     </section>
 
-    <!--弹框展示model output,data output模块-->
     <el-dialog
       :visible.sync="outputVisible"
       :title="outputTitle"
@@ -134,7 +135,7 @@
       <section v-loading="modelOutputLoading" class="section-wrapper" style="padding: 0">
         <!--<h3 class="section-title">Visualization</h3>-->
         <div class="section-view" style="padding: 0">
-          <!--输出结果tab-->
+
           <div class="tab-bar flex">
             <div :class="{'tab-btn-active':currentTab === 'model'}" class="tab-btn" @click="switchLogTab('model')">
               <span class="text">model_output</span>
@@ -203,11 +204,12 @@ export default {
       status: 'complete',
       summaryLoading: true,
       msgLoading: false,
-      paraList: [],
+      paraData: null,
       guest: {},
       jobInfo: {},
       componentName: '',
       logLoading: false,
+      dagInstance: null,
       graphOptions,
       treeOptions,
       lineOptions,
@@ -281,8 +283,9 @@ export default {
         query: { jobId: this.jobId }
       })
     },
-    // 获取graph树状图图echart实例
+
     getGraphEchartInstance(echartInstance) {
+      this.dagInstance = echartInstance
       let fnInterval = null
       const fn = () => {
         if (this.DAGData) {
@@ -294,29 +297,40 @@ export default {
           echartInstance.setOption(this.graphOptions, true)
           // 点击交互
           echartInstance.on('click', { dataType: 'node' }, nodeData => {
-            this.clickComponent(nodeData.name)
+            // console.log(nodeData)
+            this.clickComponent(nodeData.name, nodeData.dataIndex)
           })
         }
       }
       fnInterval = window.setInterval(fn, 100)
     },
-    // 点击DAG图组件
-    clickComponent(component_name) {
-      this.initOutput()
+
+    clickComponent(component_name, dataIndex) {
       this.componentName = component_name
-      // this.logWebsocket = this.initWebSocket(`/log/${component_name}/${this.jobId}/1`, res => {
-      //   // console.log('日志推送websocket连接成功')
-      // }, res => {
-      //   // console.log('websocket请求回来的数据:', JSON.parse(res.data))
-      //   this.logList.push(JSON.parse(res.data))
-      // })
+      this.clickComponentChangeStyle(this.graphOptions.series[0].data, dataIndex)
+      this.dagInstance.setOption(this.graphOptions)
+      // this.initOutput()
       this.paraLoading = true
       this.getParams(component_name)
-      this.getMetrics(component_name)
-      this.getModelOutput(component_name)
+      // this.getMetrics(component_name)
+      // this.getModelOutput(component_name)
       // this.getDataOutput(component_name)
+      // this.outputVisible = true
+    },
+    clickComponentChangeStyle(obj, dataIndex) {
+      obj.forEach(item => {
+        // item.itemStyle = {}
+        item.label = {}
+      })
+      // obj[dataIndex].itemStyle = { color: '#494ece' }
+      obj[dataIndex].label = { color: '#fff', backgroundColor: '#494ece' }
+    },
+    visualization() {
+      this.initOutput()
+      this.getMetrics(this.componentName)
+      this.getModelOutput(this.componentName)
+      this.getDataOutput(this.componentName)
       this.outputVisible = true
-      // this.outputTitle = `${component_name}`
     },
     initOutput() {
       this.metricOutputList = []
@@ -326,7 +340,6 @@ export default {
       this.dataOutputBody = []
       this.currentTab = 'model'
       this.logList = []
-      this.componentName = ''
       this.outputTitle = ''
       this.closeWebsocket()
     },
@@ -395,7 +408,7 @@ export default {
         component_name: component_name
       }).then(res => {
         this.paraLoading = false
-        this.paraList = Object.keys(res.data)
+        this.paraData = res.data
       })
     },
     getMetrics(component_name) {
@@ -600,7 +613,7 @@ export default {
               tData
             }
           }
-        } else if (this.modelOutputType === 'HeteroLR') {
+        } else if (this.modelOutputType === 'HeteroLR' || this.modelOutputType === 'HomoLR') {
           const { weight, intercept, converged } = responseData
           const tData = []
           Object.keys(weight).forEach(key => {
