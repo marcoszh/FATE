@@ -14,8 +14,9 @@
 #  limitations under the License.
 #
 from fate_flow.utils.api_utils import get_json_result
+from arch.api.utils.core import base64_decode
 from flask import Flask, request
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 from fate_flow.driver.job_controller import JobController
 
 manager = Flask(__name__)
@@ -23,7 +24,7 @@ manager = Flask(__name__)
 
 @manager.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(e)
+    stat_logger.exception(e)
     return get_json_result(retcode=100, retmsg=str(e))
 
 
@@ -32,6 +33,30 @@ def submit_job():
     job_id, job_dsl_path, job_runtime_conf_path = JobController.submit_job(request.json)
     return get_json_result(job_id=job_id, data={'job_dsl_path': job_dsl_path,
                                                 'job_runtime_conf_path': job_runtime_conf_path})
+
+
+@manager.route('/<job_id>/<role>/<party_id>/create', methods=['POST'])
+def create_job(job_id, role, party_id):
+    JobController.job_status(job_id=job_id, role=role, party_id=party_id, job_info=request.json, create=True)
+    return get_json_result(retcode=0, retmsg='success')
+
+
+@manager.route('/<job_id>/<role>/<party_id>/status', methods=['POST'])
+def job_status(job_id, role, party_id):
+    JobController.job_status(job_id=job_id, role=role, party_id=party_id, job_info=request.json, create=False)
+    return get_json_result(retcode=0, retmsg='success')
+
+
+@manager.route('/<job_id>/<role>/<party_id>/<model_id>/save/pipeline', methods=['POST'])
+def save_pipeline(job_id, role, party_id, model_id):
+    JobController.save_pipeline(job_id=job_id, role=role, party_id=party_id, model_id=base64_decode(model_id))
+    return get_json_result(retcode=0, retmsg='success')
+
+
+@manager.route('/<job_id>/<role>/<party_id>/clean', methods=['POST'])
+def clean(job_id, role, party_id):
+    JobController.clean_job(job_id=job_id, role=role, party_id=party_id)
+    return get_json_result(retcode=0, retmsg='success')
 
 
 @manager.route('/<job_id>/<component_name>/<task_id>/<role>/<party_id>/run', methods=['POST'])

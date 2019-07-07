@@ -13,11 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-#import ujson
 import json
 import time
 import uuid
+import base64
 
 
 def get_fate_uuid():
@@ -53,3 +52,11 @@ def json_loads(src):
 
 def current_timestamp():
     return int(time.time()*1000)
+
+
+def base64_encode(src):
+    return bytes_to_string(base64.b64encode(src.encode("utf-8")))
+
+
+def base64_decode(src):
+    return bytes_to_string(base64.b64decode(src))

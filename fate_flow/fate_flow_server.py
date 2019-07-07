@@ -4,7 +4,7 @@ from fate_flow.utils.api_utils import get_json_result
 from flask import Flask
 import grpc, time, sys
 from concurrent import futures
-from fate_flow.settings import IP, GRPC_PORT, HTTP_PORT, _ONE_DAY_IN_SECONDS, MAX_CONCURRENT_JOB_RUN, logger, API_VERSION
+from fate_flow.settings import IP, GRPC_PORT, HTTP_PORT, _ONE_DAY_IN_SECONDS, MAX_CONCURRENT_JOB_RUN, stat_logger, API_VERSION
 from werkzeug.wsgi import DispatcherMiddleware
 from werkzeug.serving import run_simple
 from fate_flow.utils.grpc_utils import UnaryServicer
@@ -28,7 +28,7 @@ manager = Flask(__name__)
 
 @manager.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(e)
+    stat_logger.exception(e)
     return get_json_result(retcode=100, retmsg=str(e))
 
 

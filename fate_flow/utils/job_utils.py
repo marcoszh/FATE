@@ -18,7 +18,7 @@ from arch.api.utils.core import json_loads
 import subprocess
 import os
 import uuid
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.manager.queue_manager import JOB_QUEUE
 import errno
@@ -51,9 +51,12 @@ def generate_job_id():
     return '_'.join([datetime.datetime.now().strftime("%Y%m%d%H%M%S%f"), str(id_counter.incr())])
 
 
-def get_job_directory(job_id=None):
-    _paths = ['jobs', job_id] if job_id else ['jobs']
-    return os.path.join(file_utils.get_project_base_directory(), *_paths)
+def get_job_directory(job_id):
+    return os.path.join(file_utils.get_project_base_directory(), 'jobs', job_id)
+
+
+def get_job_log_directory(job_id):
+    return os.path.join(file_utils.get_project_base_directory(), 'logs', job_id)
 
 
 def new_runtime_conf(job_dir, method, module, role, party_id):
@@ -67,7 +70,7 @@ def new_runtime_conf(job_dir, method, module, role, party_id):
 
 def save_job_conf(job_id, job_dsl, job_runtime_conf):
     job_dsl_path, job_runtime_conf_path = get_job_conf_path(job_id=job_id)
-    os.makedirs(os.path.dirname(job_dsl_path))
+    os.makedirs(os.path.dirname(job_dsl_path), exist_ok=True)
     for data, conf_path in [(job_dsl, job_dsl_path), (job_runtime_conf, job_runtime_conf_path)]:
         with open(conf_path, 'w+') as f:
             f.truncate()
@@ -149,11 +152,11 @@ def running_job_amount():
 
 def clean_job(job_id):
     try:
-        logger.info('ready clean job {}'.format(job_id))
+        stat_logger.info('ready clean job {}'.format(job_id))
         eggroll.cleanup('*', namespace=job_id, persistent=False)
-        logger.info('send clean job {}'.format(job_id))
+        stat_logger.info('send clean job {}'.format(job_id))
     except Exception as e:
-        logger.exception(e)
+        stat_logger.exception(e)
 
 
 @DB.connection_context()
@@ -192,15 +195,15 @@ def check_job_process(pid):
         return True
 
 
-def run_subprocess(job_dir, job_role, process_cmd):
-    logger.info('Starting process command: {}'.format(process_cmd))
-    logger.info(' '.join(process_cmd))
+def run_subprocess(config_dir, process_cmd, log_dir=None):
+    stat_logger.info('Starting process command: {}'.format(process_cmd))
+    stat_logger.info(' '.join(process_cmd))
 
-    std_dir = os.path.join(job_dir, job_role)
-    if not os.path.exists(std_dir):
-        os.makedirs(os.path.join(job_dir, job_role))
-    std_log = open(os.path.join(std_dir, 'std.log'), 'w')
-    job_pid_path = os.path.join(job_dir, 'pids')
+    os.makedirs(config_dir, exist_ok=True)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    std_log = open(os.path.join(log_dir if log_dir else config_dir, 'std.log'), 'w')
+    pid_path = os.path.join(config_dir, 'pid')
 
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
@@ -213,8 +216,7 @@ def run_subprocess(job_dir, job_role, process_cmd):
                          stderr=std_log,
                          startupinfo=startupinfo
                          )
-    os.makedirs(job_pid_path, exist_ok=True)
-    with open(os.path.join(job_pid_path, job_role + ".pid"), 'w') as f:
+    with open(pid_path, 'w') as f:
         f.truncate()
         f.write(str(p.pid) + "\n")
         f.flush()

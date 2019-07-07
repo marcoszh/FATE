@@ -15,9 +15,10 @@
 #
 # -*- coding: utf-8 -*-
 from arch.api.utils import file_utils
-from arch.api.utils.log_utils import LoggerFactory
-LoggerFactory.setDirectory()
-logger = LoggerFactory.getLogger("fate_flow_server")
+from arch.api.utils import log_utils
+stat_logger = log_utils.getLogger("fate_flow_stat")
+schedule_logger = log_utils.getLogger("fate_flow_schedule")
+access_logger = log_utils.getLogger("fate_flow_access")
 
 '''
 Constants

@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from fate_flow.settings import logger, LOCAL_URL, HEADERS
+from fate_flow.settings import stat_logger, LOCAL_URL, HEADERS
 from flask import jsonify
 import json
 from fate_flow.utils.grpc_utils import wrap_grpc_packet, get_proxy_data_channel
@@ -32,14 +32,14 @@ def federated_api(job_id, method, url, src_party_id, dest_party_id, json_body={}
     try:
         channel, stub = get_proxy_data_channel()
         _return = stub.unaryCall(_packet)
-        logger.info("grpc unary response: {}".format(_return))
+        stat_logger.info("grpc unary response: {}".format(_return))
         channel.close()
         return 0, _return.body.value
     except grpc.RpcError as e:
-        logger.exception(e)
+        stat_logger.exception(e)
         return 101, 'rpc error'
     except Exception as e:
-        logger.exception(e)
+        stat_logger.exception(e)
         return 102, str(e)
 
 

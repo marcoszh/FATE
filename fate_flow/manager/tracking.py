@@ -19,7 +19,7 @@ from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.storage.fate_storage import FateStorage
 from fate_flow.entity.metric import Metric, MetricMeta
 from arch.api.utils.core import current_timestamp
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 
 
 class Tracking(object):
@@ -209,6 +209,9 @@ class Tracking(object):
         else:
             task.save()
         return task
+
+    def clean_job(self):
+        FateStorage.clean_job(namespace=self.job_id, regex_string='*')
 
     @staticmethod
     def metric_table_name(metric_namespace: str, metric_name: str):

@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 from fate_flow.utils.api_utils import get_json_result
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 from arch.api.utils.dtable_utils import get_table_info
 from flask import Flask, request
 from arch.api import storage
@@ -24,7 +24,7 @@ manager = Flask(__name__)
 
 @manager.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(e)
+    stat_logger.exception(e)
     return get_json_result(retcode=100, retmsg=str(e))
 
 

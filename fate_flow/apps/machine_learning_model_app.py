@@ -19,13 +19,13 @@ from fate_flow.utils import publish_model
 from fate_flow.utils.job_utils import generate_job_id
 from fate_flow.utils.api_utils import get_json_result, federated_api
 from fate_flow.manager.version_control import version_history
-from fate_flow.settings import logger, SERVINGS
+from fate_flow.settings import stat_logger, SERVINGS
 manager = Flask(__name__)
 
 
 @manager.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(e)
+    stat_logger.exception(e)
     return get_json_result(retcode=100, retmsg=str(e))
 
 

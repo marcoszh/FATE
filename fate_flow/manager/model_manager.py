@@ -26,7 +26,7 @@ from fate_flow.manager import version_control
 import datetime
 import inspect
 import importlib
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 from arch.api.utils import file_utils
 
 
@@ -74,20 +74,20 @@ def get_model_meta(model_version, model_id):
 
 
 def get_proto_buffer_class(class_name):
-    logger.info(class_name)
+    stat_logger.info(class_name)
     package_path = os.path.join(file_utils.get_project_base_directory(), 'arch', 'api', 'proto')
     package_python_path = 'arch.api.proto'
     for f in os.listdir(package_path):
         if f.startswith('.'):
             continue
         try:
-            logger.info(f)
+            stat_logger.info(f)
             proto_module = importlib.import_module(package_python_path + '.' + f.rstrip('.py'))
             for name, obj in inspect.getmembers(proto_module):
                 if inspect.isclass(obj) and name == class_name:
                     return obj
         except Exception as e:
-            logger.warning(e)
+            stat_logger.warning(e)
     else:
         return None
 
