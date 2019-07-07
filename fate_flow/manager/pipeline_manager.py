@@ -22,7 +22,7 @@ def pipeline_dag_dependency(job_id):
     jobs = Job.select(Job.f_dsl, Job.f_runtime_conf).where(Job.f_job_id == job_id, Job.f_is_initiator == 1)
     if jobs:
         job_dsl_path, job_runtime_conf_path = job_utils.get_job_conf_path(job_id=job_id)
-        job_dsl_parser = job_utils.get_job_dsl_parser(job_id=job_id, job_dsl_path=job_dsl_path,
+        job_dsl_parser = job_utils.get_job_dsl_parser(job_dsl_path=job_dsl_path,
                                                       job_runtime_conf_path=job_runtime_conf_path)
         return job_dsl_parser.get_dependency()
     else:

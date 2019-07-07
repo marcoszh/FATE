@@ -25,7 +25,6 @@ from fate_flow.db.db_models import Task, Job
 from fate_flow.manager.tracking import Tracking
 from fate_flow.manager.queue_manager import JOB_QUEUE
 from fate_flow.storage.fate_storage import FateStorage
-from fate_flow.entity.metric import Metric
 from fate_flow.settings import API_VERSION
 from concurrent.futures import ThreadPoolExecutor
 import os
@@ -48,6 +47,11 @@ class JobController(object):
         logger.info('submit job, job_id {}, body {}'.format(job_id, job_data))
         job_runtime_conf = job_data.get('job_runtime_conf', {})
         job_dsl = job_data.get('job_dsl', {})
+        job_parameters = job_runtime_conf.get('job_parameters', {})
+        if not job_parameters.get('model_id', None):
+            model_id = job_utils.gen_all_party_key(job_runtime_conf['role'])
+            job_parameters['model_id'] = model_id
+        job_runtime_conf['job_parameters'] = job_parameters
         job_dsl_path, job_runtime_conf_path = save_job_conf(job_id=job_id,
                                                             job_dsl=job_dsl,
                                                             job_runtime_conf=job_runtime_conf)
@@ -74,15 +78,18 @@ class JobController(object):
             "job_runtime_conf_path": job_runtime_conf_path
         }
         )
-        logger.info('submit job successfully, job id is {}'.format(job.f_job_id))
+        logger.info(
+            'submit job successfully, job id is {}, model id is {}'.format(job.f_job_id, job_parameters['model_id']))
         return job_id, job_dsl_path, job_runtime_conf_path
 
     @staticmethod
     def run_job(job_id, job_dsl_path, job_runtime_conf_path):
-        dsl = get_job_dsl_parser(job_id=job_id, job_dsl_path=job_dsl_path, job_runtime_conf_path=job_runtime_conf_path)
-        job_config = file_utils.load_json_conf(job_runtime_conf_path)
-        job_initiator = job_config.get('initiator', None)
-        job_args = dsl.get_args_input()
+        dag = get_job_dsl_parser(job_dsl_path=job_dsl_path,
+                                 job_runtime_conf_path=job_runtime_conf_path)
+        job_runtime_conf = file_utils.load_json_conf(job_runtime_conf_path)
+        job_parameters = job_runtime_conf.get('job_parameters', {})
+        job_initiator = job_runtime_conf.get('initiator', {})
+        job_args = dag.get_args_input()
         if not job_initiator:
             return False
         FateStorage.init_storage(job_id=job_id)
@@ -98,12 +105,14 @@ class JobController(object):
         component_names = []
         task_ids = []
         top_level_task_status = set()
-        component_count = len(dsl.get_dependency()['component_list'])
-        components = dsl.get_next_components(None)
+        component_count = len(dag.get_dependency()['component_list'])
+        components = dag.get_next_components(None)
         logger.info('get job {} next components {} by {}'.format(job.f_job_id, components, None))
         for component in components:
             try:
-                run_status = JobController.run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component)
+                run_status = JobController.run_component(job_id, job_parameters, job_initiator, job_args, job,
+                                                         job_tracker,
+                                                         component_names, task_ids, dag, component)
             except Exception as e:
                 logger.info(e)
                 run_status = False
@@ -124,7 +133,8 @@ class JobController(object):
         logger.info('job {} {}'.format(job.f_job_id, job.f_status))
 
     @staticmethod
-    def run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component):
+    def run_component(job_id, job_parameters, job_initiator, job_args, job, job_tracker, component_names, task_ids,
+                      dag, component):
         parameters = component.get_role_parameters()
         component_name = component.get_name()
         component_names.append(component_name)
@@ -156,7 +166,8 @@ class JobController(object):
                                   dest_party_id),
                               src_party_id=job_initiator['party_id'],
                               dest_party_id=dest_party_id,
-                              json_body={'job_initiator': job_initiator,
+                              json_body={'job_parameters': job_parameters,
+                                         'job_initiator': job_initiator,
                                          'job_args': party_job_args,
                                          'parameters': party_parameters,
                                          'module_name': module_name,
@@ -170,10 +181,12 @@ class JobController(object):
                 break
             time.sleep(2)
         if task_success:
-            components = dsl.get_next_components(component_name)
+            components = dag.get_next_components(component_name)
             for component in components:
                 try:
-                    run_status = JobController.run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component)
+                    run_status = JobController.run_component(job_id, job_parameters, job_initiator, job_args, job,
+                                                             job_tracker,
+                                                             component_names, task_ids, dag, component)
                 except Exception as e:
                     logger.info(e)
                     run_status = False
@@ -225,6 +238,7 @@ class JobController(object):
         task_config = file_utils.load_json_conf(args.config)
         logger.info('task info {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))
         request_url_without_host = task_config['request_url_without_host']
+        job_parameters = task_config.get('job_parameters', None)
         job_initiator = task_config.get('job_initiator', None)
         job_args = task_config.get('job_args', {})
         task_input_dsl = task_config.get('input', {})
@@ -245,7 +259,7 @@ class JobController(object):
         task.f_party_id = party_id
         task.f_create_time = current_timestamp()
         tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id,
-                           model_id='jarvis_test')
+                           model_id=job_parameters['model_id'])
         try:
             task.f_start_time = current_timestamp()
             task.f_operator = 'python_operator'
@@ -255,7 +269,9 @@ class JobController(object):
             run_class_package = '.'.join(run_class_paths[:-2]) + '.' + run_class_paths[-2].rstrip('.py')
             run_class_name = run_class_paths[-1]
             task_run_args = JobController.get_task_run_args(job_id=job_id, role=role, party_id=party_id,
-                                                            job_args=job_args, input_dsl=task_input_dsl)
+                                                            job_parameters=job_parameters, job_args=job_args,
+                                                            input_dsl=task_input_dsl)
+            logger.info(task_run_args)
             run_object = getattr(importlib.import_module(run_class_package), run_class_name)()
             run_object.set_tracker(tracker=tracker)
             task.f_status = 'running'
@@ -287,7 +303,7 @@ class JobController(object):
         logger.info('finish task {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))
 
     @staticmethod
-    def get_task_run_args(job_id, role, party_id, job_args, input_dsl):
+    def get_task_run_args(job_id, role, party_id, job_parameters, job_args, input_dsl):
         task_run_args = {}
         for input_type, input_detail in input_dsl.items():
             if input_type == 'data':
@@ -318,7 +334,7 @@ class JobController(object):
                     model_key_items = model_key.split('.')
                     search_component_name, search_model_name = model_key_items[0], model_key_items[1]
                     models = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=search_component_name,
-                                      model_id='jarvis_test').get_output_model()
+                                      model_id=job_parameters['model_id']).get_output_model()
                     this_type_args[search_component_name] = models
         return task_run_args
 
@@ -326,6 +342,12 @@ class JobController(object):
     def task_status(job_id, component_name, task_id, role, party_id, task_info):
         tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id)
         tracker.save_task(role=role, party_id=party_id, task_info=task_info)
+
+    @staticmethod
+    def save_pipeline(job_id):
+        dsl_parser = job_utils.get_job_dsl_parser_by_job_id(job_id=job_id)
+        predict_dsl = dsl_parser.get_predict_dsl()
+        logger.info(predict_dsl)
 
 
 if __name__ == '__main__':

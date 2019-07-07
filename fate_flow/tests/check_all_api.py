@@ -15,9 +15,9 @@
 #
 import sys
 import requests
-from fate_flow.settings import API_VERSION
+from fate_flow.settings import API_VERSION, IP, HTTP_PORT
 
-fate_flow_server_host = 'http://127.0.0.1:9380/{}'.format(API_VERSION)
+fate_flow_server_host = 'http://127.0.0.1:{}/{}'.format(HTTP_PORT, API_VERSION)
 job_id = sys.argv[1]
 role = 'guest'
 party_id = 10000

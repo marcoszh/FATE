@@ -22,7 +22,10 @@
                     "data": [
                         "args.train_data"
                     ]
-                }
+                },
+                "model": [
+                    "dataio_0.dataio"
+                ]
             },
             "output": {
                 "data": ["eval_data"]

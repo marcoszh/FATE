@@ -27,8 +27,7 @@ class Tracking(object):
     METRIC_LIST_PARTITION = 48
     JOB_VIEW_PARTITION = 8
 
-    def __init__(self, job_id: str, role: str, party_id: int, component_name: str = None, task_id: str = None,
-                 model_id: str = None):
+    def __init__(self, job_id: str, role: str, party_id: int, model_id: str = None, component_name: str = None, task_id: str = None):
         self.job_id = job_id
         self.role = role
         self.party_id = party_id
@@ -36,13 +35,10 @@ class Tracking(object):
         self.task_id = task_id
         self.table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
-        self.model_id = '{}_{}_{}'.format(model_id, role, party_id)
+        self.model_id = '#'.join([model_id, role, str(party_id)]) if model_id else None
         self.model_version = self.job_id
 
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
-        logger.info(self.component_name)
-        logger.info(metric_namespace)
-        logger.info(metric_name)
         kv = {}
         for metric in metrics:
             kv[metric.key] = metric.value
@@ -131,7 +127,7 @@ class Tracking(object):
                                      model_buffers=model_buffers,
                                      model_version=self.model_version,
                                      model_id=self.model_id)
-            self.save_output_model_meta({'module_name': module_name})
+            self.save_output_model_meta({'{}_module_name'.format(self.component_name): module_name})
 
     def get_output_model(self):
         model_buffers = model_manager.read_model(model_key=self.component_name,

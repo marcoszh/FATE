@@ -566,7 +566,7 @@ class DSLParser(object):
 
         return self.components
 
-    def get_predict_dag(self):
+    def get_predict_dsl(self):
         return self.predict_dsl
 
     def get_runtime_conf(self):
