@@ -16,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ImportResource(locations = {
         "classpath:db-mybatis-context.xml"
 })
-@PropertySource(value="classpath:application.properties",ignoreResourceNotFound=true)
+@PropertySource(value = "classpath:application.properties", ignoreResourceNotFound = true)
 @Configuration
 @EnableScheduling
 public class Bootstrap {

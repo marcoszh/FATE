@@ -8,9 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * @Description TODO
- **/
 public class RandomFileScanner implements Runnable, LogScanner {
 
     private static final Logger logger = LoggerFactory.getLogger(RandomFileScanner.class);
@@ -20,7 +17,8 @@ public class RandomFileScanner implements Runnable, LogScanner {
         try {
             tailFile = new TailFile(file, 0);
         } catch (IOException e) {
-            logger.error("file error", e);
+            logger.error("init RandomFileScanner failed", e);
+
         }
         this.session = session;
         this.skipLine = skipLine;
@@ -65,7 +63,6 @@ public class RandomFileScanner implements Runnable, LogScanner {
     @Override
     public void run() {
         try {
-            logger.info("roll file start");
             while (true) {
 
                 try {
@@ -75,11 +72,9 @@ public class RandomFileScanner implements Runnable, LogScanner {
                     }
                     List<String> lines = tailFile.readEvents(100);
 
-
                     if (lines == null) {
                         throw new Exception("lines not exist");
                     }
-                   // logger.info("roll file ============ {} ",lines.size());
                     if (lines.size() == 0) {
                         Thread.sleep(500);
                     } else {
@@ -93,7 +88,7 @@ public class RandomFileScanner implements Runnable, LogScanner {
                                         session.getBasicRemote().sendText(content);
                                     }
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+
                                     logger.error("IOException", e);
                                 }
                             } else {
@@ -104,8 +99,7 @@ public class RandomFileScanner implements Runnable, LogScanner {
                         });
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error("Exception", e);
+                    logger.error("roll local file error", e);
                 }
             }
         } finally {

@@ -13,13 +13,6 @@ public class TaskManagerService {
     @Autowired
     TaskMapper taskMapper;
 
- /*   public List<Task> findAll(){
-        TaskExample taskExample = new TaskExample();
-        List<Task> tasks = taskMapper.selectByExample(taskExample);
-
-        return tasks;
-
-    }*/
 
     public String findTaskStatus(String jobId, String componentName) {
         TaskExample taskExample = new TaskExample();

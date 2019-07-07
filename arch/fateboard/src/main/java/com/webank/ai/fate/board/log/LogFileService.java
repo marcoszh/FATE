@@ -14,6 +14,7 @@ import com.webank.ai.fate.board.pojo.TaskExample;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.ssh.SshService;
 import com.webank.ai.fate.board.utils.Dict;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,26 +27,20 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Description TODO
- **/
 
 @Service
 public class LogFileService {
+
+
+    final static String JOB_LOG_PATH = "fate-flow/logs/jobs/$job_id/$file_name";
+    final static String TASK_LOG_PATH = "fate-flow/logs/jobs/$job_id/$component_id/$file_name";
+    final static String DEFAULT_FILE_NAME = "fate_flow_run.log";
+    final static String FATE_DEPLOY_PREFIX = "/data/projects/fate/";
+    final static String DEFAULT_COMPONENT_ID = "default";
+    final static String DEFAULT_LOG_TYPE = "default";
+
     @Autowired
     SshService sshService;
-
-    public String jobLogPath = "fate-flow/logs/jobs/$job_id/$file_name";
-    public String taskLogPath = "fate-flow/logs/jobs/$job_id/$component_id/$file_name";
-    final static String DEFAULT_FILE_NAME = "fate_flow_run.log";
-
-    //    前缀就是目前fate的部署目录:
-//            /data/projects/fate/
-    private String fate_deploy_prefix = "/data/projects/fate/";
-
-    final static String DEFAULT_COMPONENT_ID = "default";
-
-    final static String DEFAULT_LOG_TYPE = "default";
     @Autowired
     private JobManagerService jobManagerService;
 
@@ -88,7 +83,7 @@ public class LogFileService {
     }
 
     public String getJobDir(String jobId) {
-        return fate_deploy_prefix + jobId + "/";
+        return FATE_DEPLOY_PREFIX + jobId + "/";
     }
 
 
@@ -181,7 +176,7 @@ public class LogFileService {
     public Channel getRemoteLogStream(String jobId, String componentId, String cmd) throws Exception {
 
         JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
-        Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""), "remote ip is null");
+        Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip ), "remote ip is null");
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
         return getRemoteLogStream(sshInfo, cmd);
 

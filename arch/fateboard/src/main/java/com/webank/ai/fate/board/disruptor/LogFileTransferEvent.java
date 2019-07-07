@@ -1,6 +1,8 @@
 package com.webank.ai.fate.board.disruptor;
 
 import com.webank.ai.fate.board.pojo.SshInfo;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class LogFileTransferEvent {
 
@@ -55,5 +57,11 @@ public class LogFileTransferEvent {
         this.sshInfo = sshInfo;
         this.sourceFilePath = sourceFilePath;
         this.desFilePath = desFilePath;
+    }
+
+    @Override
+    public String toString(){
+        String str = ToStringBuilder.reflectionToString(this, ToStringStyle.DEFAULT_STYLE);
+        return  str;
     }
 }

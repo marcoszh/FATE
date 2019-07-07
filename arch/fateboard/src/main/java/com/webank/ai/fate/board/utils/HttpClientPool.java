@@ -1,6 +1,7 @@
 package com.webank.ai.fate.board.utils;
 
 import com.alibaba.fastjson.JSON;
+import org.apache.commons.io.Charsets;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -86,7 +87,7 @@ public class HttpClientPool implements InitializingBean {
         HttpPost httpPost = new HttpPost(url);
         config(httpPost);
         StringEntity stringEntity = new StringEntity(JSON.toJSONString(requestData), "UTF-8");
-        stringEntity.setContentEncoding("UTF-8");
+        stringEntity.setContentEncoding(Charsets.UTF_8.toString());
         httpPost.setEntity(stringEntity);
         return getResponse(httpPost);
     }
@@ -96,7 +97,7 @@ public class HttpClientPool implements InitializingBean {
 
         HttpPost httpPost = new HttpPost(url);
         config(httpPost);
-        StringEntity stringEntity = new StringEntity(requestData, "UTF-8");
+        StringEntity stringEntity = new StringEntity(requestData, Charsets.UTF_8.toString());
         stringEntity.setContentEncoding("UTF-8");
         httpPost.setEntity(stringEntity);
         String  result = getResponse(httpPost);
@@ -116,7 +117,7 @@ public class HttpClientPool implements InitializingBean {
             response = httpClient.execute(request,
                     HttpClientContext.create());
             HttpEntity entity = response.getEntity();
-            String result = EntityUtils.toString(entity, "utf-8");
+            String result = EntityUtils.toString(entity, Charsets.UTF_8);
             EntityUtils.consume(entity);
 
                        return result;

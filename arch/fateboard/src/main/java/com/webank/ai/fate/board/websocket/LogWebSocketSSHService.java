@@ -79,7 +79,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
     ) throws Exception {
 
-        logger.info("jobId:{}, componentId:{}, type:{}", jobId, componentId, type);
+//        logger.info("jobId:{}, componentId:{}, type:{}", jobId, componentId, type);
 
         //test();
 
@@ -87,9 +87,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
         Preconditions.checkArgument(filePath != null, "file path is null");
 
-        /**
-         * 本地文件
-         */
+
          if(LogFileService.checkFileIsExist(filePath)){
        //if (false) {
             File file = new File(filePath);

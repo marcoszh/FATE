@@ -32,7 +32,6 @@ public class JobWebSocketService {
 
     static Logger logger = LoggerFactory.getLogger(JobWebSocketService.class);
 
-
     static ConcurrentHashMap jobSessionMap = new ConcurrentHashMap();
 
     private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -94,12 +93,6 @@ public class JobWebSocketService {
             Session session = (Session) k;
             String jobId = (String) v;
             Set<Session> sessions = jobMaps.get(jobId);
-//            if (sessions != null) {
-//                sessions.add(session);
-//            } else {
-//                sessions = new HashSet<Session>();
-//                sessions.add(session);
-//            }
             if (sessions == null) {
                 sessions = new HashSet<Session>();
             }
@@ -135,7 +128,6 @@ public class JobWebSocketService {
                         stringObjectHashMap.put("process", process);
                         stringObjectHashMap.put("duration", duration);
                         stringObjectHashMap.put("status", status);
-
 
                         v.forEach(session -> {
 

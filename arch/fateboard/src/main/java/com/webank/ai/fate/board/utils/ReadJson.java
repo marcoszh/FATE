@@ -9,11 +9,11 @@ public class ReadJson {
     }
 
     public static String readJsonFile(String filename) {
-        //定义接收可变字符串和需要读取的文件
+
         StringBuilder strFile = new StringBuilder();
         File jsonFile = new File(filename);
 
-        //读取文件信息
+
         FileInputStream fileInputStream = null;
         InputStreamReader inputStreamReader = null;
         BufferedReader bufferedReader = null;

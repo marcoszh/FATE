@@ -56,7 +56,7 @@ public class SshLogScanner implements Runnable, LogScanner {
 
 
     public void pullLog() throws IOException {
-        logger.info("begin pull remote log file ");
+        logger.info("prepare to pull remote log file   ");
         BufferedReader reader = null;
         Channel wcChannel = null;
         Channel tailChannel = null;

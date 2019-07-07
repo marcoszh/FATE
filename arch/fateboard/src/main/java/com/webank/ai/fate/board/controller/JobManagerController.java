@@ -11,6 +11,7 @@ import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
 import com.webank.ai.fate.board.utils.PageBean;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,12 +49,7 @@ public class JobManagerController {
      */
     @RequestMapping(value = "/query/status", method = RequestMethod.GET)
     public ResponseResult queryJobStatus() {
-        logger.info("start job query!");
-
         List<Job> jobs = jobManagerService.queryJobStatus();
-
-        logger.info("results for job query：" + jobs);
-
         if (jobs.size() == 0) {
             return new ResponseResult<>(ErrorCode.SUCCESS, "There is no job on running or waiting!");
         }
@@ -68,34 +64,16 @@ public class JobManagerController {
      */
     @RequestMapping(value = "/v1/pipeline/job/stop", method = RequestMethod.POST)
     public ResponseResult stopJob(@RequestBody String param) {
-        logger.info("input parameters for killing job：" + param);
-
-
         JSONObject jsonObject = JSON.parseObject(param);
-        Object job_id = jsonObject.get("job_id");
-        if ((job_id == null) || "".equals(job_id)) {
+        String jobId = jsonObject.getString(Dict.JOBID);
+        if ( StringUtils.isEmpty(jobId)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
-
         }
-
-        String result =  httpClientPool.post(fateUrl+"/v1/pipeline/job/stop",param);
-
-       // String result = "{    \"retcode\": 0,    \"retmsg\": \"OK\"}";
-
-        logger.info("result for killing job：" + result);
-        if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
-        }
-
+        String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
         JSONObject resultObject = JSON.parseObject(result);
-        Integer retcode = resultObject.getInteger("retcode");
-        if (retcode == 0) {
+        Integer retcode = resultObject.getInteger(Dict.RETCODE);
+        return new ResponseResult<>(ErrorCode.SUCCESS,resultObject);
 
-            return new ResponseResult<>(ErrorCode.SUCCESS);
-
-        } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
-        }
 
     }
 
@@ -107,30 +85,26 @@ public class JobManagerController {
     @RequestMapping(value = "/tracking/job/data_view", method = RequestMethod.POST)
     public ResponseResult queryJobDataset(@RequestBody String param) {
 
-        logger.info("parameters for querying dataset：" + param);
-
         JSONObject jsonObject = JSON.parseObject(param);
-        Object job_id = jsonObject.get("job_id");
-        if ((job_id == null) || "".equals(job_id)) {
+        String jobId = jsonObject.getString(Dict.JOBID);
+        if (StringUtils.isEmpty(jobId)) {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
         }
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, param);
 
-        if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
-        }
+//        if (result == null || "".equals(result)) {
+//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
+//        }
 
         JSONObject resultObject = JSON.parseObject(result);
 
-        Integer retcode = resultObject.getInteger("retcode");
-        if (retcode == 0) {
-            Object data = resultObject.get("data");
+        Integer retcode = resultObject.getInteger(Dict.RETCODE);
 
-            return new ResponseResult<>(ErrorCode.SUCCESS, data);
+        Object data = resultObject.get(Dict.DATA);
 
-        } else {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
-        }
+        return new ResponseResult<>(retcode, data);
+
+
     }
 
     /**
@@ -140,35 +114,21 @@ public class JobManagerController {
      */
     @RequestMapping(value = "/query/{jobId}", method = RequestMethod.GET)
     public ResponseResult queryJobById(@PathVariable("jobId") String jobId) {
-
-        logger.info("jobId：" + jobId);
-
         HashMap<String, Object> resultMap = new HashMap<>();
-
         JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
-        logger.info("jobWithBLOBs：" + jobWithBLOBs);
-
         if (jobWithBLOBs == null) {
             return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
         }
-
         Map  params = Maps.newHashMap();
-        params.put("job_id",jobId);
+        params.put(Dict.JOBID,jobId);
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
 
-        if (result == null || "".equals(result)) {
-            return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
-        }
-
-        JSONObject data = JSON.parseObject(result).getJSONObject("data");
-
-        logger.info("data：" + data);
-
-        resultMap.put("job", jobWithBLOBs);
-        resultMap.put("dataset", data);
-
-        logger.info("stringObjectHashMap：" + resultMap);
-
+//        if (result == null || "".equals(result)) {
+//            return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
+//        }
+        JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
+        resultMap.put(Dict.JOB, jobWithBLOBs);
+        resultMap.put(Dict.DATASET, data);
         return new ResponseResult<>(ErrorCode.SUCCESS, resultMap);
     }
 
@@ -180,8 +140,6 @@ public class JobManagerController {
      */
     @RequestMapping(value = "/query/totalrecord", method = RequestMethod.GET)
     public ResponseResult queryTotalRecord() {
-        logger.info("Start querying totalRecord!");
-
         long count = jobManagerService.count();
         return new ResponseResult<>(ErrorCode.SUCCESS, count);
     }
@@ -190,10 +148,7 @@ public class JobManagerController {
 
     public ResponseResult queryJob(@PathVariable(value = "totalRecord") long totalRecord, @PathVariable(value = "pageNum") long pageNum, @PathVariable(value = "pageSize") long pageSize) {
 
-        logger.info("Start querying jobs:totalRecord={}, pageNum={},pageSize={}.",totalRecord, pageNum, pageSize);
-
         PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
-        System.out.println(listPageBean);
 
         long startIndex = listPageBean.getStartIndex();
         List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJobByPage(startIndex, pageSize);
@@ -208,25 +163,23 @@ public class JobManagerController {
 
                 @Override
                 public JSONObject call() throws Exception {
+                    Map param = Maps.newHashMap();
                     String jobId = jobWithBLOBs.getfJobId();
-                    String result = httpClientPool.post(fateUrl + "/tracking/job/data_view", jobId);
-                    logger.info("http result for data_view:" + result);
-
-                    JSONObject data = JSON.parseObject(result).getJSONObject("data");
+                    param.put(Dict.JOBID,jobId);
+                    String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, JSON.toJSONString(param));
+                    JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
                     return data;
                 }
             });
             jobDataMap.put(jobWithBLOBs, feature);
-
-
         }
 
         jobDataMap.forEach((k, v) -> {
             try {
                 HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-                stringObjectHashMap.put("job", k);
+                stringObjectHashMap.put(Dict.JOB, k);
                 jobList.add(stringObjectHashMap);
-                stringObjectHashMap.put("dataset", v.get());
+                stringObjectHashMap.put(Dict.DATASET, v.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -234,12 +187,8 @@ public class JobManagerController {
             }
 
         });
-
-
-        logger.info("jobList：" + jobList);
         listPageBean.setList(jobList);
-        System.out.println("111111111111");
-        logger.info("11111111111111"+listPageBean.toString());
+
 
         return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
     }
@@ -252,21 +201,15 @@ public class JobManagerController {
     @RequestMapping(value = "/query/all", method = RequestMethod.GET)
     public ResponseResult queryJob() {
 
-        logger.info("Start querying all jobs!");
+
         ArrayList<Map> jobList = new ArrayList<>();
 
         List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJob();
-        logger.info("jobWithBLOBsList：" + jobWithBLOBsList);
 
         if (jobWithBLOBsList.size() == 0) {
             return new ResponseResult<String>(ErrorCode.SUCCESS, "Job not exist!");
         }
-
-
         Map<JobWithBLOBs,Future>  jobDataMap = new HashMap<JobWithBLOBs,Future>(16);
-
-
-
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
 
@@ -276,9 +219,9 @@ public class JobManagerController {
                 public JSONObject  call() throws Exception {
                     String jobId = jobWithBLOBs.getfJobId();
                     Map  params =Maps.newHashMap();
-                    params.put("job_id",jobId);
+                    params.put(Dict.JOBID,jobId);
                     String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
-                    JSONObject data = JSON.parseObject(result).getJSONObject("data");
+                    JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
                     return data;
                 }
             });
@@ -288,9 +231,9 @@ public class JobManagerController {
         jobDataMap.forEach((k,v)->{
             try {
             HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-            stringObjectHashMap.put("job", k);
+            stringObjectHashMap.put(Dict.JOB, k);
             jobList.add(stringObjectHashMap);
-            stringObjectHashMap.put("dataset", v.get());
+            stringObjectHashMap.put(Dict.DATASET, v.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -298,8 +241,6 @@ public class JobManagerController {
             }
 
         });
-
-        logger.info("jobList：" + jobList);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, jobList);
     }
