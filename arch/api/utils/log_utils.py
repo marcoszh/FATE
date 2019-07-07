@@ -31,6 +31,10 @@ class LoggerFactory(object):
     globalHandlerDict = {}
 
     LOG_DIR = None
+    PARENT_LOG_DIR = None
+
+    appendToParentLog = None
+
     lock = RLock()
     # CRITICAL = 50
     # FATAL = CRITICAL
@@ -44,28 +48,64 @@ class LoggerFactory(object):
     levels = (10, 20,30, 40)
 
 
+    # @staticmethod
+    # def setDirectory(directory=None,parentLogDir=None,appendToParentLog=None):
+    #
+    #     if(parentLogDir):
+    #        LoggerFactory.PARENT_LOG_DIR= parentLogDir
+    #     if(appendToParentLog):
+    #         LoggerFactory.appendToParentLog=appendToParentLog
+    #     with LoggerFactory.lock:
+    #         if not directory:
+    #             directory = os.path.join(file_utils.get_project_base_directory(), 'logs')
+    #         LoggerFactory.LOG_DIR = directory
+    #         os.makedirs(LoggerFactory.LOG_DIR, exist_ok=True)
+    #         for loggerName, handler in LoggerFactory.globalHandlerDict.items():
+    #             handler.close()
+    #         LoggerFactory.globalHandlerDict={}
+    #         for className, (logger, handler) in LoggerFactory.loggerDict.items():
+    #             logger.removeHandler(handler)
+    #             handler.close()
+    #             _hanlder = LoggerFactory.get_hanlder(className)
+    #             logger.addHandler(_hanlder)
+    #             LoggerFactory.assembleGloableHandler(logger)
+    #             LoggerFactory.loggerDict[className] = logger, _hanlder
+
+
     @staticmethod
-    def setDirectory(directory=None):
+    def setDirectory(directory=None,parentLogDir=None,appendToParentLog=None):
+        if(parentLogDir):
+           LoggerFactory.PARENT_LOG_DIR= parentLogDir
+        if(appendToParentLog):
+            LoggerFactory.appendToParentLog=appendToParentLog
         with LoggerFactory.lock:
             if not directory:
                 directory = os.path.join(file_utils.get_project_base_directory(), 'logs')
             LoggerFactory.LOG_DIR = directory
             os.makedirs(LoggerFactory.LOG_DIR, exist_ok=True)
-            for loggerName, handler in LoggerFactory.globalHandlerDict.items():
-                handler.close()
+            for loggerName, ghandler in LoggerFactory.globalHandlerDict.items():
+                print("close handler=======",ghandler)
+                for className, (logger, handler) in LoggerFactory.loggerDict.items():
+                    print(logger.handlers)
+                    logger.removeHandler(ghandler)
+                    print(logger.handlers)
+                ghandler.close()
             LoggerFactory.globalHandlerDict={}
             for className, (logger, handler) in LoggerFactory.loggerDict.items():
                 logger.removeHandler(handler)
-                handler.close()
-                _hanlder = LoggerFactory.get_hanlder(className)
-                logger.addHandler(_hanlder)
+                _hanlder=None
+                if(handler):
+                    handler.close()
+                if(className != "default"):
+                    _hanlder = LoggerFactory.get_hanlder(className)
+                    logger.addHandler(_hanlder)
                 LoggerFactory.assembleGloableHandler(logger)
                 LoggerFactory.loggerDict[className] = logger, _hanlder
 
 
 
     @staticmethod
-    def getLogger(className):
+    def getLogger(className=None):
         with LoggerFactory.lock:
             if className in LoggerFactory.loggerDict.keys():
                 logger, hanlder = LoggerFactory.loggerDict[className]
@@ -77,28 +117,35 @@ class LoggerFactory(object):
 
 
     @staticmethod
-    def get_globle_hanlder(loggerName,level=None):
+    def get_globle_hanlder(loggerName,level=None,logDir=None):
         if not LoggerFactory.LOG_DIR:
             return logging.StreamHandler()
-
-        if loggerName not in LoggerFactory.globalHandlerDict:
+        if(logDir):
+            loggerNameKey =  loggerName + "_"+logDir
+        else:
+            loggerNameKey = loggerName+"_"+LoggerFactory.LOG_DIR
+        # if loggerName not in LoggerFactory.globalHandlerDict:
+        if loggerNameKey not in LoggerFactory.globalHandlerDict:
             with LoggerFactory.lock:
-                if(loggerName not in LoggerFactory.globalHandlerDict):
-                    handler = LoggerFactory.get_hanlder(loggerName,level)
-                    LoggerFactory.globalHandlerDict[loggerName]=handler
+                if(loggerNameKey not in LoggerFactory.globalHandlerDict):
+                    handler = LoggerFactory.get_hanlder(loggerName,level,logDir)
+                    LoggerFactory.globalHandlerDict[loggerNameKey]=handler
 
 
-        return LoggerFactory.globalHandlerDict[loggerName]
+        return LoggerFactory.globalHandlerDict[loggerNameKey]
 
 
 
 
     @staticmethod
-    def get_hanlder(className,level=None):
-        if not LoggerFactory.LOG_DIR:
+    def get_hanlder(className,level=None,logDir=None):
+        if not LoggerFactory.LOG_DIR or not className:
             return logging.StreamHandler()
         formatter = logging.Formatter('"%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s"')
-        log_file = os.path.join(LoggerFactory.LOG_DIR, "{}.log".format(className))
+        if(not logDir):
+            log_file = os.path.join(LoggerFactory.LOG_DIR, "{}.log".format(className))
+        else:
+            log_file = os.path.join(logDir, "{}.log".format(className))
         handler = TimedRotatingFileHandler(log_file,
                                            when='H',
                                            interval=4,
@@ -114,16 +161,35 @@ class LoggerFactory(object):
 
 
 
+    # @staticmethod
+    # def __initLogger(className):
+    #     with LoggerFactory.lock:
+    #         logger = logging.getLogger(className)
+    #         logger.setLevel(LoggerFactory.LEVEL)
+    #         handler = LoggerFactory.get_hanlder(className)
+    #        # LoggerFactory.get_handlder_use_level()
+    #         logger.addHandler(handler)
+    #         LoggerFactory.assembleGloableHandler(logger)
+    #         LoggerFactory.loggerDict[className] = logger, handler
+    #         return logger, handler
+
     @staticmethod
     def __initLogger(className):
         with LoggerFactory.lock:
             logger = logging.getLogger(className)
             logger.setLevel(LoggerFactory.LEVEL)
-            handler = LoggerFactory.get_hanlder(className)
-           # LoggerFactory.get_handlder_use_level()
-            logger.addHandler(handler)
+            handler = None
+            if(className):
+                handler = LoggerFactory.get_hanlder(className)
+                # LoggerFactory.get_handlder_use_level()
+                logger.addHandler(handler)
+                LoggerFactory.loggerDict[className] = logger, handler
+
+            else:
+                LoggerFactory.loggerDict["default"] = logger, handler
+
             LoggerFactory.assembleGloableHandler(logger)
-            LoggerFactory.loggerDict[className] = logger, handler
+
             return logger, handler
 
     @staticmethod
@@ -133,6 +199,11 @@ class LoggerFactory(object):
                 if level >= LoggerFactory.LEVEL:
                     levelLoggerName = logging._levelToName[level]
                     logger.addHandler(LoggerFactory.get_globle_hanlder(levelLoggerName, level))
+        if LoggerFactory.appendToParentLog and LoggerFactory.PARENT_LOG_DIR:
+            for level in LoggerFactory.levels:
+                if level >= LoggerFactory.LEVEL:
+                    levelLoggerName = logging._levelToName[level]
+                    logger.addHandler(LoggerFactory.get_globle_hanlder(levelLoggerName, level,LoggerFactory.PARENT_LOG_DIR))
 
 
 def setDirectory(directory=None):
@@ -144,15 +215,8 @@ def setLevel(level):
 
 
 def getLogger(className=None,useLevelFile=False):
-    if className is None:
-        frame = inspect.stack()[1]
-        module = inspect.getmodule(frame[0])
-        className = os.path.splitext(os.path.basename(module.__file__))[0]
+    # if className is None:
+    #     frame = inspect.stack()[1]
+    #     module = inspect.getmodule(frame[0])
+    #     className = os.path.splitext(os.path.basename(module.__file__))[0]
     return LoggerFactory.getLogger(className)
-
-
-
-
-
-
-
