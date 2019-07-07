@@ -14,7 +14,7 @@
         },
         "arbiter":
         {
-            "program": "hetero_lr_arbiter.py/HeteroLRArbiter""
+            "program": "hetero_lr_arbiter.py/HeteroLRArbiter"
         }
     }
 }
