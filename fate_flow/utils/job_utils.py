@@ -47,7 +47,7 @@ id_counter = IdCounter()
 
 
 def generate_job_id():
-    return '_'.join([datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f"), str(id_counter.incr())])
+    return '_'.join([datetime.datetime.now().strftime("%Y%m%d%H%M%S%f"), str(id_counter.incr())])
 
 
 def get_job_directory(job_id=None):
@@ -169,9 +169,9 @@ def check_job_process(pid):
         return True
 
 
-def run_subprocess(job_dir, job_role, progs):
-    logger.info('Starting progs: {}'.format(progs))
-    logger.info(' '.join(progs))
+def run_subprocess(job_dir, job_role, process_cmd):
+    logger.info('Starting process command: {}'.format(process_cmd))
+    logger.info(' '.join(process_cmd))
 
     std_dir = os.path.join(job_dir, job_role)
     if not os.path.exists(std_dir):
@@ -185,7 +185,7 @@ def run_subprocess(job_dir, job_role, progs):
         startupinfo.wShowWindow = subprocess.SW_HIDE
     else:
         startupinfo = None
-    p = subprocess.Popen(progs,
+    p = subprocess.Popen(process_cmd,
                          stdout=std_log,
                          stderr=std_log,
                          startupinfo=startupinfo

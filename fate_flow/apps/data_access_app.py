@@ -63,7 +63,7 @@ def download_upload(data_func):
                      os.path.join(file_utils.get_project_base_directory(), JOB_MODULE_CONF[module]["module_path"]),
                      "-c", conf_file_path
                      ]
-        p = run_subprocess(job_dir=_job_dir, job_role=data_func, progs=progs)
+        p = run_subprocess(job_dir=_job_dir, job_role=data_func, process_cmd=progs)
         return get_json_result(job_id=_job_id, data={'pid': p.pid, 'table_name': request_config['table_name'], 'namespace': request_config['namespace']})
     except Exception as e:
         logger.exception(e)

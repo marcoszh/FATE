@@ -17,7 +17,7 @@ from fate_flow.utils.api_utils import get_json_result
 from fate_flow.settings import logger
 from flask import Flask, request
 from fate_flow.manager.tracking import Tracking
-from fate_flow.db.db_models import Job
+from fate_flow.db.db_models import Job, DB
 from fate_flow.utils import job_utils, data_utils
 from arch.api.utils.core import json_loads
 from google.protobuf import json_format
@@ -75,6 +75,7 @@ def component_metric_data():
         return get_json_result(retcode=101, retmsg='error')
 
 
+@DB.connection_context()
 @manager.route('/component/parameters', methods=['post'])
 def component_parameters():
     request_data = request.json
@@ -141,6 +142,7 @@ def component_output_data():
         return get_json_result(retcode=101, retmsg='no data')
 
 
+@DB.connection_context()
 def check_request_parameters(request_data):
     if 'role' not in request_data and 'party_id' not in request_data:
         jobs = Job.select(Job.f_runtime_conf).where(Job.f_job_id == request_data.get('job_id', ''), Job.f_is_initiator == 1)

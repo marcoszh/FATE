@@ -40,6 +40,9 @@ class Tracking(object):
         self.model_version = self.job_id
 
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
+        logger.info(self.component_name)
+        logger.info(metric_namespace)
+        logger.info(metric_name)
         kv = {}
         for metric in metrics:
             kv[metric.key] = metric.value

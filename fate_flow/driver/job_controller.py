@@ -45,7 +45,7 @@ class JobController(object):
     @staticmethod
     def submit_job(job_data):
         job_id = generate_job_id()
-        logger.info('generated job_id {}, body {}'.format(job_id, job_data))
+        logger.info('submit job, job_id {}, body {}'.format(job_id, job_data))
         job_runtime_conf = job_data.get('job_runtime_conf', {})
         job_dsl = job_data.get('job_dsl', {})
         job_dsl_path, job_runtime_conf_path = save_job_conf(job_id=job_id,
@@ -74,6 +74,7 @@ class JobController(object):
             "job_runtime_conf_path": job_runtime_conf_path
         }
         )
+        logger.info('submit job successfully, job id is {}'.format(job.f_job_id))
         return job_id, job_dsl_path, job_runtime_conf_path
 
     @staticmethod
@@ -86,76 +87,101 @@ class JobController(object):
             return False
         FateStorage.init_storage(job_id=job_id)
         job = Job()
+        job.f_job_id = job_id
         job.f_start_time = current_timestamp()
         job.f_role = job_initiator.get('role', '')
         job.f_party_id = job_initiator.get('party_id', '')
         job.f_status = 'running'
         job_tracker = Tracking(job_id=job_id, role=job.f_role, party_id=job.f_party_id)
         job_tracker.save_job_info(role=job.f_role, party_id=job.f_party_id, job_info=job.to_json())
-        loops = 0
-        component_name = None
-        while job.f_status != 'failed':
-            components = dsl.get_next_components(component_name)
-            if not components:
-                break
-            loops += 1
-            task_ids = []
-            component_names = []
 
-            for component in components:
-                parameters = component.get_role_parameters()
-                component_name = component.get_name()
-                component_names.append(component_name)
-                module_name = component.get_module()
-                task_id = '{}_{}_{}'.format(job_id, component_name, loops)
-                task_ids.append(task_id)
-                for role, partys_parameters in parameters.items():
-                    for party_index in range(len(partys_parameters)):
-                        party_parameters = partys_parameters[party_index]
-                        if role in job_args:
-                            party_job_args = job_args[role][party_index]['args']
-                        else:
-                            party_job_args = {}
-                        dest_party_id = party_parameters.get('local', {}).get('party_id')
-                        federated_api(job_id=job_id,
-                                      method='POST',
-                                      url='/{}/job/{}/{}/{}/{}/{}/run'.format(
-                                          API_VERSION,
-                                          job_id,
-                                          component_name,
-                                          task_id,
-                                          role,
-                                          dest_party_id),
-                                      src_party_id=job_initiator['party_id'],
-                                      dest_party_id=dest_party_id,
-                                      json_body={'job_initiator': job_initiator,
-                                                 'job_args': party_job_args,
-                                                 'parameters': party_parameters,
-                                                 'module_name': module_name,
-                                                 'input': component.get_input(),
-                                                 'output': component.get_output()})
-            job.f_current_steps = json_dumps(component_names)
-            job.f_current_tasks = json_dumps(task_ids)
-            job.f_update_time = current_timestamp()
-            job_tracker.save_job_info(role=job.f_role, party_id=job.f_party_id, job_info=job.to_json())
-            # check the task status of the same level component
-            while True:
-                all_task_status = set()
-                for task_id in task_ids:
-                    tasks = query_tasks(job_id=job_id, task_id=task_id)
-                    all_task_status.update(set([task.f_status for task in tasks]))
-                if 'failed' in all_task_status:
-                    job.f_status = 'failed'
-                    break
-                elif len(all_task_status) == 1 and 'success' in all_task_status:
-                    job.f_status = 'success'
-                    break
-                time.sleep(2)
+        component_names = []
+        task_ids = []
+        top_level_task_status = set()
+        component_count = len(dsl.get_dependency()['component_list'])
+        components = dsl.get_next_components(None)
+        logger.info('get job {} next components {} by {}'.format(job.f_job_id, components, None))
+        for component in components:
+            try:
+                run_status = JobController.run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component)
+            except Exception as e:
+                logger.info(e)
+                run_status = False
+            top_level_task_status.add(run_status)
+            if not run_status:
+                break
+        if len(top_level_task_status) == 2:
+            job.f_status = 'partial'
+        elif True in top_level_task_status:
+            job.f_status = 'success'
+        else:
+            job.f_status = 'failed'
         job.f_end_time = current_timestamp()
         job.f_elapsed = job.f_end_time - job.f_start_time
         job.f_progress = 100
         job.f_update_time = current_timestamp()
         job_tracker.save_job_info(role=job.f_role, party_id=job.f_party_id, job_info=job.to_json())
+        logger.info('job {} {}'.format(job.f_job_id, job.f_status))
+
+    @staticmethod
+    def run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component):
+        parameters = component.get_role_parameters()
+        component_name = component.get_name()
+        component_names.append(component_name)
+        module_name = component.get_module()
+        task_id = '{}_{}'.format(job_id, component_name)
+        task_ids.append(task_id)
+        job.f_current_steps = json_dumps(component_names)
+        job.f_current_tasks = json_dumps(task_ids)
+        job.f_update_time = current_timestamp()
+        job_tracker.save_job_info(role=job.f_role, party_id=job.f_party_id, job_info=job.to_json())
+        logger.info('run job {} task {}'.format(job_id, component_name))
+        task_success = False
+        for role, partys_parameters in parameters.items():
+            for party_index in range(len(partys_parameters)):
+                party_parameters = partys_parameters[party_index]
+                if role in job_args:
+                    party_job_args = job_args[role][party_index]['args']
+                else:
+                    party_job_args = {}
+                dest_party_id = party_parameters.get('local', {}).get('party_id')
+                federated_api(job_id=job_id,
+                              method='POST',
+                              url='/{}/job/{}/{}/{}/{}/{}/run'.format(
+                                  API_VERSION,
+                                  job_id,
+                                  component_name,
+                                  task_id,
+                                  role,
+                                  dest_party_id),
+                              src_party_id=job_initiator['party_id'],
+                              dest_party_id=dest_party_id,
+                              json_body={'job_initiator': job_initiator,
+                                         'job_args': party_job_args,
+                                         'parameters': party_parameters,
+                                         'module_name': module_name,
+                                         'input': component.get_input(),
+                                         'output': component.get_output()})
+        while True:
+            tasks = query_tasks(job_id=job_id, task_id=task_id)
+            if tasks and tasks[0].f_status in ['failed', 'success']:
+                if tasks[0].f_status == 'success':
+                    task_success = True
+                break
+            time.sleep(2)
+        if task_success:
+            components = dsl.get_next_components(component_name)
+            for component in components:
+                try:
+                    run_status = JobController.run_component(job_id, job_args, job_initiator, job, job_tracker, component_names, task_ids, dsl, component)
+                except Exception as e:
+                    logger.info(e)
+                    run_status = False
+                if not run_status:
+                    return False
+            return True
+        else:
+            return False
 
     @staticmethod
     def start_task(job_id, component_name, task_id, role, party_id, task_config):
@@ -164,10 +190,10 @@ class JobController(object):
         task_dir = os.path.join(job_utils.get_job_directory(job_id=job_id), role, party_id, component_name)
         if not os.path.exists(task_dir):
             os.makedirs(task_dir)
-        task_config_path = os.path.join(task_dir, 'task_config')
+        task_config_path = os.path.join(task_dir, 'task_config.json')
         with open(task_config_path, 'w') as fw:
             json.dump(task_config, fw)
-        progs = [
+        process_cmd = [
             'python3', __file__,
             '-j', job_id,
             '-n', component_name,
@@ -176,7 +202,7 @@ class JobController(object):
             '-p', party_id,
             '-c', task_config_path
         ]
-        p = run_subprocess(job_dir=task_dir, job_role=role, progs=progs)
+        p = run_subprocess(job_dir=task_dir, job_role=role, process_cmd=process_cmd)
 
     @staticmethod
     def run_task():
@@ -228,15 +254,14 @@ class JobController(object):
             run_class_paths = parameters.get('CodePath').split('/')
             run_class_package = '.'.join(run_class_paths[:-2]) + '.' + run_class_paths[-2].rstrip('.py')
             run_class_name = run_class_paths[-1]
-            logger.info(task_input_dsl)
             task_run_args = JobController.get_task_run_args(job_id=job_id, role=role, party_id=party_id,
                                                             job_args=job_args, input_dsl=task_input_dsl)
-            logger.info(task_run_args)
-            logger.info(run_class_package)
             run_object = getattr(importlib.import_module(run_class_package), run_class_name)()
             run_object.set_tracker(tracker=tracker)
+            task.f_status = 'running'
+            tracker.save_task(role=role, party_id=party_id, task_info=task.to_json(), create=True)
+
             run_object.run(parameters, task_run_args)
-            logger.info(task_output_dsl)
             if task_output_dsl:
                 if task_output_dsl.get('data', {}):
                     output_data = run_object.save_data()
@@ -252,14 +277,13 @@ class JobController(object):
             task.f_end_time = current_timestamp()
             task.f_elapsed = task.f_end_time - task.f_start_time
             task.f_update_time = current_timestamp()
-            task_info = task.to_json()
-            tracker.save_task(role=role, party_id=party_id, task_info=task_info, create=True)
+            tracker.save_task(role=role, party_id=party_id, task_info=task.to_json(), create=True)
             federated_api(job_id=job_id,
                           method='POST',
                           url=request_url_without_host.replace('run', 'status'),
                           src_party_id=task.f_party_id,
                           dest_party_id=job_initiator.get('party_id', None),
-                          json_body=task_info)
+                          json_body=task.to_json())
         logger.info('finish task {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))
 
     @staticmethod

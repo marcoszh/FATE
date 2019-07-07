@@ -38,7 +38,6 @@ def save_model(model_key, model_buffers, model_version, model_id, version_log=No
         storage_key = '{}.{}'.format(model_key, buffer_name)
         data_table.put(storage_key, buffer_object.SerializeToString(), use_serialize=False)
         model_class_map[storage_key] = type(buffer_object).__name__
-        logger.info(model_class_map[storage_key])
     FateStorage.save_data_table_meta(model_class_map, namespace=model_id, name=model_version)
     version_log = "[AUTO] save model at %s." % datetime.datetime.now() if not version_log else version_log
     version_control.save_version(name=model_version, namespace=model_id, version_log=version_log)
