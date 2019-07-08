@@ -19,6 +19,7 @@ from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.storage.fate_storage import FateStorage
 from fate_flow.entity.metric import Metric, MetricMeta
 from arch.api.utils.core import current_timestamp
+from arch.api.utils import dtable_utils
 from fate_flow.settings import stat_logger
 
 
@@ -35,7 +36,7 @@ class Tracking(object):
         self.task_id = task_id
         self.table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
-        self.model_id = '#'.join([model_id, role, str(party_id)]) if model_id else None
+        self.model_id = dtable_utils.gen_namespace_by_prefix(prefix=model_id, role=role, party_id=party_id) if model_id else None
         self.model_version = self.job_id
 
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):

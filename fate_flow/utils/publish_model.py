@@ -21,27 +21,34 @@ import copy
 from arch.task_manager.settings import logger
 
 
-def generate_model_info(config_data):
+def generate_publish_model_info(config_data):
     default_table_config = dict()
     default_table_config['role'] = config_data.get('role')
     default_table_config['data_type'] = 'model'
-    default_table_config['gen_table_info'] = True
     table_config = copy.deepcopy(default_table_config)
-    table_config['local'] = config_data.get('local')
-    table_config.update(config_data.get('model').get(table_config['local'].get('role'), {}).get(table_config['local'].get('party_id')))
-    table_name, namespace = dtable_utils.get_table_info(config=table_config)
-    models_table_name = table_name
-    if not models_table_name or not namespace:
+
+    # The model version is consistent under the same modeling, first find the model version
+    table_config['local'] = config_data['local']
+    initiator_role = table_config['local']['role']
+    initiator_party_id = table_config['local']['party_id']
+    initiator_model_id = config_data['model'][initiator_role][initiator_party_id]['model_id']
+    initiator_model_version = config_data['model'][initiator_role][initiator_party_id]['model_version']
+    table_config.update({'table_name': initiator_model_version, 'namespace': initiator_model_id})
+    print(table_config)
+    model_version, model_id = dtable_utils.get_table_info(config=table_config)
+    # get model version
+    models_version = model_version
+    if not models_version or not model_id:
         return False
     for role_name, role_model_config in config_data.get("model").items():
         for _party_id, role_party_model_config in role_model_config.items():
             table_config = copy.deepcopy(default_table_config)
             table_config['local'] = {'role': role_name, 'party_id': _party_id}
             table_config.update(role_party_model_config)
-            table_config['table_name'] = table_config['table_name'] if table_config.get('table_name') else models_table_name
-            table_name, namespace = dtable_utils.get_table_info(config=table_config)
-            config_data['model'][role_name][_party_id]['table_name'] = table_name
-            config_data['model'][role_name][_party_id]['namespace'] = namespace
+            table_config['table_name'] = table_config['table_name'] if table_config.get('table_name') else models_version
+            model_version, model_id = dtable_utils.get_table_info(config=table_config)
+            config_data['model'][role_name][_party_id]['model_version'] = model_version
+            config_data['model'][role_name][_party_id]['model_id'] = model_id
 
 
 def load_model(config_data):

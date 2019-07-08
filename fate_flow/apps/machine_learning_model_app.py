@@ -36,7 +36,7 @@ def load_model():
     initiator = request_config.get('local', {})
     initiator_party_id = initiator.get('party_id', 0)
     if request_config.get('gen_table_info', False):
-        publish_model.generate_model_info(request_config)
+        publish_model.generate_publish_model_info(request_config)
     for role_name, role_partys in request_config.get("role").items():
         if role_name == 'arbiter':
             continue

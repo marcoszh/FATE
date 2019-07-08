@@ -16,7 +16,7 @@
 from arch.api.proto import pipeline_pb2
 from fate_flow.utils.job_utils import generate_job_id, save_job_conf, query_tasks, get_job_dsl_parser, run_subprocess
 from fate_flow.utils import job_utils
-from arch.api.utils import file_utils, log_utils
+from arch.api.utils import file_utils, log_utils, dtable_utils
 from fate_flow.utils.api_utils import federated_api
 from arch.api.utils.core import current_timestamp, json_dumps, base64_encode
 from arch.api import federation
@@ -50,7 +50,7 @@ class JobController(object):
         job_dsl = job_data.get('job_dsl', {})
         job_parameters = job_runtime_conf.get('job_parameters', {})
         if not job_parameters.get('model_id', None):
-            model_id = job_utils.gen_all_party_key(job_runtime_conf['role'])
+            model_id = '#'.join([dtable_utils.all_party_key(job_runtime_conf['role']), 'model'])
             job_parameters['model_id'] = model_id
         job_runtime_conf['job_parameters'] = job_parameters
         job_dsl_path, job_runtime_conf_path = save_job_conf(job_id=job_id,
@@ -98,7 +98,8 @@ class JobController(object):
         )
         schedule_logger.info(
             'submit job successfully, job id is {}, model id is {}'.format(job.f_job_id, job_parameters['model_id']))
-        return job_id, job_dsl_path, job_runtime_conf_path
+        model_version = job_id
+        return job_id, job_dsl_path, job_runtime_conf_path, job_parameters['model_id'], model_version
 
     @staticmethod
     def run_job(job_id, job_dsl_path, job_runtime_conf_path):
@@ -335,7 +336,7 @@ class JobController(object):
                         args_from_component = this_type_args[search_component_name] = this_type_args.get(
                             search_component_name, {})
                         args_from_component[data_type] = data_table
-            elif input_type == 'model':
+            elif input_type in ['model', 'isometric_model']:
                 this_type_args = task_run_args[input_type] = task_run_args.get(input_type, {})
                 for model_key in input_detail:
                     model_key_items = model_key.split('.')

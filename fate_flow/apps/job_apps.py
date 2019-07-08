@@ -30,9 +30,12 @@ def internal_server_error(e):
 
 @manager.route('/submit', methods=['POST'])
 def submit_job():
-    job_id, job_dsl_path, job_runtime_conf_path = JobController.submit_job(request.json)
+    job_id, job_dsl_path, job_runtime_conf_path, model_id, model_version = JobController.submit_job(request.json)
     return get_json_result(job_id=job_id, data={'job_dsl_path': job_dsl_path,
-                                                'job_runtime_conf_path': job_runtime_conf_path})
+                                                'job_runtime_conf_path': job_runtime_conf_path,
+                                                'model_id': model_id,
+                                                'model_version': model_version
+                                                })
 
 
 @manager.route('/<job_id>/<role>/<party_id>/create', methods=['POST'])
