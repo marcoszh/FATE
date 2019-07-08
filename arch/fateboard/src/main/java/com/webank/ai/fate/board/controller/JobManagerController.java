@@ -19,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 @CrossOrigin
@@ -75,12 +72,7 @@ public class JobManagerController {
         }
         String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
 
-
         return  ResponseUtil.buildResponse(result,null);
-//        JSONObject resultObject = JSON.parseObject(result);
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//        return new ResponseResult<>(ErrorCode.SUCCESS,resultObject);
-
 
     }
 
@@ -168,7 +160,7 @@ public class JobManagerController {
 
         ArrayList<Map> jobList = new ArrayList<>();
 
-        Map<JobWithBLOBs, Future> jobDataMap = new HashMap<JobWithBLOBs, Future>(16);
+        Map<JobWithBLOBs, Future> jobDataMap = new LinkedHashMap<>();
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
 
@@ -201,7 +193,6 @@ public class JobManagerController {
 
         });
         listPageBean.setList(jobList);
-
 
         return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
     }

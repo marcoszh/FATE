@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -32,12 +33,15 @@ import java.util.Map;
 public class LogFileService {
 
 
-    final static String JOB_LOG_PATH = "fate-flow/logs/jobs/$job_id/$file_name";
-    final static String TASK_LOG_PATH = "fate-flow/logs/jobs/$job_id/$component_id/$file_name";
-    final static String DEFAULT_FILE_NAME = "fate_flow_run.log";
-    final static String FATE_DEPLOY_PREFIX = "/data/projects/fate/";
+    String JOB_LOG_PATH = "$job_id/$role/$party_id/$file_name";
+    final static String TASK_LOG_PATH = "$job_id/$role/$party_id/$component_id/$file_name";
+    final static String DEFAULT_FILE_NAME = "DEBUG.log";
+
     final static String DEFAULT_COMPONENT_ID = "default";
     final static String DEFAULT_LOG_TYPE = "default";
+
+    @Value("${FATE_DEPLOY_PREFIX:/data/projects/fate/python/logs/}")
+    String FATE_DEPLOY_PREFIX = "/data/projects/fate/python/logs/";
 
     @Autowired
     SshService sshService;
@@ -92,35 +96,46 @@ public class LogFileService {
 
         JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
 
+        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
+
         String  role =jobWithBLOBs.getfRole();
 
         String  partyId = jobWithBLOBs.getfPartyId();
 
+        String filePath = "";
+        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
 
-//        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
-//        String filePath = "";
-//        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
-//
-//            filePath = jobLogPath.replace("$job_id", jobId);
-//
-//        } else {
-//            filePath = taskLogPath.replace("$job_id", jobId).replace("$component_id", componentId);
-//        }
-//
-//        if (type.equals(DEFAULT_LOG_TYPE)) {
-//            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
-//        } else {
-//            filePath = filePath.replace("$file_name", type);
-//        }
-//        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
-//        return fate_deploy_prefix + filePath;
-//          return "/data/project/fdn/nginx/logs/access.log";
+            filePath = JOB_LOG_PATH.replace("$job_id", jobId).replace("$role",role).replace("$party_id",partyId);
 
-        SimpleDateFormat  simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-         Date  date  = new Date();
 
-         String  temp =  simpleDateFormat.format(date);
-          return  "/data/projects/fateboard/bin/logs/"+temp+"/httpclient.0.log";
+        } else {
+            filePath = TASK_LOG_PATH.replace("$job_id", jobId).replace("$component_id", componentId).replace("$role",role).replace("$party_id",partyId);
+        }
+
+        if (type.equals(DEFAULT_LOG_TYPE)) {
+            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
+        } else {
+
+            switch(type){
+                case  "error":       filePath = filePath.replace("$file_name", "ERROR.log");  break;
+                case  "debug":       filePath = filePath.replace("$file_name", "DEBUG.log");  break;
+                case   "info":          filePath = filePath.replace("$file_name", "INFO.log");  break;
+
+                default:   filePath = filePath.replace("$file_name", "INFO.log");
+
+            }
+
+        }
+
+        String  result = FATE_DEPLOY_PREFIX + filePath;
+        logger.info("build filePath result {}", result);
+        return result;
+         // return "/data/project/fdn/nginx/logs/access.log";
+//        SimpleDateFormat  simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//         Date  date  = new Date();
+//
+//         String  temp =  simpleDateFormat.format(date);
+//          return  "/data/projects/fateboard/bin/logs/"+temp+"/httpclient.0.log";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {

@@ -7,7 +7,9 @@ import com.webank.ai.fate.board.disruptor.LogFileTransferEventProducer;
 import com.webank.ai.fate.board.log.LogFileService;
 import com.webank.ai.fate.board.log.LogScanner;
 import com.webank.ai.fate.board.log.RandomFileScanner;
+
 import com.webank.ai.fate.board.pojo.SshInfo;
+import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.ssh.SftpUtils;
 import com.webank.ai.fate.board.ssh.SshLogScanner;
 import com.webank.ai.fate.board.ssh.SshService;
@@ -49,14 +51,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
    // success/failed/partial/setFailed
 
-    static Set<String> jobFinishStatus =  new  HashSet<String>(){
-        {
-            add("success");
-            add("failed");
-            add("partial");
-            add("setFailed");
-        }
-    };
+
 
     private static final Logger logger = LoggerFactory.getLogger(LogWebSocketSSHService.class);
 
@@ -133,7 +128,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              */
 
             //logger.info("job stauts {}",jobTaskInfo.jobStatus);
-             if(jobFinishStatus.contains(jobTaskInfo.jobStatus)){
+             if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
             //if (true) {
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);

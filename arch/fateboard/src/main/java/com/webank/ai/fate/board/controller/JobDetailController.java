@@ -32,9 +32,6 @@ import java.io.IOException;
 import java.util.*;
 
 
-/**
- * @Description TODO
- **/
 
 
 @Controller
@@ -200,6 +197,8 @@ public class JobDetailController {
         } else {
             return new ResponseResult<>(retcode, resultObject);
         }
+
+
 
     }
 
