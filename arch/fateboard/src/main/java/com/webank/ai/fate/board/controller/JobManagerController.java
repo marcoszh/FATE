@@ -113,7 +113,7 @@ public class JobManagerController {
     @RequestMapping(value = "/query/{jobId}", method = RequestMethod.GET)
     public ResponseResult queryJobById(@PathVariable("jobId") String jobId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
+        JobWithBLOBs jobWithBLOBs = jobManagerService.query(jobId);
         if (jobWithBLOBs == null) {
             return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
         }
