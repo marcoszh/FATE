@@ -883,6 +883,146 @@ public class TaskExample {
             addCriterion("f_elapsed not between", value1, value2, "fElapsed");
             return (Criteria) this;
         }
+
+        public Criteria andFRoleIsNull() {
+            addCriterion("f_role is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleIsNotNull() {
+            addCriterion("f_role is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleEqualTo(String value) {
+            addCriterion("f_role =", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleNotEqualTo(String value) {
+            addCriterion("f_role <>", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleGreaterThan(String value) {
+            addCriterion("f_role >", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleGreaterThanOrEqualTo(String value) {
+            addCriterion("f_role >=", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleLessThan(String value) {
+            addCriterion("f_role <", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleLessThanOrEqualTo(String value) {
+            addCriterion("f_role <=", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleLike(String value) {
+            addCriterion("f_role like", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleNotLike(String value) {
+            addCriterion("f_role not like", value, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleIn(List<String> values) {
+            addCriterion("f_role in", values, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleNotIn(List<String> values) {
+            addCriterion("f_role not in", values, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleBetween(String value1, String value2) {
+            addCriterion("f_role between", value1, value2, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFRoleNotBetween(String value1, String value2) {
+            addCriterion("f_role not between", value1, value2, "fRole");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdIsNull() {
+            addCriterion("f_party_id is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdIsNotNull() {
+            addCriterion("f_party_id is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdEqualTo(String value) {
+            addCriterion("f_party_id =", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdNotEqualTo(String value) {
+            addCriterion("f_party_id <>", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdGreaterThan(String value) {
+            addCriterion("f_party_id >", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdGreaterThanOrEqualTo(String value) {
+            addCriterion("f_party_id >=", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdLessThan(String value) {
+            addCriterion("f_party_id <", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdLessThanOrEqualTo(String value) {
+            addCriterion("f_party_id <=", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdLike(String value) {
+            addCriterion("f_party_id like", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdNotLike(String value) {
+            addCriterion("f_party_id not like", value, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdIn(List<String> values) {
+            addCriterion("f_party_id in", values, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdNotIn(List<String> values) {
+            addCriterion("f_party_id not in", values, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdBetween(String value1, String value2) {
+            addCriterion("f_party_id between", value1, value2, "fPartyId");
+            return (Criteria) this;
+        }
+
+        public Criteria andFPartyIdNotBetween(String value1, String value2) {
+            addCriterion("f_party_id not between", value1, value2, "fPartyId");
+            return (Criteria) this;
+        }
     }
 
     public static class Criteria extends GeneratedCriteria {

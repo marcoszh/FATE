@@ -25,6 +25,10 @@ public class Task {
 
     private Long fElapsed;
 
+    private String fRole;
+
+    private String fPartyId;
+
     public String getfTaskId() {
         return fTaskId;
     }
@@ -119,5 +123,21 @@ public class Task {
 
     public void setfElapsed(Long fElapsed) {
         this.fElapsed = fElapsed;
+    }
+
+    public String getfRole() {
+        return fRole;
+    }
+
+    public void setfRole(String fRole) {
+        this.fRole = fRole == null ? null : fRole.trim();
+    }
+
+    public String getfPartyId() {
+        return fPartyId;
+    }
+
+    public void setfPartyId(String fPartyId) {
+        this.fPartyId = fPartyId == null ? null : fPartyId.trim();
     }
 }
