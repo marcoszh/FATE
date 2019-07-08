@@ -13,6 +13,7 @@ import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.ssh.SftpUtils;
 import com.webank.ai.fate.board.ssh.SshLogScanner;
 import com.webank.ai.fate.board.ssh.SshService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -35,7 +36,7 @@ import java.util.concurrent.Executors;
  * @Description TODO
  **/
 
-@ServerEndpoint(value = "/log/{jobId}/{componentId}/{type}", configurator = Configurator.class)
+@ServerEndpoint(value = "/log/{jobId}/{role}/{partyId}/{componentId}/{type}", configurator = Configurator.class)
 @Component
 public class LogWebSocketSSHService implements InitializingBean, ApplicationContextAware {
 
@@ -69,22 +70,19 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
      */
     @OnOpen
     public synchronized void onOpen(Session session, @PathParam("jobId") String jobId,
+                                    @PathParam("role")  String role,
+                                    @PathParam("partyId")  String partyId,
                                     @PathParam("componentId") String componentId,
                                     @PathParam("type") String type
 
     ) throws Exception {
 
-//        logger.info("jobId:{}, componentId:{}, type:{}", jobId, componentId, type);
 
-        //test();
+        String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
 
-        String filePath = logFileService.buildFilePath(jobId, componentId, type);
-
-        Preconditions.checkArgument(filePath != null, "file path is null");
-
+        Preconditions.checkArgument(StringUtils.isNotEmpty(filePath), "file path is null");
 
          if(LogFileService.checkFileIsExist(filePath)){
-       //if (false) {
             File file = new File(filePath);
 
             long lines = LogFileService.getLocalFileLineCount(file);
@@ -113,29 +111,21 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
             LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId);
 
+            Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip));
+
             SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
-          // SshInfo  sshInfo =  sshService.getSSHInfo("10.107.116.39");
 
-
-            Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""));
-//
             Preconditions.checkArgument(sshInfo != null);
 
 
-
-            /**
-             *   success/failed/partial/setFailed
-             */
-
-            //logger.info("job stauts {}",jobTaskInfo.jobStatus);
              if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
-            //if (true) {
+
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
 
             }
 
-            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type);
+            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type,role,partyId);
 
             sessionMap.put(session, sshLogScanner);
 
@@ -183,7 +173,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error("there is a error");
+        logger.error("log web socket error",error);
         error.printStackTrace();
     }
 

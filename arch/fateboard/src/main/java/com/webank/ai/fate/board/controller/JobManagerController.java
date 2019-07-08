@@ -70,7 +70,6 @@ public class JobManagerController {
         String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
 
         return  ResponseUtil.buildResponse(result,null);
-
     }
 
     /**

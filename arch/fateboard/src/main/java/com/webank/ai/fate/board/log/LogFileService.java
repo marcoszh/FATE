@@ -92,15 +92,15 @@ public class LogFileService {
 
 
 
-    public String buildFilePath(String jobId, String componentId, String type) {
+    public String buildFilePath(String jobId, String componentId, String type,String  role,String partyId) {
 
-        JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
+      //  JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
 
-        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentId,type,role,partyId));
 
-        String  role =jobWithBLOBs.getfRole();
-
-        String  partyId = jobWithBLOBs.getfPartyId();
+//        String  role =jobWithBLOBs.getfRole();
+//
+//        String  partyId = jobWithBLOBs.getfPartyId();
 
         String filePath = "";
         if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
@@ -164,11 +164,11 @@ public class LogFileService {
     }
 
 
-    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type, int begin, int count) throws Exception {
+    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type,String role,String partyId, int begin, int count) throws Exception {
         List<Map> results = Lists.newArrayList();
         JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
-        String filePath = this.buildFilePath(jobId, componentId, type);
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         Session session = this.sshService.connect(sshInfo);
         Channel channel = this.sshService.executeCmd(session, "tail -n +" + begin + " " + filePath + " | head -n " + count);
 
@@ -216,8 +216,8 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String type, int endNum) throws Exception {
-        String filePath = this.buildFilePath(jobId, componentId, type);
+    public Channel getRemoteLogStream(String jobId, String componentId, String type,String role,String partyId, int endNum) throws Exception {
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         String cmd = this.buildCommand(endNum, filePath);
         Channel channel = getRemoteLogStream(jobId, componentId, cmd);
         return channel;
