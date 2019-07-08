@@ -1,13 +1,53 @@
 package com.webank.ai.fate.board.utils;
 
 import com.sun.management.OperatingSystemMXBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.List;
 
 public class GetSystemInfo {
-  
+
+
+   static  Logger logger  = LoggerFactory.getLogger(GetSystemInfo.class);
+
+    public static String getLocalIp() {
+
+        try {
+            Enumeration allNetInterfaces = NetworkInterface.getNetworkInterfaces();
+            InetAddress ip = null;
+            while (allNetInterfaces.hasMoreElements()) {
+                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
+
+                Enumeration addresses = netInterface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    ip = (InetAddress) addresses.nextElement();
+                    if (ip != null && ip instanceof Inet4Address) {
+
+                        if (!ip.getHostAddress().equals("127.0.0.1")
+                                && !ip.getHostAddress().equals("0.0.0.0")) {
+                             return  ip.getHostAddress();
+                        }
+
+                    }
+                }
+            }
+        } catch (Throwable e) {
+
+            logger.error("get local ip error",e);
+        }
+        return null;
+
+
+    }
+
+
     /** 
      * 获取操作系统名称 
      * @return 

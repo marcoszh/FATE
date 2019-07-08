@@ -60,24 +60,12 @@ public class JobDetailController {
     public ResponseResult getMetaInfo(@RequestBody String param) {
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC, param);
-
-
         return  ResponseUtil.buildResponse(result,Dict.DATA);
-
-//        JSONObject resultObject = JSON.parseObject(result);
-//
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//
-//        JSONObject data = resultObject.getJSONObject(Dict.DATA);
-//
-//        String  msg  = data.getString(Dict.REMOTE_RETURN_MSG);
-//
-//        return new ResponseResult<>(retcode,msg, data);
-
     }
 
     ;
@@ -94,21 +82,15 @@ public class JobDetailController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         String metricNamespace = jsonObject.getString(Dict.METRIC_NAMESPACE);
         String metricName = jsonObject.getString(Dict.METRIC_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName,metricName,metricNamespace));
-
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName,metricName,metricNamespace));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, param);
-
         return  ResponseUtil.buildResponse(result,null);
 
-
-//        JSONObject resultObject = JSON.parseObject(result);
-//
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//
-//        return new ResponseResult<>(retcode, resultObject);
     }
 
     /**
@@ -124,28 +106,15 @@ public class JobDetailController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
 
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, param);
 
         return  ResponseUtil.buildResponse(result,Dict.DATA);
-
-//        JSONObject resultObject = JSON.parseObject(result);
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//
-////        if (retcode == null) {
-////            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "parameter not exist!");
-////        }
-////        if (retcode == 0) {
-//
-//            Object data = resultObject.get(Dict.DATA);
-//
-//            return new ResponseResult<>(retcode, data);
-//
-////        } else {
-////            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "errorcode: " + retcode);
-////        }
 
     }
 
@@ -162,36 +131,26 @@ public class JobDetailController {
 
 
         JSONObject jsonObject = JSON.parseObject(param);
-
         String jobId = jsonObject.getString(Dict.JOBID);
-        Preconditions.checkArgument(StringUtils.isNotEmpty(jobId));
-//        if (jobId == null || "".equals(jobId)) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
-//        }
-
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, param);
-
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger(Dict.RETCODE);
 
         if (retcode == 0) {
-
             JSONObject data = resultObject.getJSONObject(Dict.DATA);
-
             JSONArray components_list = data.getJSONArray(Dict.COMPONENT_LIST);
             ArrayList<Map> componentList = new ArrayList<>();
-
             for (Object o : components_list) {
                 HashMap<String, String> component = new HashMap<>();
                 component.put(Dict.COMPONENT_NAME, (String) o);
-
                 String taskStatus = taskManagerService.findTaskStatus(jobId, (String) o);
                 component.put(Dict.STATUS, taskStatus);
                 componentList.add(component);
             }
             data.put(Dict.COMPONENT_LIST, componentList);
-
-
             return new ResponseResult<>(ErrorCode.SUCCESS, data);
 
         } else {
@@ -211,35 +170,15 @@ public class JobDetailController {
     @RequestMapping(value = "/tracking/component/output/model", method = RequestMethod.POST)
     @ResponseBody
     public ResponseResult getModel(@RequestBody String param) {
-
-
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
-//        if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
-//        }
-
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
         String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_MODEL, param);
-
-
-
-//        if (result == null || "".equals(result)) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
-//        }
-
         return  ResponseUtil.buildResponse(result,null);
 
-
-//        JSONObject resultObject = JSON.parseObject(result);
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//        return new ResponseResult<>(retcode, resultObject);
-
-//        } else {
-//            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, "errorcode: " + retcode);
-//        }
 
     }
 
@@ -254,22 +193,12 @@ public class JobDetailController {
     public ResponseResult getData(@RequestBody String param) {
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
-//        if (StringUtils.isEmpty(jobId)) || String) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
-//        }
-
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
         String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_DATA, param);
-//        if (result == null || "".equals(result)) {
-//            return new ResponseResult<>(ErrorCode.SYSTEM_ERROR, "Network Error!");
-//        }
         return  ResponseUtil.buildResponse(result,null);
-
-
-//        JSONObject resultObject = JSON.parseObject(result);
-//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-//        return new ResponseResult<>(retcode, resultObject);
 
     }
 

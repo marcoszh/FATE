@@ -109,7 +109,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              * 远程文件
              */
 
-            LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId);
+            LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId,role,partyId);
 
             Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip));
 
@@ -117,8 +117,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
             Preconditions.checkArgument(sshInfo != null);
 
-
-             if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
+            if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
 
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
