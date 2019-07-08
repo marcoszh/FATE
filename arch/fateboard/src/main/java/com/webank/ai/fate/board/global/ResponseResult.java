@@ -10,7 +10,7 @@ public class ResponseResult<T> {
     private int code = 0;
 
     @JsonProperty(value = "msg")
-    private String msg = "success";
+    private String msg = "";
 
     public T getData() {
         return data;
@@ -48,6 +48,12 @@ public class ResponseResult<T> {
     public ResponseResult(int code, T data) {
         this.code = code;
         this.data = data;
+    }
+
+    public ResponseResult(int code,String msg, T data) {
+        this.code = code;
+        this.data = data;
+        this.msg=msg;
     }
 
     public ResponseResult(ErrorCode errorCode) {

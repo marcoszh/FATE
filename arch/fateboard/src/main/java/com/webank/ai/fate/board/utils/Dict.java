@@ -41,4 +41,6 @@ public class Dict {
     static public String URL_JOB_DATAVIEW="/v1/tracking/job/data_view";
     static public String URL_JOB_STOP="/v1/pipeline/job/stop";
 
+    static public String REMOTE_RETURN_MSG="retmsg";
+
 }

@@ -11,6 +11,7 @@ import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
 import com.webank.ai.fate.board.utils.PageBean;
+import com.webank.ai.fate.board.utils.ResponseUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +71,12 @@ public class JobManagerController {
             return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
         }
         String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
-        JSONObject resultObject = JSON.parseObject(result);
-        Integer retcode = resultObject.getInteger(Dict.RETCODE);
-        return new ResponseResult<>(ErrorCode.SUCCESS,resultObject);
+
+
+        return  ResponseUtil.buildResponse(result,null);
+//        JSONObject resultObject = JSON.parseObject(result);
+//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
+//        return new ResponseResult<>(ErrorCode.SUCCESS,resultObject);
 
 
     }
@@ -96,13 +100,16 @@ public class JobManagerController {
 //            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Network Error!");
 //        }
 
-        JSONObject resultObject = JSON.parseObject(result);
+        return  ResponseUtil.buildResponse(result,Dict.DATA);
 
-        Integer retcode = resultObject.getInteger(Dict.RETCODE);
 
-        Object data = resultObject.get(Dict.DATA);
-
-        return new ResponseResult<>(retcode, data);
+//        JSONObject resultObject = JSON.parseObject(result);
+//
+//        Integer retcode = resultObject.getInteger(Dict.RETCODE);
+//
+//        Object data = resultObject.get(Dict.DATA);
+//
+//        return new ResponseResult<>(retcode, data);
 
 
     }

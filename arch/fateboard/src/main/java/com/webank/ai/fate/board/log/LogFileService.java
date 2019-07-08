@@ -89,6 +89,14 @@ public class LogFileService {
 
 
     public String buildFilePath(String jobId, String componentId, String type) {
+
+        JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
+
+        String  role =jobWithBLOBs.getfRole();
+
+        String  partyId = jobWithBLOBs.getfPartyId();
+
+
 //        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
 //        String filePath = "";
 //        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
