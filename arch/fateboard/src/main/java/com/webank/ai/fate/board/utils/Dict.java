@@ -15,6 +15,9 @@ public class Dict {
     static public final  String JOB="job";
     static public final  String DATASET="dataset";
     static public final  String COMPONENT_NAME="component_name";
+    static public final  String ROLE="role";
+    static public final  String PARTY_ID="party_id";
+
 
 
     static public  final String METRIC_NAMESPACE="metric_namespace";

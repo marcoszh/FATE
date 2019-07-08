@@ -2,6 +2,7 @@ package com.webank.ai.fate.board.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.global.ErrorCode;
 import com.webank.ai.fate.board.global.ResponseResult;
@@ -65,11 +66,10 @@ public class JobManagerController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
-        if ( StringUtils.isEmpty(jobId)) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
-            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
 
-        }
         String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
 
         return  ResponseUtil.buildResponse(result,null);
@@ -86,10 +86,10 @@ public class JobManagerController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
-        if (StringUtils.isEmpty(jobId)) {
-//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
-            ResponseResult<Object> objectResponseResult = new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
-        }
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
+
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, param);
 
 //        if (result == null || "".equals(result)) {
@@ -115,17 +115,24 @@ public class JobManagerController {
      *
      * @return
      */
-    @RequestMapping(value = "/query/{jobId}", method = RequestMethod.GET)
-    public ResponseResult queryJobById(@PathVariable("jobId") String jobId) {
+    @RequestMapping(value = "/query/{jobId}/{role}/{partyId}", method = RequestMethod.GET)
+    public ResponseResult queryJobById(@PathVariable("jobId") String jobId,
+                                       @PathVariable("role") String role,
+                                       @PathVariable("partyId") String partyId
+                                       ) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
+        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId,role,partyId);
         if (jobWithBLOBs == null) {
 //            return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
             return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
 
         }
         Map  params = Maps.newHashMap();
+
         params.put(Dict.JOBID,jobId);
+        params.put(Dict.ROLE,role);
+        params.put(Dict.PARTY_ID,partyId);
+
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
 
 //        if (result == null || "".equals(result)) {
@@ -170,7 +177,7 @@ public class JobManagerController {
                 public JSONObject call() throws Exception {
                     Map param = Maps.newHashMap();
                     String jobId = jobWithBLOBs.getfJobId();
-                    param.put(Dict.JOBID,jobId);
+                    param.put(Dict.JOB + Dict.ROLE +Dict.PARTY_ID,jobId);
                     String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, JSON.toJSONString(param));
                     JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
                     return data;
@@ -224,8 +231,13 @@ public class JobManagerController {
                 @Override
                 public JSONObject  call() throws Exception {
                     String jobId = jobWithBLOBs.getfJobId();
+                    String role = jobWithBLOBs.getfRole();
+                    String partyId = jobWithBLOBs.getfPartyId();
+
                     Map  params =Maps.newHashMap();
                     params.put(Dict.JOBID,jobId);
+                    params.put(Dict.ROLE,role);
+                    params.put(Dict.PARTY_ID,partyId);
                     String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
                     JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
                     return data;

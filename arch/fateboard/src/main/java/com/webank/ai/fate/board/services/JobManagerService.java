@@ -86,7 +86,7 @@ public class JobManagerService {
     }
 
 
-    public JobWithBLOBs queryJobByFJobId(String jobId) {
+    public JobWithBLOBs queryJobByFJobId(String jobId,String role,String partyId) {
 
         //logger.info("jobId:" + jobId);
 
@@ -97,6 +97,9 @@ public class JobManagerService {
 
 
         criteria.andFJobIdEqualTo(jobId);
+        criteria.andFRoleEqualTo(role);
+        criteria.andFPartyIdEqualTo(partyId);
+
 
         // logger.info("jobExample：" + jobExample);
 

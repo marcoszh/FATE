@@ -59,10 +59,15 @@ public class JobDetailController {
     @RequestMapping(value = "/tracking/component/metrics", method = RequestMethod.POST)
     public ResponseResult getMetaInfo(@RequestBody String param) {
         JSONObject jsonObject = JSON.parseObject(param);
+
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
 
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
+
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC, param);
 
 
@@ -94,10 +99,13 @@ public class JobDetailController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         String metricNamespace = jsonObject.getString(Dict.METRIC_NAMESPACE);
         String metricName = jsonObject.getString(Dict.METRIC_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName,metricName,metricNamespace));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName,metricName,metricNamespace));
 
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, param);
 
@@ -124,8 +132,11 @@ public class JobDetailController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
 
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, param);
 
@@ -164,7 +175,10 @@ public class JobDetailController {
         JSONObject jsonObject = JSON.parseObject(param);
 
         String jobId = jsonObject.getString(Dict.JOBID);
-        Preconditions.checkArgument(StringUtils.isNotEmpty(jobId));
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
+
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
 //        if (jobId == null || "".equals(jobId)) {
 //            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
 //        }
@@ -215,9 +229,11 @@ public class JobDetailController {
 
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
 
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
 //        if (job_id == null || "".equals(job_id) || component_name == null || "".equals(component_name)) {
 //            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
 //        }
@@ -254,8 +270,10 @@ public class JobDetailController {
     public ResponseResult getData(@RequestBody String param) {
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
+        String role = jsonObject.getString(Dict.ROLE);
+        String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentName));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
 //        if (StringUtils.isEmpty(jobId)) || String) {
 //            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters！");
 //        }
