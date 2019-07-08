@@ -1,13 +1,20 @@
 package com.webank.ai.fate.board.websocket;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.conf.Configurator;
 import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.services.JobManagerService;
+import com.webank.ai.fate.board.utils.Dict;
+import com.webank.ai.fate.board.utils.HttpClientPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,9 +33,13 @@ import java.util.concurrent.Executors;
 
 @ServerEndpoint(value = "/websocket/progress/{jobId}", configurator = Configurator.class)
 @Component
-public class JobWebSocketService {
-    @Autowired
-    JobManagerService jobManagerService;
+public class JobWebSocketService implements InitializingBean, ApplicationContextAware {
+
+    static HttpClientPool  httpClientPool;
+
+    static JobManagerService jobManagerService;
+
+    static ApplicationContext  applicationContext;
 
     static Logger logger = LoggerFactory.getLogger(JobWebSocketService.class);
 
@@ -77,7 +88,7 @@ public class JobWebSocketService {
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error("there is a error!");
+        logger.error("there is a error!",error);
         error.printStackTrace();
     }
 
@@ -125,9 +136,15 @@ public class JobWebSocketService {
 
                         String status = job.getfStatus();
 
-                        stringObjectHashMap.put("process", process);
-                        stringObjectHashMap.put("duration", duration);
-                        stringObjectHashMap.put("status", status);
+                        stringObjectHashMap.put(Dict.JOB_PROCESS, process);
+                        stringObjectHashMap.put(Dict.JOB_DURATION, duration);
+                        stringObjectHashMap.put(Dict.JOB_STATUS, status);
+
+                        if(JobManagerService.jobFinishStatus.contains(status)){
+
+
+                        }
+
 
                         v.forEach(session -> {
 
@@ -139,7 +156,6 @@ public class JobWebSocketService {
                                     logger.error("IOException", e);
                                 }
                             } else {
-                                //???
                                 v.remove(session);
 
                                 jobSessionMap.remove(session);
@@ -150,6 +166,19 @@ public class JobWebSocketService {
 
                 }
         );
+
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        jobManagerService =(JobManagerService)applicationContext.getBean("jobManagerService");
+        httpClientPool  =  (HttpClientPool)applicationContext.getBean("httpClientPool");
+
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        JobWebSocketService.applicationContext =  applicationContext;
 
     }
 }

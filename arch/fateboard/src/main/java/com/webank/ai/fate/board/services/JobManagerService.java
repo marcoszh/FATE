@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -20,6 +22,16 @@ public class JobManagerService {
 
     @Autowired
     JobMapper jobMapper;
+
+
+    public  static Set<String> jobFinishStatus =  new  HashSet<String>(){
+        {
+        add("success");
+        add("failed");
+        add("partial");
+        add("setFailed");
+        }
+        };
 
     public long count() {
 
