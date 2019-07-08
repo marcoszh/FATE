@@ -181,19 +181,18 @@ public class JobDetailController {
 
             JSONObject data = resultObject.getJSONObject(Dict.DATA);
 
-            JSONArray components_list = data.getJSONArray("component_list");
+            JSONArray components_list = data.getJSONArray(Dict.COMPONENT_LIST);
             ArrayList<Map> componentList = new ArrayList<>();
 
             for (Object o : components_list) {
                 HashMap<String, String> component = new HashMap<>();
-                component.put("componentName", (String) o);
+                component.put(Dict.COMPONENT_NAME, (String) o);
 
                 String taskStatus = taskManagerService.findTaskStatus(jobId, (String) o);
                 component.put(Dict.STATUS, taskStatus);
                 componentList.add(component);
             }
-            data.remove("component_list");
-            data.put("componentList", componentList);
+            data.put(Dict.COMPONENT_LIST, componentList);
 
 
             return new ResponseResult<>(ErrorCode.SUCCESS, data);

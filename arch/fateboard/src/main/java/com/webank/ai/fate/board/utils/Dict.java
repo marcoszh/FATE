@@ -15,6 +15,7 @@ public class Dict {
     static public String JOB="job";
     static public String DATASET="dataset";
     static public String COMPONENT_NAME="component_name";
+    static public String COMPONENT_LIST="component_list";
 
 
     static public String METRIC_NAMESPACE="metric_namespace";

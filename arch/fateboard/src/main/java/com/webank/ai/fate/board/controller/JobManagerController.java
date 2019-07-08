@@ -51,9 +51,9 @@ public class JobManagerController {
     @RequestMapping(value = "/query/status", method = RequestMethod.GET)
     public ResponseResult queryJobStatus() {
         List<Job> jobs = jobManagerService.queryJobStatus();
-        if (jobs.size() == 0) {
-            return new ResponseResult<>(ErrorCode.SUCCESS, "There is no job on running or waiting!");
-        }
+//        if (jobs.size() == 0) {
+//            return new ResponseResult<>(ErrorCode.SUCCESS, "There is no job on running or waiting!");
+//        }
         return new ResponseResult<>(ErrorCode.SUCCESS, jobs);
     }
 
@@ -65,10 +65,13 @@ public class JobManagerController {
      */
     @RequestMapping(value = "/v1/pipeline/job/stop", method = RequestMethod.POST)
     public ResponseResult stopJob(@RequestBody String param) {
+
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
         if ( StringUtils.isEmpty(jobId)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
+//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
+
         }
         String result =  httpClientPool.post(fateUrl+Dict.URL_JOB_STOP,param);
 
@@ -92,7 +95,8 @@ public class JobManagerController {
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
         if (StringUtils.isEmpty(jobId)) {
-            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
+//            return new ResponseResult<>(ErrorCode.PARAM_ERROR, "Error for incoming parameters!");
+            ResponseResult<Object> objectResponseResult = new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
         }
         String result = httpClientPool.post(fateUrl + Dict.URL_JOB_DATAVIEW, param);
 
@@ -124,7 +128,9 @@ public class JobManagerController {
         HashMap<String, Object> resultMap = new HashMap<>();
         JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
         if (jobWithBLOBs == null) {
-            return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
+//            return new ResponseResult<String>(ErrorCode.PARAM_ERROR, "Job not exist!");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
+
         }
         Map  params = Maps.newHashMap();
         params.put(Dict.JOBID,jobId);
@@ -214,8 +220,10 @@ public class JobManagerController {
         List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJob();
 
         if (jobWithBLOBsList.size() == 0) {
-            return new ResponseResult<String>(ErrorCode.SUCCESS, "Job not exist!");
+//            return new ResponseResult<String>(ErrorCode.SUCCESS, "Job not exist!");
+            return new ResponseResult<>(ErrorCode.INCOMING_PARAM_ERROR);
         }
+
         Map<JobWithBLOBs,Future>  jobDataMap = new HashMap<JobWithBLOBs,Future>(16);
 
         for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
