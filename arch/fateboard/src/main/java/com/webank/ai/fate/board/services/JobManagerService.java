@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -20,6 +22,16 @@ public class JobManagerService {
 
     @Autowired
     JobMapper jobMapper;
+
+
+    public  static Set<String> jobFinishStatus =  new  HashSet<String>(){
+        {
+        add("success");
+        add("failed");
+        add("partial");
+        add("setFailed");
+        }
+        };
 
     public long count() {
 
@@ -74,7 +86,7 @@ public class JobManagerService {
     }
 
 
-    public JobWithBLOBs queryJobByFJobId(String jobId) {
+    public JobWithBLOBs queryJobByFJobId(String jobId,String role,String partyId) {
 
         //logger.info("jobId:" + jobId);
 
@@ -85,6 +97,9 @@ public class JobManagerService {
 
 
         criteria.andFJobIdEqualTo(jobId);
+        criteria.andFRoleEqualTo(role);
+        criteria.andFPartyIdEqualTo(partyId);
+
 
         // logger.info("jobExample：" + jobExample);
 
