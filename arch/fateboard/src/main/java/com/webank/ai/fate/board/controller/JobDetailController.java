@@ -64,7 +64,8 @@ public class JobDetailController {
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC, jsonObject.toJSONString());
         return  ResponseUtil.buildResponse(result,Dict.DATA);
     }
 
@@ -88,7 +89,8 @@ public class JobDetailController {
         String metricNamespace = jsonObject.getString(Dict.METRIC_NAMESPACE);
         String metricName = jsonObject.getString(Dict.METRIC_NAME);
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName,metricName,metricNamespace));
-        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, jsonObject.toJSONString());
         return  ResponseUtil.buildResponse(result,null);
 
     }
@@ -111,8 +113,8 @@ public class JobDetailController {
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
 
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-
-        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, jsonObject.toJSONString());
 
         return  ResponseUtil.buildResponse(result,Dict.DATA);
 
@@ -176,7 +178,8 @@ public class JobDetailController {
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_MODEL, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_MODEL, jsonObject.toJSONString());
         return  ResponseUtil.buildResponse(result,null);
 
 
@@ -197,7 +200,8 @@ public class JobDetailController {
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_DATA, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_DATA, jsonObject.toJSONString());
         return  ResponseUtil.buildResponse(result,null);
 
     }

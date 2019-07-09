@@ -13,6 +13,7 @@ import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.ssh.SftpUtils;
 import com.webank.ai.fate.board.ssh.SshLogScanner;
 import com.webank.ai.fate.board.ssh.SshService;
+import com.webank.ai.fate.board.utils.GetSystemInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,18 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
             LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId,role,partyId);
 
+
+
+
             Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip));
+
+             String localIp  = GetSystemInfo.getLocalIp();
+
+             if(localIp.equals(jobTaskInfo.ip)){
+                 logger.error("local log file {} not exist",filePath);
+                 return ;
+             }
+
 
             SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
 
@@ -121,9 +133,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
-
             }
-
             SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type,role,partyId);
 
             sessionMap.put(session, sshLogScanner);

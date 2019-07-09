@@ -50,17 +50,17 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
 
     /**
+     *
      * call method when building connection
      **/
     @OnOpen
-    public void onOpen(Session session, @PathParam("jobId") String jobId,String  role,String partyId) {
+    public void onOpen(Session session, @PathParam("jobId") String jobId,@PathParam("role") String  role,@PathParam("partyId")  Integer partyId) {
 
-        String  jobKey =  jobId+"\\|"+role+"\\|"+partyId;
+        String  jobKey =  jobId+":"+role+":"+partyId;
 
+        jobSessionMap.put(session, jobKey);
 
-        jobSessionMap.put(session, jobId);
-
-        logger.info("websocket job id {} open ,session size{}", jobId, jobSessionMap.size());
+        logger.info("websocket job id {} open ,session size{}", jobKey, jobSessionMap.size());
 
     }
 
@@ -120,12 +120,14 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
 
         jobMaps.forEach((k, v) -> {
-                   // logger.info("try to query job {} process", k);
 
-                    String[] args = k.split("\\|");
+
+                    String[] args = k.split(":");
                     Preconditions.checkArgument(args.length==3);
                     Job job = jobManagerService.queryJobByConditions(args[0],args[1],args[2]);
                     if (job != null) {
+                        //logger.info("try to query job process {} ", k);
+
                         HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
                         Integer process = job.getfProgress();
                         long  now=  System.currentTimeMillis();
@@ -166,7 +168,9 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
                             }
 
                         });
-                    }
+                    }else{
+                        logger.error("job {} is not exist",k);
+                    };
 
                 }
         );

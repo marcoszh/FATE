@@ -269,7 +269,7 @@ public class LogFileService {
 
             TaskExample taskExample = new TaskExample();
 
-            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId);
+            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId).andFRoleEqualTo(role).andFPartyIdEqualTo(partyId);
 
             List<Task> tasks = taskMapper.selectByExample(taskExample);
 
