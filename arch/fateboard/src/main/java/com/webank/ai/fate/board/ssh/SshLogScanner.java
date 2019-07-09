@@ -13,10 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
- * @Description TODO
- * @Author kaideng
- **/
+
 public class SshLogScanner implements Runnable, LogScanner {
 
 
@@ -30,6 +27,10 @@ public class SshLogScanner implements Runnable, LogScanner {
 
     String componentId;
 
+    String role;
+
+    String partyId;
+
     String type;
 
     String filePath;
@@ -41,12 +42,12 @@ public class SshLogScanner implements Runnable, LogScanner {
     public SshLogScanner(javax.websocket.Session webSocketSession,
                          LogFileService logFileService,
                          SshInfo sshInfo,
-                         String jobId, String componentId, String type) {
+                         String jobId, String componentId, String type,String  role,String partyId) {
         Preconditions.checkArgument(jobId != null && !jobId.equals(""));
         this.jobId = jobId;
         Preconditions.checkArgument(componentId != null && !componentId.equals(""));
         this.componentId = componentId;
-        this.filePath = logFileService.buildFilePath(jobId, componentId, type);
+        this.filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
         this.sshInfo = sshInfo;
         Preconditions.checkArgument(type != null && !type.equals(""));
         this.type = type;

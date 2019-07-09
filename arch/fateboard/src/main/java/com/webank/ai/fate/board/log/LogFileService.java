@@ -92,15 +92,15 @@ public class LogFileService {
 
 
 
-    public String buildFilePath(String jobId, String componentId, String type) {
+    public String buildFilePath(String jobId, String componentId, String type,String  role,String partyId) {
 
-        JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
+      //  JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
 
-        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentId,type,role,partyId));
 
-        String  role =jobWithBLOBs.getfRole();
-
-        String  partyId = jobWithBLOBs.getfPartyId();
+//        String  role =jobWithBLOBs.getfRole();
+//
+//        String  partyId = jobWithBLOBs.getfPartyId();
 
         String filePath = "";
         if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
@@ -164,11 +164,11 @@ public class LogFileService {
     }
 
 
-    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type, int begin, int count) throws Exception {
+    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type,String role,String partyId, int begin, int count) throws Exception {
         List<Map> results = Lists.newArrayList();
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
-        String filePath = this.buildFilePath(jobId, componentId, type);
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         Session session = this.sshService.connect(sshInfo);
         Channel channel = this.sshService.executeCmd(session, "tail -n +" + begin + " " + filePath + " | head -n " + count);
 
@@ -196,9 +196,9 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String cmd) throws Exception {
+    public Channel getRemoteLogStream(String jobId, String componentId,String role,String partyId ,String cmd) throws Exception {
 
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
         Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip ), "remote ip is null");
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
         return getRemoteLogStream(sshInfo, cmd);
@@ -216,10 +216,10 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String type, int endNum) throws Exception {
-        String filePath = this.buildFilePath(jobId, componentId, type);
+    public Channel getRemoteLogStream(String jobId, String componentId, String type,String role,String partyId, int endNum) throws Exception {
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         String cmd = this.buildCommand(endNum, filePath);
-        Channel channel = getRemoteLogStream(jobId, componentId, cmd);
+        Channel channel = getRemoteLogStream(jobId, componentId,role,partyId, cmd);
         return channel;
     }
 
@@ -249,7 +249,7 @@ public class LogFileService {
 
     ;
 
-    public JobTaskInfo getJobTaskInfo(String jobId, String componentId) {
+    public JobTaskInfo getJobTaskInfo(String jobId, String componentId,String role,String partyId) {
 
         JobTaskInfo jobTaskInfo = new JobTaskInfo();
 
@@ -257,7 +257,7 @@ public class LogFileService {
 
         jobTaskInfo.componentId = componentId;
 
-        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
+        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByConditions(jobId,role,partyId);
 
         Preconditions.checkArgument(jobWithBLOBs != null, "job info " + jobId + " is not exist");
 
@@ -269,7 +269,7 @@ public class LogFileService {
 
             TaskExample taskExample = new TaskExample();
 
-            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId);
+            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId).andFRoleEqualTo(role).andFPartyIdEqualTo(partyId);
 
             List<Task> tasks = taskMapper.selectByExample(taskExample);
 
