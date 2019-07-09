@@ -24,8 +24,7 @@ from federatedml.util import consts
 
 class BaseParam(object):
     def __init__(self):
-        self.func = None
-        self.builtin_types = None
+        pass
 
     def check(self):
         raise NotImplementedError("Parameter Object should have be check")
