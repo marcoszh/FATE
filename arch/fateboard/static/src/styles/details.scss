@@ -56,7 +56,7 @@
           }
         }
         .log-list {
-          max-height: 500px;
+          height: 500px;
           overflow: auto;
           > li {
             /*height: 25px;*/
@@ -115,7 +115,7 @@
         color: #bbbbc8;
       }
       .echart-wrapper {
-        height: 400px;
+        height: 632px;
         .echarts {
           height: 100%;
         }
@@ -123,14 +123,18 @@
     }
     .para-wrapper{
       width: 316px;
-      .title {
+      overflow: auto;
+      .para-title {
+        margin-bottom: 18px;
         font-size: 16px;
         color: #7f7d8e;
       }
       .msg {
-        .msg-title {
-          margin-right: 20px;
-        }
+        height: 632px;
+        padding: 24px;
+        margin-bottom: 24px;
+        color: #7f7d8e;
+        overflow: auto;
         .msg-list {
           > li {
 

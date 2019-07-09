@@ -8,9 +8,8 @@ import { Message } from 'element-ui'
 // create an axios instance
 // console.log(window.location.origin)
 const service = axios.create({
-  // baseURL: 'http://10.107.117.81:8081/scvmadm/api',
-  baseURL: process.env.BASE_API, // api 的 base_url
-  // baseURL: window.location.origin, // api 的 base_url
+  // baseURL: process.env.BASE_API, // api 的 base_url
+  baseURL: window.location.origin, // api 的 base_url
   withCredentials: false, // 跨域请求时发送 cookies
   timeout: 5000 // request timeout
 })
@@ -45,7 +44,7 @@ service.interceptors.response.use(
    */
   response => {
     const res = response.data
-    if (res.code !== 0 && res.code !== 10001) {
+    if (res.code !== 0) {
       Message({
         message: res.message || res.msg,
         type: 'error',

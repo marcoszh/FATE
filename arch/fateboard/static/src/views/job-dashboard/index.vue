@@ -13,39 +13,39 @@
           <!--左上角 job info 模块-->
           <h3 class="list-title">DATASET INFO</h3>
           <el-row :gutter="4" class="dataset-row">
-            <el-col :span="6" :offset="2" class="dataset-title">GUEST</el-col>
-            <el-col :span="8">
-              <div class="dataset-item">
+            <el-col v-if="dataset.dataset || dataset.columns || dataset.target || dataset.row" :span="6" :offset="2" class="dataset-title">GUEST</el-col>
+            <el-col v-if="dataset.dataset || dataset.columns" :span="8">
+              <div v-if="dataset.dataset" class="dataset-item">
                 <p class="name">dataset</p>
                 <p class="value">{{ dataset.dataset }}</p>
               </div>
-              <div class="dataset-item">
+              <div v-if="dataset.columns" class="dataset-item">
                 <p class="name">columns</p>
                 <p class="value">{{ dataset.columns }}</p>
               </div>
             </el-col>
 
-            <el-col :span="8">
-              <div class="dataset-item">
+            <el-col v-if="dataset.target || dataset.row" :span="8">
+              <div v-if="dataset.target" class="dataset-item">
                 <p class="name">target</p>
                 <p class="value">{{ dataset.target }}</p>
               </div>
-              <div class="dataset-item">
+              <div v-if="dataset.row" class="dataset-item">
                 <p class="name">rows</p>
                 <p class="value">{{ dataset.row }}</p>
               </div>
             </el-col>
           </el-row>
-          <el-row :gutter="4" class="dataset-row">
+          <el-row v-if="dataset.partner || dataset.pnr_dataset" :gutter="4" class="dataset-row">
             <el-col :span="6" :offset="2" class="dataset-title">HOST</el-col>
             <el-col :span="8">
-              <div class="dataset-item">
+              <div v-if="dataset.partner" class="dataset-item">
                 <p class="name">partner</p>
                 <p class="value">{{ dataset.partner }}</p>
               </div>
             </el-col>
             <el-col :span="8">
-              <div class="dataset-item">
+              <div v-if="dataset.pnr_dataset" class="dataset-item">
                 <p class="name">pnr-dataset</p>
                 <p class="value">{{ dataset.pnr_dataset }}</p>
               </div>
@@ -54,18 +54,17 @@
         </div>
       </el-col>
 
-      <!--仪表盘job进度图-->
       <el-col :span="8">
         <div class="col job flex-center justify-center shadow">
           <h3 class="list-title">JOB</h3>
-          <!--在faied或complete状态不展示仪表，展示数据，和进入details的按钮-->
-          <div v-if="jobStatus==='faied' || jobStatus==='complete'" class="job-end-container flex flex-col flex-center">
+
+          <div v-if="jobStatus==='faied' || jobStatus==='success'" class="job-end-container flex flex-col flex-center">
             <i
               v-if="jobStatus === 'faied'"
               class="el-icon-circle-close job-icon icon-error"
               style="color: #ff6464;"/>
             <i
-              v-else
+              v-else-if="jobStatus === 'success'"
               class="el-icon-circle-check job-icon icon-error"
               style="color: #24b68b;"/>
             <ul class="job-info flex space-around flex-wrap w-100">
@@ -73,15 +72,27 @@
                 <p class="name">status</p>
                 <p class="value">{{ jobStatus }}</p>
               </li>
-              <li>
+              <li v-if="elapsed">
                 <p class="name">duration</p>
-                <p class="value">00:30:35</p>
+                <p class="value">{{ elapsed }}</p>
+              </li>
+              <li v-if="AUC">
+                <p class="name overflow-ellipsis">best score(AUC)</p>
+                <p class="value">{{ AUC }}</p>
+              </li>
+              <li v-if="ratio">
+                <p class="name">ratio</p>
+                <p class="value">{{ ratio }}</p>
+              </li>
+              <li v-if="count">
+                <p class="name">count</p>
+                <p class="value">{{ count }}</p>
               </li>
             </ul>
             <el-button type="primary" round @click="toDetails(jobId)">VIEW THIS JOB</el-button>
           </div>
-          <!--仪表盘图-->
-          <div v-else class="echarts-container">
+
+          <div v-else-if="jobStatus==='waiting' || jobStatus==='running'" class="echarts-container">
             <div v-if="elapsed" class="elapsed">
               <p class="elapsed-title">elapsed</p>
               <p class="elapsed-time text-primary">{{ elapsed }}</p>
@@ -91,7 +102,7 @@
               <span class="status">{{ jobStatus }}</span>
               <div style="width: 100%;" class="flex space-around">
                 <el-button class="btn text-primary" round @click="killJob">KILL</el-button>
-                <!--<el-button class="btn text-primary" round @click="completeJob">COMPLETE</el-button>-->
+
               </div>
             </div>
           </div>
@@ -99,7 +110,7 @@
       </el-col>
       <!--graph图-->
       <el-col :span="8">
-        <div v-loading="!DAGData" class="col graph flex-center justify-center shadow">
+        <div v-loading="false" class="col graph flex-center justify-center shadow">
           <h3 class="list-title">GRAPH</h3>
           <div v-if="DAGData" :style="{'min-height':DAGData.componentList.length * 60+'px'}" class="wrapper w-100">
             <echart-container
@@ -128,7 +139,7 @@
         </li>
         <!--<div class="tab-search">debug</div>-->
       </ul>
-      <div v-loading="logLoading" class="log-container" @mousewheel="logOnMousewheel">
+      <div v-loading="logLoading" ref="logView" class="log-container" @mousewheel="logOnMousewheel">
         <ul class="log-list overflow-hidden">
           <li v-for="(log,index) in logsMap[currentLogTab].list" :key="index">
             <div class="flex">
@@ -167,11 +178,17 @@ export default {
         partner: '',
         pnr_dataset: ''
       },
-      jobStatus: 'waiting...',
-      datasetLoading: true,
+      jobStatus: '',
+      datasetLoading: false,
       logLoading: false,
       jobTimer: null,
-      logWebsocket: null,
+      logWebsocket: {
+        'all': null,
+        'error': null,
+        'warning': null,
+        'info': null,
+        'debug': null
+      },
       jobWebsocket: null,
       logsMap: {
         'all': { list: [], length: 0 },
@@ -183,6 +200,9 @@ export default {
       jobId: this.$route.query.jobId,
       DAGData: null,
       gaugeInstance: null,
+      ratio: '',
+      count: '',
+      AUC: '',
       elapsed: '',
       currentLogTab: 'all'
     }
@@ -191,28 +211,24 @@ export default {
     // console.log(process.env.BASE_API)
     getJobDetails(this.jobId).then(res => {
       this.datasetLoading = false
-      this.dataset = res.data.dataset
+      if (res.data.dataset) {
+        this.dataset = res.data.dataset
+      }
     })
 
     getDAGDpencencies(this.jobId).then(res => {
       this.DAGData = res.data
     })
 
-    // this.logWebsocket = initWebSocket(`/log/${this.jobId}/default/default`, res => {
-    //   // console.log('日志推送websocket连接成功')
-    // }, res => {
-    //   // console.log('websocket请求回来的数据:', res)
-    //   this.allLogs.push(JSON.parse(res.data))
-    //   // console.log(res.data)
-    // })
-
     Object.keys(this.logsMap).forEach(item => {
       const type = item === 'all' ? 'default' : item
-      this.logWebsocket = initWebSocket(`/log/${this.jobId}/default/${type}`, res => {
-        // console.log('日志推送websocket连接成功')
+      this.logWebsocket[item] = initWebSocket(`/log/${this.jobId}/default/${type}`, res => {
+
       }, res => {
-        // console.log('websocket请求回来的数据:', res)
         const data = JSON.parse(res.data)
+        // if (item === 'all') {
+        //   console.log(data)
+        // }
         this.logsMap[item].list.push(data)
         if (item !== 'all') {
           this.logsMap[item].length = data.lineNum
@@ -222,19 +238,23 @@ export default {
     })
 
     this.jobWebsocket = initWebSocket(`/websocket/progress/${this.jobId}`, res => {
-      console.log('job推送websocket连接成功')
+      // console.log('job推送websocket连接成功')
     }, res => {
-      // console.log(res.data)
-      if (this.jobStatus !== 'faied' && this.jobStatus !== 'complete') {
-        const { process, status, time } = JSON.parse(res.data)
-        if (status === 'running') {
-          this.elapsed = formatSeconds(time)
-          this.jobStatus = 'running...'
-          this.jobOptions.series[0].pointer.show = true
-          this.jobOptions.series[0].detail.show = true
-          this.jobOptions.series[0].data[0].value = process
+      // console.log(JSON.parse(res.data))
+      if (this.jobStatus !== 'faied' && this.jobStatus !== 'success') {
+        const { process, status, duration } = JSON.parse(res.data)
+        // if (status === 'running') {
+        if (duration) {
+          this.elapsed = formatSeconds(duration)
+        }
+        this.jobStatus = status
+        this.jobOptions.series[0].pointer.show = true
+        this.jobOptions.series[0].detail.show = true
+        this.jobOptions.series[0].data[0].value = process
+        if (this.gaugeInstance) {
           this.gaugeInstance.setOption(this.jobOptions, true)
         }
+        // }
       }
     })
   },
@@ -243,18 +263,23 @@ export default {
     this.closeWebsocket()
   },
   methods: {
-    // 获取job仪表图echart实例
+
     getJobEchartInstance(echartInstance) {
       this.gaugeInstance = echartInstance
     },
 
-    // 关闭所有websocket
     closeWebsocket() {
-      console.log('close Websocket')
-      this.logWebsocket.close()
-      this.jobWebsocket.close()
+      // console.log('close Websocket')
+      Object.keys(this.logWebsocket).forEach(type => {
+        if (this.logWebsocket[type]) {
+          this.logWebsocket[type].close()
+        }
+      })
+      if (this.jobWebsocket) {
+        this.jobWebsocket.close()
+      }
     },
-    // stop job
+
     killJob() {
       console.log(this.jobWebsocket)
       this.$confirm('You can\'t undo this action', 'Are you sure you want to kill this job?', {
@@ -268,43 +293,33 @@ export default {
         console.log('cancel kill')
       })
     },
-    completeJob() {
-      this.jobStatus = 'complete'
-    },
-    // 获取graph树状图图echart实例
+
     getGraphEchartInstance(echartInstance) {
       let fnInterval = null
       const fn = () => {
-        // 2. 如果有，则取消定时器，开始画图
         if (this.DAGData) {
           window.clearInterval(fnInterval)
-          // 3. 根据自定义处理流程图中间件，获取流程节点和连接信息
           const { dataList, linksList } = graphChartHandle(this.DAGData)
           // console.log(dataList, linksList)
           this.graphOptions.series[0].data = dataList
           this.graphOptions.series[0].links = linksList
           echartInstance.setOption(this.graphOptions, true)
-          // 4. 设置点击交互（暂无交互）
           echartInstance.on('click', { dataType: 'node' }, nodeData => {
             console.log(nodeData)
           })
         }
       }
-      // 1. 开个定时器监听DAGData
       fnInterval = window.setInterval(fn, 100)
     },
-    // 跳转到job详情
     toDetails(jobId) {
       this.$router.push({
         path: '/details',
         query: { jobId, 'from': 'Dashboard' }
       })
     },
-    // 切换日志tab
     switchLogTab(tab) {
       this.currentLogTab = tab
     },
-    // 鼠标滚轮上划加载前面日志
     logOnMousewheel(e) {
       // console.log(e.target.parentNode.parentNode.scrollTop)
       // console.log(e.wheelDelta)
@@ -314,8 +329,7 @@ export default {
       }
       const end = topLog.lineNum - 1
       if (end > 0) {
-        if (e.target.parentNode.parentNode.scrollTop === 0 && (e.wheelDelta > 0 || e.detail > 0)) {
-          // console.log('鼠标滚轮往上滑，加载前面的日志')
+        if (this.$refs['logView'].scrollTop === 0 && (e.wheelDelta > 0 || e.detail > 0)) {
           const begin = end - 10 > 1 ? end - 10 : 1
           if (!this.logLoading) {
             this.logLoading = true

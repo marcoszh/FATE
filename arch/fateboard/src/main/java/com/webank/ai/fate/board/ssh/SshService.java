@@ -23,10 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-/**
- * @Description TODO
- * @Author kaideng
- **/
+
 @Service
 public class SshService implements InitializingBean {
 
@@ -115,7 +112,6 @@ public class SshService implements InitializingBean {
     public Session connect(SshInfo sshInfo) throws Exception {
         Preconditions.checkArgument(sshInfo != null, "sshInfo is null");
 
-
         return this.connect(sshInfo.getUser(), sshInfo.getPassword(), sshInfo.getIp(), new Integer(sshInfo.getPort()));
 
     }
@@ -140,7 +136,6 @@ public class SshService implements InitializingBean {
             }
             session.setPassword(passwd);
             java.util.Properties config = new java.util.Properties();
-            //第一次登陆
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
             try {
@@ -149,7 +144,7 @@ public class SshService implements InitializingBean {
                 e.printStackTrace();
 
                 logger.error("ssh connect error {} password {}",sessionKey,passwd);
-                throw new Exception("连接远程端口无效或用户名密码错误");
+                throw new Exception("ssh connect error");
             }
             sessionMap.put(sessionKey, session);
         }

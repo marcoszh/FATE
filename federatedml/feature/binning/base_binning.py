@@ -405,7 +405,7 @@ class Binning(object):
         result_bin_dict : dict.
             Each element represent for the corresponding bin number this feature belongs to.
             e.g. it could be:
-            [{'x1': 1, 'x2': 5, 'x3': 2}
+            [{1: 1, 2: 5, 3: 2}
             ...
              ]  # Each number represent for the bin number it belongs to.
         """
@@ -544,7 +544,7 @@ class Binning(object):
         return result_ivs
 
     @staticmethod
-    def add_label_in_partition(data_bin_with_table, total_bin, cols_dict, encryptor=None):
+    def add_label_in_partition(data_bin_with_table, total_bin, cols_dict, encryptor=None, header=None):
         """
         Add all label, so that become convenient to calculate woe and iv
 
@@ -595,6 +595,14 @@ class Binning(object):
                 label_sum[1] = label_sum[1] + inverse_y
                 col_sum[bin_idx] = label_sum
                 result_sum[col_name] = col_sum
+
+        # Convert to col_index
+        if header is not None:
+            new_result = {}
+            for col_name, col_sum in result_sum.items():
+                col_idx = header.index(col_name)
+                new_result[col_idx] = col_sum
+            result_sum = new_result
 
         return result_sum
 

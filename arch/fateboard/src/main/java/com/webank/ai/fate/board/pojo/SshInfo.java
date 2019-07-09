@@ -1,5 +1,8 @@
 package com.webank.ai.fate.board.pojo;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 public class SshInfo {
     private String user;
 
@@ -39,4 +42,12 @@ public class SshInfo {
 
     private String ip;
     private Integer port;
+
+    @Override
+    public  String  toString(){
+
+        String str = ToStringBuilder.reflectionToString(this, ToStringStyle.DEFAULT_STYLE);
+        return  str;
+
+    }
 }

@@ -57,7 +57,7 @@ class IVValueSelectionParam(BaseParam):
 
     def check(self):
         descr = "IV selection param's"
-        self.check_positive_number(self.value_threshold, descr)
+        self.check_decimal_float(self.value_threshold, descr)
         return True
 
 
@@ -89,7 +89,8 @@ class CoeffOfVarSelectionParam(BaseParam):
     Parameters
     ----------
     value_threshold: float, default: 1.0
-        Used if coefficient_of_variation_value_thres method is used in feature selection.
+        Used if coefficient_of_variation_value_thres method is used in feature selection. Filter those
+        columns who has smaller coefficient of variance than the threshold.
 
     """
 

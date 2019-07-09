@@ -48,8 +48,8 @@ class HeteroFeatureBinningGuest(BaseHeteroFeatureBinning):
         is_binary_data = data_overview.is_binary_labels(data_instances)
 
         if not is_binary_data:
-            LOGGER.warning("Iv is not supported for Multiple-label data. Return split points only.")
-            data_instances = self.fit_local(data_instances)
+            LOGGER.warning("Iv is not supported for Multiple-label data.")
+            # data_instances = self.fit_local(data_instances)
             return data_instances
 
         # 1. Synchronize encryption information

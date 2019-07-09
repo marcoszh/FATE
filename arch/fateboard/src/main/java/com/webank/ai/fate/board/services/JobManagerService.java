@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -22,9 +24,28 @@ public class JobManagerService {
     JobMapper jobMapper;
 
 
-    public List<Job> queryJobStatus() {
+    public  static Set<String> jobFinishStatus =  new  HashSet<String>(){
+        {
+        add("success");
+        add("failed");
+        add("partial");
+        add("setFailed");
+        }
+        };
 
-       // logger.info("Start query for JobStatus!");
+    public long count() {
+
+        JobExample jobExample = new JobExample();
+        return jobMapper.countByExample(jobExample);
+    }
+
+    public List<JobWithBLOBs> queryJobByPage(long startIndex, long pageSize) {
+        List<JobWithBLOBs> jobWithBLOBs = jobMapper.selectByPage(startIndex, pageSize);
+        return jobWithBLOBs;
+    }
+
+
+    public List<Job> queryJobStatus() {
 
         JobExample jobExample = new JobExample();
 
@@ -40,7 +61,6 @@ public class JobManagerService {
 
         jobExample.setOrderByClause("f_status, f_start_time desc");
 
-        //logger.info("jobExample:" + jobExample);
 
         return jobMapper.selectByExample(jobExample);
 
@@ -48,13 +68,10 @@ public class JobManagerService {
 
 
     public List<JobWithBLOBs> queryJob() {
-        //logger.info("Start querying for job!");
 
         JobExample jobExample = new JobExample();
 
         jobExample.setOrderByClause("f_start_time desc");
-
-        //logger.info("jobExample：" + jobExample);
 
         List<JobWithBLOBs> jobWithBLOBsList = jobMapper.selectByExampleWithBLOBs(jobExample);
 
@@ -63,23 +80,19 @@ public class JobManagerService {
     }
 
 
-    public JobWithBLOBs queryJobByFJobId(String jobId) {
-
-        //logger.info("jobId:" + jobId);
+    public JobWithBLOBs queryJobByConditions(String jobId,String  role,String partyId) {
 
         JobExample jobExample = new JobExample();
 
-
         JobExample.Criteria criteria = jobExample.createCriteria();
-
 
         criteria.andFJobIdEqualTo(jobId);
 
-       // logger.info("jobExample：" + jobExample);
+        criteria.andFRoleEqualTo(role);
 
+        criteria.andFPartyIdEqualTo(partyId);
 
         List<JobWithBLOBs> jobWithBLOBsList = jobMapper.selectByExampleWithBLOBs(jobExample);
-
 
         if (jobWithBLOBsList.size() != 0) {
             return jobWithBLOBsList.get(0);
@@ -87,6 +100,9 @@ public class JobManagerService {
             return null;
         }
     }
+
+
+
 
 
 }

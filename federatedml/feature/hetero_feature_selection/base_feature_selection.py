@@ -22,14 +22,16 @@ import numpy as np
 
 from arch.api.proto import feature_selection_meta_pb2, feature_selection_param_pb2
 from federatedml.model_base import ModelBase
+from arch.api.utils import log_utils
 from federatedml.param.feature_selection_param import FeatureSelectionParam
 from federatedml.statistic.data_overview import get_header
 from federatedml.util import abnormal_detection
 from federatedml.util.transfer_variable.hetero_feature_selection_transfer_variable import HeteroFeatureSelectionTransferVariable
-from federatedml.feature.hetero_feature_binning import base_feature_binning
 from federatedml.feature.hetero_feature_binning.hetero_binning_host import HeteroFeatureBinningHost
 from federatedml.feature.hetero_feature_binning.hetero_binning_guest import HeteroFeatureBinningGuest
 from federatedml.util import consts
+
+LOGGER = log_utils.getLogger()
 
 MODEL_PARAM_NAME = 'FeatureSelectionParam'
 MODEL_META_NAME = 'FeatureSelectionMeta'
@@ -110,8 +112,12 @@ class BaseHeteroFeatureSelection(ModelBase):
         return result
 
     def _load_model(self, model_dict):
-        self._parse_need_run(model_dict, MODEL_META_NAME)
+
         if 'model' in model_dict:
+            self._parse_need_run(model_dict, MODEL_META_NAME)
+            LOGGER.debug("Feature selection need run: {}".format(self.need_run))
+            if not self.need_run:
+                return
             model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
 
             self.results = list(model_param.results)
@@ -128,6 +134,8 @@ class BaseHeteroFeatureSelection(ModelBase):
                 self.left_cols[col_idx] = is_left
 
         if 'isometric_model' in model_dict:
+
+            LOGGER.debug("Has isometric_model, model_dict: {}".format(model_dict))
             if self.party_name == consts.GUEST:
                 self.binning_model = HeteroFeatureBinningGuest()
             else:
@@ -203,6 +211,8 @@ class BaseHeteroFeatureSelection(ModelBase):
         for col_idx, is_left in new_left_cols.items():
             if not is_left:
                 self.left_cols[col_idx] = False
+            elif is_left:
+                self.left_cols[col_idx] = True
 
     def _init_cols(self, data_instances):
         header = get_header(data_instances)

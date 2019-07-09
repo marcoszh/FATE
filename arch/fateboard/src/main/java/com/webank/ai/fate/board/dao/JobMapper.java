@@ -9,6 +9,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 public interface JobMapper {
+
+    List<JobWithBLOBs> selectByPage(@Param(value = "startIndex") long startIndex,
+                                    @Param(value = "pageSize")long pageSize);
+
     long countByExample(JobExample example);
 
     int deleteByExample(JobExample example);
@@ -36,4 +40,5 @@ public interface JobMapper {
     int updateByPrimaryKeyWithBLOBs(JobWithBLOBs record);
 
     int updateByPrimaryKey(Job record);
+
 }

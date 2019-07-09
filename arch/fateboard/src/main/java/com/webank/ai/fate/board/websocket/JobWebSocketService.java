@@ -1,13 +1,21 @@
 package com.webank.ai.fate.board.websocket;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.conf.Configurator;
 import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.services.JobManagerService;
+import com.webank.ai.fate.board.utils.Dict;
+import com.webank.ai.fate.board.utils.HttpClientPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,14 +32,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@ServerEndpoint(value = "/websocket/progress/{jobId}", configurator = Configurator.class)
+@ServerEndpoint(value = "/websocket/progress/{jobId}/{role}/{partyId}", configurator = Configurator.class)
 @Component
-public class JobWebSocketService {
-    @Autowired
-    JobManagerService jobManagerService;
+public class JobWebSocketService implements InitializingBean, ApplicationContextAware {
+
+    static HttpClientPool  httpClientPool;
+
+    static JobManagerService jobManagerService;
+
+    static ApplicationContext  applicationContext;
 
     static Logger logger = LoggerFactory.getLogger(JobWebSocketService.class);
-
 
     static ConcurrentHashMap jobSessionMap = new ConcurrentHashMap();
 
@@ -39,15 +50,17 @@ public class JobWebSocketService {
 
 
     /**
+     *
      * call method when building connection
      **/
     @OnOpen
-    public void onOpen(Session session, @PathParam("jobId") String jobId) {
+    public void onOpen(Session session, @PathParam("jobId") String jobId,@PathParam("role") String  role,@PathParam("partyId")  Integer partyId) {
 
+        String  jobKey =  jobId+":"+role+":"+partyId;
 
-        jobSessionMap.put(session, jobId);
+        jobSessionMap.put(session, jobKey);
 
-        logger.info("websocket job id {} open ,session size{}", jobId, jobSessionMap.size());
+        logger.info("websocket job id {} open ,session size{}", jobKey, jobSessionMap.size());
 
     }
 
@@ -78,7 +91,7 @@ public class JobWebSocketService {
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error("there is a error!");
+        logger.error("there is a error!",error);
         error.printStackTrace();
     }
 
@@ -92,19 +105,13 @@ public class JobWebSocketService {
         Map<String, Set<Session>> jobMaps = Maps.newHashMap();
         jobSessionMap.forEach((k, v) -> {
             Session session = (Session) k;
-            String jobId = (String) v;
-            Set<Session> sessions = jobMaps.get(jobId);
-//            if (sessions != null) {
-//                sessions.add(session);
-//            } else {
-//                sessions = new HashSet<Session>();
-//                sessions.add(session);
-//            }
+            String jobKey = (String) v;
+            Set<Session> sessions = jobMaps.get(jobKey);
             if (sessions == null) {
                 sessions = new HashSet<Session>();
             }
             sessions.add(session);
-            jobMaps.put(jobId, sessions);
+            jobMaps.put(jobKey, sessions);
 
         });
         if (logger.isDebugEnabled()) {
@@ -113,20 +120,38 @@ public class JobWebSocketService {
 
 
         jobMaps.forEach((k, v) -> {
-                   // logger.info("try to query job {} process", k);
-                    Job job = jobManagerService.queryJobByFJobId(k);
+
+
+                    String[] args = k.split(":");
+                    Preconditions.checkArgument(args.length==3);
+                    Job job = jobManagerService.queryJobByConditions(args[0],args[1],args[2]);
                     if (job != null) {
+                        //logger.info("try to query job process {} ", k);
+
                         HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
                         Integer process = job.getfProgress();
-                        Long time = job.getfElapsed();
+                        long  now=  System.currentTimeMillis();
+                        long duration =0;
+                        Long startTime = job.getfStartTime();
+                        Long endTime =job.getfEndTime();
+                        if(endTime!=null)
+                        {
+                            duration= endTime-startTime;
+
+                        }else{
+                            duration = now - startTime;
+                        }
+
                         String status = job.getfStatus();
 
-                        stringObjectHashMap.put("process", process);
-                        stringObjectHashMap.put("time", time);
-                        stringObjectHashMap.put("status", status);
+                        stringObjectHashMap.put(Dict.JOB_PROCESS, process);
+                        stringObjectHashMap.put(Dict.JOB_DURATION, duration);
+                        stringObjectHashMap.put(Dict.JOB_STATUS, status);
 
-                       // logger.info("jobStatus: " + JSON.toJSONString(stringObjectHashMap));
+                        if(JobManagerService.jobFinishStatus.contains(status)){
 
+
+                        }
                         v.forEach(session -> {
 
                             if (session.isOpen()) {
@@ -137,17 +162,31 @@ public class JobWebSocketService {
                                     logger.error("IOException", e);
                                 }
                             } else {
-                                //???
                                 v.remove(session);
 
                                 jobSessionMap.remove(session);
                             }
 
                         });
-                    }
+                    }else{
+                        logger.error("job {} is not exist",k);
+                    };
 
                 }
         );
+
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        jobManagerService =(JobManagerService)applicationContext.getBean("jobManagerService");
+        httpClientPool  =  (HttpClientPool)applicationContext.getBean("httpClientPool");
+
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        JobWebSocketService.applicationContext =  applicationContext;
 
     }
 }

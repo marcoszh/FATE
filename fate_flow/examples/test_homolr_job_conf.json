@@ -46,6 +46,15 @@
             "learning_rate": 0.01,
             "init_param": {
 				"init_method": "random_uniform"
+            },
+            "cv_param": {
+                "n_splits": 4,
+                "shuffle": true,
+                "random_seed": 33,
+                "need_cv": true,
+                "evaluate_param": {
+                    "thresholds": [0.3, 0.5, 0.7]
+                }
             }
         },
         "evaluation_0": {

@@ -14,36 +14,37 @@ import com.webank.ai.fate.board.pojo.TaskExample;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.ssh.SshService;
 import com.webank.ai.fate.board.utils.Dict;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Description TODO
- **/
 
 @Service
 public class LogFileService {
-    @Autowired
-    SshService sshService;
 
-    public String jobLogPath = "fate-flow/logs/jobs/$job_id/$file_name";
-    public String taskLogPath = "fate-flow/logs/jobs/$job_id/$component_id/$file_name";
-    final static String DEFAULT_FILE_NAME = "fate_flow_run.log";
 
-    //    前缀就是目前fate的部署目录:
-//            /data/projects/fate/
-    private String fate_deploy_prefix = "/data/projects/fate/";
+    String JOB_LOG_PATH = "$job_id/$role/$party_id/$file_name";
+    final static String TASK_LOG_PATH = "$job_id/$role/$party_id/$component_id/$file_name";
+    final static String DEFAULT_FILE_NAME = "DEBUG.log";
 
     final static String DEFAULT_COMPONENT_ID = "default";
-
     final static String DEFAULT_LOG_TYPE = "default";
+
+    @Value("${FATE_DEPLOY_PREFIX:/data/projects/fate/python/logs/}")
+    String FATE_DEPLOY_PREFIX = "/data/projects/fate/python/logs/";
+
+    @Autowired
+    SshService sshService;
     @Autowired
     private JobManagerService jobManagerService;
 
@@ -86,31 +87,55 @@ public class LogFileService {
     }
 
     public String getJobDir(String jobId) {
-        return fate_deploy_prefix + jobId + "/";
+        return FATE_DEPLOY_PREFIX + jobId + "/";
     }
 
 
 
-    public String buildFilePath(String jobId, String componentId, String type) {
-//        Preconditions.checkArgument(jobId != null && !"".equals(jobId));
-//        String filePath = "";
-//        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
+    public String buildFilePath(String jobId, String componentId, String type,String  role,String partyId) {
+
+      //  JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
+
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentId,type,role,partyId));
+
+//        String  role =jobWithBLOBs.getfRole();
 //
-//            filePath = jobLogPath.replace("$job_id", jobId);
+//        String  partyId = jobWithBLOBs.getfPartyId();
+
+        String filePath = "";
+        if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
+
+            filePath = JOB_LOG_PATH.replace("$job_id", jobId).replace("$role",role).replace("$party_id",partyId);
+
+
+        } else {
+            filePath = TASK_LOG_PATH.replace("$job_id", jobId).replace("$component_id", componentId).replace("$role",role).replace("$party_id",partyId);
+        }
+
+        if (type.equals(DEFAULT_LOG_TYPE)) {
+            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
+        } else {
+
+            switch(type){
+                case  "error":       filePath = filePath.replace("$file_name", "ERROR.log");  break;
+                case  "debug":       filePath = filePath.replace("$file_name", "DEBUG.log");  break;
+                case   "info":          filePath = filePath.replace("$file_name", "INFO.log");  break;
+
+                default:   filePath = filePath.replace("$file_name", "INFO.log");
+
+            }
+
+        }
+
+        String  result = FATE_DEPLOY_PREFIX + filePath;
+        logger.info("build filePath result {}", result);
+        return result;
+         // return "/data/project/fdn/nginx/logs/access.log";
+//        SimpleDateFormat  simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//         Date  date  = new Date();
 //
-//        } else {
-//            filePath = taskLogPath.replace("$job_id", jobId).replace("$component_id", componentId);
-//        }
-//
-//        if (type.equals(DEFAULT_LOG_TYPE)) {
-//            filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
-//        } else {
-//            filePath = filePath.replace("$file_name", type);
-//        }
-//        logger.info("build filePath result {}", fate_deploy_prefix + filePath);
-//        return fate_deploy_prefix + filePath;
-//          return "/data/project/fdn/nginx/logs/access.log";
-          return  "/data/projects/fateboard/bin/nohup.out";
+//         String  temp =  simpleDateFormat.format(date);
+//          return  "/data/projects/fateboard/bin/logs/"+temp+"/httpclient.0.log";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {
@@ -139,11 +164,11 @@ public class LogFileService {
     }
 
 
-    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type, int begin, int count) throws Exception {
+    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type,String role,String partyId, int begin, int count) throws Exception {
         List<Map> results = Lists.newArrayList();
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
-        String filePath = this.buildFilePath(jobId, componentId, type);
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         Session session = this.sshService.connect(sshInfo);
         Channel channel = this.sshService.executeCmd(session, "tail -n +" + begin + " " + filePath + " | head -n " + count);
 
@@ -171,10 +196,10 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String cmd) throws Exception {
+    public Channel getRemoteLogStream(String jobId, String componentId,String role,String partyId ,String cmd) throws Exception {
 
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId);
-        Preconditions.checkArgument(jobTaskInfo.ip != null && !jobTaskInfo.ip.equals(""), "remote ip is null");
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
+        Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip ), "remote ip is null");
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
         return getRemoteLogStream(sshInfo, cmd);
 
@@ -191,10 +216,10 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String type, int endNum) throws Exception {
-        String filePath = this.buildFilePath(jobId, componentId, type);
+    public Channel getRemoteLogStream(String jobId, String componentId, String type,String role,String partyId, int endNum) throws Exception {
+        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
         String cmd = this.buildCommand(endNum, filePath);
-        Channel channel = getRemoteLogStream(jobId, componentId, cmd);
+        Channel channel = getRemoteLogStream(jobId, componentId,role,partyId, cmd);
         return channel;
     }
 
@@ -224,7 +249,7 @@ public class LogFileService {
 
     ;
 
-    public JobTaskInfo getJobTaskInfo(String jobId, String componentId) {
+    public JobTaskInfo getJobTaskInfo(String jobId, String componentId,String role,String partyId) {
 
         JobTaskInfo jobTaskInfo = new JobTaskInfo();
 
@@ -232,7 +257,7 @@ public class LogFileService {
 
         jobTaskInfo.componentId = componentId;
 
-        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByFJobId(jobId);
+        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByConditions(jobId,role,partyId);
 
         Preconditions.checkArgument(jobWithBLOBs != null, "job info " + jobId + " is not exist");
 
@@ -244,7 +269,7 @@ public class LogFileService {
 
             TaskExample taskExample = new TaskExample();
 
-            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId);
+            taskExample.createCriteria().andFJobIdEqualTo(jobId).andFComponentNameEqualTo(componentId).andFRoleEqualTo(role).andFPartyIdEqualTo(partyId);
 
             List<Task> tasks = taskMapper.selectByExample(taskExample);
 
