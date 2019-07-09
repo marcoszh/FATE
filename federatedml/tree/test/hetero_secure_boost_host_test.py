@@ -64,7 +64,13 @@ class TestHeteroSecureBoostHost(unittest.TestCase):
                               {"max_depth": 3,
                                "min_leaf_node": 10
                               },
-                             "num_trees": 3
+                             "num_trees": 3,
+                             "cv_param": {
+                                 "n_splits": 3,
+                                 "mode": "hetero",
+                                 "role": "guest",
+                                 "need_cv": True
+                             }
                             },
                             "local": {
                              "role": "host",

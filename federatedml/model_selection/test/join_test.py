@@ -16,18 +16,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import numpy as np
-import time
 import random
-import string
-import sys
 import unittest
+
+import numpy as np
+
 from arch.api import eggroll
-from arch.api import federation
-from fate_flow.manager.tracking import Tracking
 from federatedml.feature.instance import Instance
 from federatedml.feature.sparse_vector import SparseVector
-from federatedml.tree.hetero_secureboosting_tree_guest import HeteroSecureBoostingTreeGuest
 
 
 class TestHeteroSecureBoostGuest(unittest.TestCase):
@@ -47,7 +43,7 @@ class TestHeteroSecureBoostGuest(unittest.TestCase):
                 data.append(val)
 
             sparse_vec = SparseVector(indices, data, 50)
-            self.data.append((i, Instance(features=sparse_vec, label=i % 2)))
+            self.data.append((str(i), Instance(features=sparse_vec, label=i % 2)))
 
         self.table = eggroll.parallelize(self.data, include_key=True)
         self.table.schema = {"header": ["fid" + str(i) for i in range(50)]}

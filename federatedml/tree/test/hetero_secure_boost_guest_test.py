@@ -67,7 +67,13 @@ class TestHeteroSecureBoostGuest(unittest.TestCase):
                              "objective_param":
                               {"objective": "cross_entropy"
                               },
-                             "num_trees": 3
+                             "num_trees": 3,
+                             "cv_param":{
+                                 "n_splits": 3,
+                                 "mode": "hetero",
+                                 "role": "guest",
+                                 "need_cv": True
+                             }
                             }
                           }
        
