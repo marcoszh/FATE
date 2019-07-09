@@ -91,7 +91,7 @@ class ModelBase(object):
                 eval_data_output = self.predict(eval_data)
 
                 if eval_data_output:
-                    eval_data_output = eval_data_output.mapValues(lambda value: value + ["predict"])
+                    eval_data_output = eval_data_output.mapValues(lambda value: value + ["validation"])
 
                 if self.data_output and eval_data_output:
                     self.data_output.union(eval_data_output)
@@ -102,7 +102,7 @@ class ModelBase(object):
             self.data_output = self.predict(eval_data)
 
             if self.data_output:
-                self.data_output = self.data_output.mapValues(lambda value: value + ["predict"])
+                self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
         else:
             if stage == "fit":

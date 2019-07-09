@@ -126,7 +126,6 @@ class KFold(BaseCrossValidator):
         return cv_results
 
 
-
     def _init_model(self, param):
         self.model_param = param
         self.n_splits = param.n_splits
