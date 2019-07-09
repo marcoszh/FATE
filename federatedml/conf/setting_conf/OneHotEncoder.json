@@ -1,7 +1,7 @@
 {
     "module_path":  "federatedml/feature",
     "default_runtime_conf": "onehot_encoder_param.json",
-    "param_class" : "OneHotEncoderParam",
+    "param_class" : "federatedml/param/onehot_encoder_param.py/OneHotEncoderParam",
     "role":
     {
         "guest|host":
