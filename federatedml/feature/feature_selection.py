@@ -100,6 +100,7 @@ class FilterMethod(object):
         if feature_values is None:
             feature_values = self.feature_values
 
+        LOGGER.debug("In _keep_one_feature, left_cols: {}, feature_values: {}".format(left_cols, feature_values))
         for col_name, is_left in left_cols.items():
             if is_left:
                 return left_cols
@@ -113,6 +114,8 @@ class FilterMethod(object):
             left_key = result[0][0]
 
         left_cols[left_key] = True
+        LOGGER.debug("In _keep_one_feature, left_key: {}, left_cols: {}".format(left_key, left_cols))
+
         return left_cols
 
     def get_meta_obj(self):
@@ -124,6 +127,8 @@ class FilterMethod(object):
     def _init_cols(self, data_instances):
         # Already initialized
         if self.header is not None:
+            return
+        if data_instances is None:
             return
 
         header = get_header(data_instances)
@@ -160,6 +165,7 @@ class FilterMethod(object):
         """
         left_col_name_dict = {}
         for col_idx, is_left in self.left_cols.items():
+            LOGGER.debug("in _generate_col_name_dict, col_idx: {}, type: {}".format(col_idx, type(col_idx)))
             col_name = self.header[col_idx]
             left_col_name_dict[col_name] = is_left
         return left_col_name_dict
@@ -336,11 +342,15 @@ class IVValueSelectFilter(FilterMethod):
 
     def fit(self, data_instances=None):
         # fit guest
+        self._init_cols(data_instances)
         guest_binning_result = self.binning_obj.binning_result
+        party_variances = {}
         for col_name, iv_attr in guest_binning_result.items():
             self.feature_values[col_name] = iv_attr.iv
+            col_idx = self.header.index(col_name)
+            party_variances[col_idx] = iv_attr.iv
 
-        self.left_cols = self.filter_one_party(self.feature_values, True, self.value_threshold)
+        self.left_cols = self.filter_one_party(party_variances, True, self.value_threshold)
         self.left_cols = self._keep_one_feature()
 
         for host_name, host_bin_result in self.binning_obj.host_results.items():
@@ -361,10 +371,11 @@ class IVValueSelectFilter(FilterMethod):
         left_col_obj = feature_selection_param_pb2.LeftCols(original_cols=cols,
                                                             left_cols=left_col_name_dict)
         host_obj = {}
+        LOGGER.debug("In get_param_obj, host_cols: {}".format(self.host_cols))
         for host_name, host_left_cols in self.host_cols.items():
             host_cols = list(str(host_left_cols.keys()))
             new_host_left_cols = {}
-            for k, v in host_left_cols:
+            for k, v in host_left_cols.items():
                 new_host_left_cols[str(k)] = v
 
             left_col_obj = feature_selection_param_pb2.LeftCols(original_cols=host_cols,
@@ -415,6 +426,8 @@ class IVPercentileFilter(FilterMethod):
     def fit(self, data_instances=None):
 
         # fit guest
+        self._init_cols(data_instances)
+
         guest_binning_result = self.binning_obj.binning_result
         for col_name, iv_attr in guest_binning_result.items():
             if col_name not in self.cols:

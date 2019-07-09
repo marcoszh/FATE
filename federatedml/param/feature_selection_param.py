@@ -89,7 +89,8 @@ class CoeffOfVarSelectionParam(BaseParam):
     Parameters
     ----------
     value_threshold: float, default: 1.0
-        Used if coefficient_of_variation_value_thres method is used in feature selection.
+        Used if coefficient_of_variation_value_thres method is used in feature selection. Filter those
+        columns who has smaller coefficient of variance than the threshold.
 
     """
 

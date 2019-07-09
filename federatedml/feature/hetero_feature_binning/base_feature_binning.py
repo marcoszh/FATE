@@ -118,10 +118,10 @@ class BaseHeteroFeatureBinning(ModelBase):
         final_host_results = {}
         for host_id, this_host_results in host_results.items():
             host_result = {}
-            for col_name, iv_attr in this_host_results.items():
+            for host_col_idx, iv_attr in this_host_results.items():
                 iv_result = iv_attr.result_dict()
                 iv_object = feature_binning_param_pb2.IVParam(**iv_result)
-                host_result[col_name] = iv_object
+                host_result[str(host_col_idx)] = iv_object
             final_host_results[host_id] = feature_binning_param_pb2.FeatureBinningResult(binning_result=host_result)
 
         result_obj = feature_binning_param_pb2.FeatureBinningParam(binning_result=binning_result_obj,
@@ -152,6 +152,9 @@ class BaseHeteroFeatureBinning(ModelBase):
                 iv_attr.reconstruct(iv_attr_obj)
                 host_result_obj[col_name] = iv_attr
             self.host_results[host_name] = host_result_obj
+        LOGGER.debug("In feature binning load model, self.binning_result: {}, cols: {}, host_results: {}".format(
+            self.binning_result, self.cols, self.host_results
+        ))
 
     def export_model(self):
         meta_obj = self._get_meta()

@@ -33,7 +33,6 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
         self.static_obj = None
         self.iv_attrs = None
         self.fit_iv = False
-        self.binning_obj = None
         self.results = []
         self.header = []
         self.flowid = ''
@@ -66,6 +65,7 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
     def filter_one_method(self, data_instances, method):
 
         if method == consts.IV_VALUE_THRES:
+            LOGGER.debug("In host party, sending select_cols")
             self._send_select_cols(consts.IV_VALUE_THRES)
             self._received_result_cols(filter_name=consts.IV_VALUE_THRES)
             LOGGER.info(
@@ -133,8 +133,18 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
         # self._renew_left_col_names()
 
         host_cols = list(left_cols.keys())
-        left_col_obj = feature_selection_param_pb2.LeftCols(original_cols=host_cols,
-                                                            left_cols=self.left_cols)
+
+        left_col_result = {}
+        original_cols = []
+        for col_idx, is_left in self.left_cols.items():
+            col_name = self.header[col_idx]
+            left_col_result[col_name] = is_left
+
+        for col_idx in host_cols:
+            original_cols.append(self.header[col_idx])
+
+        left_col_obj = feature_selection_param_pb2.LeftCols(original_cols=original_cols,
+                                                            left_cols=left_col_result)
 
         result_obj = feature_selection_param_pb2.FeatureSelectionFilterParam(feature_values={},
                                                                              left_cols=left_col_obj,
@@ -145,7 +155,7 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
     def _send_select_cols(self, filter_name):
         host_select_cols_id = self.transfer_variable.generate_transferid(self.transfer_variable.host_select_cols,
                                                                          filter_name)
-        federation.remote(self.left_col_names,
+        federation.remote(self.left_cols,
                           name=self.transfer_variable.host_select_cols.name,
                           tag=host_select_cols_id,
                           role=consts.GUEST,
