@@ -31,7 +31,6 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
         super(HeteroFeatureSelectionGuest, self).__init__()
         self.host_left_cols = {}
         self.static_obj = None
-        self.binning_model = None
         self.flowid = ''
         self.party_name = consts.GUEST
 
@@ -77,14 +76,17 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
                 host_left_cols = iv_filter.host_cols
                 # Only one host
                 left_cols = host_left_cols.get(consts.HOST)
+                LOGGER.debug("In Guest IV filter, host_select_cols: {}, host_left_cols: {}".format(host_select_cols,
+                                                                                                   host_left_cols))
                 new_result = {}
-                for host_col_name in host_select_cols:
-                    if host_col_name not in left_cols:
-                        LOGGER.warning(
-                            "Host column {} has not been set in feature binning module".format(host_col_name))
-                        continue
-                    is_left = left_cols.get(host_col_name)
-                    new_result[host_col_name] = is_left
+                for host_col_idx, _ in host_select_cols.items():
+                    # if host_col_name not in left_cols:
+                    #     LOGGER.warning(
+                    #         "Host column {} has not been set in feature binning module".format(host_col_name))
+                    #     continue
+
+                    is_left = left_cols.get(host_col_idx)
+                    new_result[host_col_idx] = is_left
                 self.host_left_cols = new_result
                 self._send_host_result_cols(consts.IV_VALUE_THRES)
                 LOGGER.info(

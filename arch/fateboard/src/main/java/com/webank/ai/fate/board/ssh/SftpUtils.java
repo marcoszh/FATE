@@ -16,17 +16,6 @@ import java.util.*;
 public class SftpUtils {
     private static Logger log = LoggerFactory.getLogger(SftpUtils.class.getName());
 
-//    private String host;//服务器连接ip
-//    private String username;//用户名
-//    private String password;//密码
-//    private int port = 22;//端口号
-//    private ChannelSftp sftp = null;
-//    private Session sshSession = null;
-
-
-    /**
-     * 通过SFTP连接服务器
-     */
     public static ChannelSftp connect(SshInfo sshInfo) {
         try {
             JSch jsch = new JSch();
@@ -58,9 +47,7 @@ public class SftpUtils {
         return null;
     }
 
-    /**
-     * 关闭连接
-     */
+
     public static void disconnect(ChannelSftp channelSftp) {
         if (channelSftp != null) {
             if (channelSftp.isConnected()) {
@@ -83,16 +70,7 @@ public class SftpUtils {
 
     }
 
-    /**
-     * 批量下载文件
-     *
-     * @param remotePath：远程下载目录(以路径符号结束,可以为相对路径eg:/assess/sftp/jiesuan_2/2014/)
-     * @param localPath：本地保存目录(以路径符号结束,D:\Duansha\sftp\)
-     * @param fileFormat：下载文件格式(以特定字符开头,为空不做检验)
-     * @param fileEndFormat：下载文件格式(文件格式)
-     * @param del：下载后是否删除sftp文件
-     * @return
-     */
+
     public static List<String> batchDownLoadFile(SshInfo sshInfo,
                                                  String remotePath,
                                                  String localPath,
@@ -100,10 +78,7 @@ public class SftpUtils {
                                                  String fileEndFormat,
                                                  boolean del) {
 
-//        String directories = "D:\\a\\b\\c\\d\\e\\f\\g\\h\\i";
-//        File file = new File(directories);
-//        boolean result = file.mkdirs();
-//        System.out.println("Status = " + result);
+
         ChannelSftp channelSftp = null;
         channelSftp = connect(sshInfo);
         try {
@@ -201,12 +176,7 @@ public class SftpUtils {
                                     fileFormat,
                                     fileEndFormat,
                                     del);
-//                        batchDownLoadFile(SshService.SSHInfo sshInfo ,
-//                                String remotePath,
-//                                String localPath,
-//                                String fileFormat,
-//                                String fileEndFormat,
-//                        boolean del)
+
                         }
                     }
                 }
@@ -219,24 +189,11 @@ public class SftpUtils {
         } catch (SftpException e) {
             e.printStackTrace();
         }
-//        finally
-//        {
-//            if(channelSftp!=null) {
-//                disconnect(channelSftp);
-//            }
-//        }
+
         return filenames;
     }
 
-    /**
-     * 下载单个文件
-     *
-     * @param remotePath：远程下载目录(以路径符号结束)
-     * @param remoteFileName：下载文件名
-     * @param localPath：本地保存目录(以路径符号结束)
-     * @param localFileName：保存文件名
-     * @return
-     */
+
     public static boolean downloadFile(ChannelSftp sftp, String remotePath, String remoteFileName, String localPath, String localFileName) {
         FileOutputStream fieloutput = null;
         try {
@@ -270,97 +227,7 @@ public class SftpUtils {
         return false;
     }
 
-//    /**
-//     * 上传单个文件
-//     * @param remotePath：远程保存目录
-//     * @param remoteFileName：保存文件名
-//     * @param localPath：本地上传目录(以路径符号结束)
-//     * @param localFileName：上传的文件名
-//     * @return
-//     */
-//    public boolean uploadFile(String remotePath, String remoteFileName,String localPath, String localFileName)
-//    {
-//        FileInputStream in = null;
-//        try
-//        {
-//            createDir(remotePath);
-//            File file = new File(localPath + localFileName);
-//            in = new FileInputStream(file);
-//            sftp.put(in, remoteFileName);
-//            return true;
-//        }
-//        catch (FileNotFoundException e)
-//        {
-//            e.printStackTrace();
-//        }
-//        catch (SftpException e)
-//        {
-//            e.printStackTrace();
-//        }
-//        finally
-//        {
-//            if (in != null)
-//            {
-//                try
-//                {
-//                    in.close();
-//                }
-//                catch (IOException e)
-//                {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * 批量上传文件
-//     * @param remotePath：远程保存目录
-//     * @param localPath：本地上传目录(以路径符号结束)
-//     * @param del：上传后是否删除本地文件
-//     * @return
-//     */
-//    public boolean bacthUploadFile(String remotePath, String localPath,
-//            boolean del)
-//    {
-//        try
-//        {
-//            connect();
-//            File file = new File(localPath);
-//            File[] files = file.listFiles();
-//            for (int i = 0; i < files.length; i++)
-//            {
-//                if (files[i].isFile()
-//                        && files[i].getName().indexOf("bak") == -1)
-//                {
-//                    if (this.uploadFile(remotePath, files[i].getName(),
-//                            localPath, files[i].getName())
-//                            && del)
-//                    {
-//                        deleteFile(localPath + files[i].getName());
-//                    }
-//                }
-//            }
-//            if (log.isInfoEnabled())
-//            {
-//                log.info("upload file is success:remotePath=" + remotePath
-//                        + "and localPath=" + localPath + ",file size is "
-//                        + files.length);
-//            }
-//            return true;
-//        }
-//        catch (Exception e)
-//        {
-//            e.printStackTrace();
-//        }
-//        finally
-//        {
-//            this.disconnect();
-//        }
-//        return false;
-//
-//    }
+
 
     /**
      * 删除本地文件
@@ -383,52 +250,7 @@ public class SftpUtils {
         }
         return rs;
     }
-//
-//    /**
-//     * 创建目录
-//     * @param createpath
-//     * @return
-//     */
-//    public boolean createDir(String createpath)
-//    {
-//        try
-//        {
-//            if (isDirExist(createpath))
-//            {
-//                this.sftp.cd(createpath);
-//                return true;
-//            }
-//            String pathArry[] = createpath.split("/");
-//            StringBuffer filePath = new StringBuffer("/");
-//            for (String path : pathArry)
-//            {
-//                if (path.equals(""))
-//                {
-//                    continue;
-//                }
-//                filePath.append(path + "/");
-//                if (isDirExist(filePath.toString()))
-//                {
-//                    sftp.cd(filePath.toString());
-//                }
-//                else
-//                {
-//                    // 建立目录
-//                    sftp.mkdir(filePath.toString());
-//                    // 进入并设置为当前目录
-//                    sftp.cd(filePath.toString());
-//                }
-//
-//            }
-//            this.sftp.cd(createpath);
-//            return true;
-//        }
-//        catch (SftpException e)
-//        {
-//            e.printStackTrace();
-//        }
-//        return false;
-//    }
+
 
     /**
      * 判断目录是否存在

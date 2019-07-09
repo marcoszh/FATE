@@ -24,62 +24,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @Description TODO
- **/
+
 @Controller
 public class LogController {
     private final Logger logger = LoggerFactory.getLogger(LogController.class);
     @Autowired
     LogFileService logFileService;
 
-    public  com.google.common.cache.CacheLoader<String, List<Map>> createCacheLoader() {
-        return new com.google.common.cache.CacheLoader<String, List<Map>>() {
-            @Override
-            public List<Map> load(String key) throws Exception {
-
-                long  begin = System.currentTimeMillis();
-                logger.info("===================load key: {}",key);
-                String[] args = key.split("\\|");
-                try {
-
-                    return queryLog(args[0], args[1], args[2], new Integer(args[3]), new Integer(args[4]));
-                }catch(Exception e){
-                    e.printStackTrace();
-                    logger.error("============== load cache error",e);
-                }
-                finally {
-                    long  end = System.currentTimeMillis();
-
-                    logger.info("============load cache cost {}",end-begin);
-                }
-                return null;
-
-            }
-        };
-    }
-    LoadingCache<String, List<Map> > cache = CacheBuilder.newBuilder()
-            .maximumSize(100)
-            .expireAfterAccess(3L, TimeUnit.MILLISECONDS)
-            .build(createCacheLoader());
-
-
-
-    @RequestMapping(value = "/queryLogWithSizeSSH/{jobId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
+    @RequestMapping(value = "/queryLogWithSizeSSH/{jobId}/{role}/{partyId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseResult queryLogWithSizeSSH(@PathVariable String componentId, @PathVariable String jobId,
-                                              @PathVariable Integer begin, @PathVariable String type, @PathVariable Integer end) throws Exception {
+    public ResponseResult queryLogWithSizeSSH(@PathVariable String componentId,
+                                              @PathVariable String jobId,
+                                              @PathVariable Integer begin,
+                                              @PathVariable String role,
+                                              @PathVariable String partyId,
+                                              @PathVariable String type,
+                                              @PathVariable Integer end) throws Exception {
         logger.info("parameters for " + "componentId:" + componentId + ", jobId:" + jobId + ", begin;" + begin + ", end:" + end + "type");
 
-        String filePath = logFileService.buildFilePath(jobId, componentId, type);
+        String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
 
         Preconditions.checkArgument(filePath != null && !filePath.equals(""));
 
-        String ip = logFileService.getJobTaskInfo(jobId, componentId).ip;
+        String ip = logFileService.getJobTaskInfo(jobId, componentId,role,partyId).ip;
 
         Preconditions.checkArgument(ip != null && !ip.equals(""));
 
-        List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type, begin, end - begin + 1);
+        List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type, role,partyId,begin, end - begin + 1);
 
         ResponseResult result = new ResponseResult();
 
@@ -107,10 +78,10 @@ public class LogController {
         return 0;
     }
 
-    List<Map>  queryLog( String componentId,  String jobId, String type,
+    List<Map>  queryLog( String componentId,  String jobId, String type,String role,String partyId,
                          Integer begin,
                          Integer end) throws Exception {
-        String filePath = logFileService.buildFilePath(jobId, componentId, type);
+        String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
 
         Preconditions.checkArgument(filePath != null && !filePath.equals(""));
 
@@ -160,11 +131,11 @@ public class LogController {
 
         }else{
 
-            String ip = logFileService.getJobTaskInfo(jobId, componentId).ip;
+            String ip = logFileService.getJobTaskInfo(jobId, componentId,role,partyId).ip;
 
             Preconditions.checkArgument(ip != null && !ip.equals(""));
 
-            List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type, begin, end - begin + 1);
+            List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type,role,partyId, begin, end - begin + 1);
 
             return  logs;
 
@@ -173,15 +144,19 @@ public class LogController {
     }
 
 
-    @RequestMapping(value = "/queryLogWithSize/{jobId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
+    @RequestMapping(value = "/queryLogWithSize/{jobId}/{role}/{partyId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseResult queryLogWithSize(@PathVariable String componentId, @PathVariable String jobId,
-                                           @PathVariable String type,@PathVariable Integer begin,
+    public ResponseResult queryLogWithSize(@PathVariable String componentId,
+                                           @PathVariable String jobId,
+                                           @PathVariable String type,
+                                           @PathVariable String role,
+                                           @PathVariable String partyId,
+                                           @PathVariable Integer begin,
                                            @PathVariable Integer end) throws Exception {
 
         logger.info("parameters for " + "componentId:" + componentId + ", jobId:" + jobId + ", begin;" + begin + ", end:" + end);
 
-        List<Map> result = this.queryLog(componentId, jobId, type, begin, end);
+        List<Map> result = this.queryLog(componentId, jobId, type,role,partyId, begin, end);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, result);
     }

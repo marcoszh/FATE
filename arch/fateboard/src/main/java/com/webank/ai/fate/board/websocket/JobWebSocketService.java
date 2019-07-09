@@ -2,6 +2,7 @@ package com.webank.ai.fate.board.websocket;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.conf.Configurator;
 import com.webank.ai.fate.board.pojo.Job;
@@ -31,7 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@ServerEndpoint(value = "/websocket/progress/{jobId}", configurator = Configurator.class)
+@ServerEndpoint(value = "/websocket/progress/{jobId}/{role}/{partyId}", configurator = Configurator.class)
 @Component
 public class JobWebSocketService implements InitializingBean, ApplicationContextAware {
 
@@ -49,15 +50,17 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
 
     /**
+     *
      * call method when building connection
      **/
     @OnOpen
-    public void onOpen(Session session, @PathParam("jobId") String jobId) {
+    public void onOpen(Session session, @PathParam("jobId") String jobId,@PathParam("role") String  role,@PathParam("partyId")  Integer partyId) {
 
+        String  jobKey =  jobId+":"+role+":"+partyId;
 
-        jobSessionMap.put(session, jobId);
+        jobSessionMap.put(session, jobKey);
 
-        logger.info("websocket job id {} open ,session size{}", jobId, jobSessionMap.size());
+        logger.info("websocket job id {} open ,session size{}", jobKey, jobSessionMap.size());
 
     }
 
@@ -102,13 +105,13 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
         Map<String, Set<Session>> jobMaps = Maps.newHashMap();
         jobSessionMap.forEach((k, v) -> {
             Session session = (Session) k;
-            String jobId = (String) v;
-            Set<Session> sessions = jobMaps.get(jobId);
+            String jobKey = (String) v;
+            Set<Session> sessions = jobMaps.get(jobKey);
             if (sessions == null) {
                 sessions = new HashSet<Session>();
             }
             sessions.add(session);
-            jobMaps.put(jobId, sessions);
+            jobMaps.put(jobKey, sessions);
 
         });
         if (logger.isDebugEnabled()) {
@@ -117,9 +120,14 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
 
         jobMaps.forEach((k, v) -> {
-                   // logger.info("try to query job {} process", k);
-                    Job job = jobManagerService.queryJobByFJobId(k);
+
+
+                    String[] args = k.split(":");
+                    Preconditions.checkArgument(args.length==3);
+                    Job job = jobManagerService.queryJobByConditions(args[0],args[1],args[2]);
                     if (job != null) {
+                        //logger.info("try to query job process {} ", k);
+
                         HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
                         Integer process = job.getfProgress();
                         long  now=  System.currentTimeMillis();
@@ -144,8 +152,6 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
 
                         }
-
-
                         v.forEach(session -> {
 
                             if (session.isOpen()) {
@@ -162,7 +168,9 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
                             }
 
                         });
-                    }
+                    }else{
+                        logger.error("job {} is not exist",k);
+                    };
 
                 }
         );
