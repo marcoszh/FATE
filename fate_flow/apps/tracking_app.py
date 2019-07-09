@@ -88,7 +88,12 @@ def component_parameters():
             for party_parameters in partys_parameters:
                 if party_parameters.get('local', {}).get('role', '') == request_data['role'] and party_parameters.get(
                         'local', {}).get('party_id', '') == request_data['party_id']:
-                    return get_json_result(retcode=0, retmsg='success', data=party_parameters)
+                    output_parameters = {}
+                    output_parameters['module'] = party_parameters.get('module', '')
+                    for p_k, p_v in party_parameters.items():
+                        if p_k.endswith('Param'):
+                            output_parameters[p_k] = p_v
+                    return get_json_result(retcode=0, retmsg='success', data=output_parameters)
         else:
             return get_json_result(retcode=102, retmsg='can not found this component parameters')
     else:

@@ -36,6 +36,8 @@ class Tracking(object):
         self.task_id = task_id
         self.table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
+        self.job_table_namespace = '_'.join(
+            ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id)])
         self.model_id = dtable_utils.gen_namespace_by_prefix(prefix=model_id, role=role, party_id=party_id) if model_id else None
         self.model_version = self.job_id
 
@@ -82,11 +84,11 @@ class Tracking(object):
         return metrics
 
     def log_job_view(self, view_data: dict):
-        FateStorage.save_data(view_data.items(), namespace=self.table_namespace, name=Tracking.job_view_table_name(),
+        FateStorage.save_data(view_data.items(), namespace=self.job_table_namespace, name=Tracking.job_view_table_name(),
                               partition=Tracking.JOB_VIEW_PARTITION, create_if_missing=True, error_if_exist=True)
 
     def get_job_view(self):
-        kv = FateStorage.read_data(namespace=self.table_namespace, name=Tracking.job_view_table_name())
+        kv = FateStorage.read_data(namespace=self.job_table_namespace, name=Tracking.job_view_table_name())
         view_data = {}
         for k, v in kv:
             view_data[k] = v

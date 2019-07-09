@@ -40,13 +40,13 @@ def submit_job():
 
 @manager.route('/<job_id>/<role>/<party_id>/create', methods=['POST'])
 def create_job(job_id, role, party_id):
-    JobController.job_status(job_id=job_id, role=role, party_id=party_id, job_info=request.json, create=True)
+    JobController.job_status(job_id=job_id, role=role, party_id=int(party_id), job_info=request.json, create=True)
     return get_json_result(retcode=0, retmsg='success')
 
 
 @manager.route('/<job_id>/<role>/<party_id>/status', methods=['POST'])
 def job_status(job_id, role, party_id):
-    JobController.job_status(job_id=job_id, role=role, party_id=party_id, job_info=request.json, create=False)
+    JobController.job_status(job_id=job_id, role=role, party_id=int(party_id), job_info=request.json, create=False)
     return get_json_result(retcode=0, retmsg='success')
 
 

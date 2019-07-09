@@ -150,15 +150,6 @@ def running_job_amount():
     return Job.select().where(Job.f_status == "running").distinct().count()
 
 
-def clean_job(job_id):
-    try:
-        stat_logger.info('ready clean job {}'.format(job_id))
-        eggroll.cleanup('*', namespace=job_id, persistent=False)
-        stat_logger.info('send clean job {}'.format(job_id))
-    except Exception as e:
-        stat_logger.exception(e)
-
-
 @DB.connection_context()
 def query_tasks(job_id, task_id, role=None, party_id=None):
     if role and party_id:

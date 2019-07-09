@@ -18,7 +18,7 @@ from fate_flow.utils.job_utils import generate_job_id, save_job_conf, query_task
 from fate_flow.utils import job_utils
 from arch.api.utils import file_utils, log_utils, dtable_utils
 from fate_flow.utils.api_utils import federated_api
-from arch.api.utils.core import current_timestamp, json_dumps, base64_encode
+from arch.api.utils.core import current_timestamp, json_dumps, base64_encode, json_loads, get_lan_ip
 from arch.api import federation
 from fate_flow.settings import IP, MAX_CONCURRENT_JOB_RUN
 import importlib
@@ -65,7 +65,7 @@ class JobController(object):
         job.f_initiator_party_id = initiator_party_id
         job.f_dsl = json_dumps(job_dsl)
         job.f_runtime_conf = json_dumps(job_runtime_conf)
-        job.f_run_ip = IP
+        job.f_run_ip = get_lan_ip()
         job.f_status = 'waiting'
         job.f_create_time = current_timestamp()
 
@@ -257,7 +257,6 @@ class JobController(object):
         job_log_dir = os.path.join(job_utils.get_job_log_directory(job_id=job_id), role, str(party_id))
         task_log_dir = os.path.join(job_log_dir, component_name)
         log_utils.LoggerFactory.set_directory(directory=task_log_dir, parent_log_dir=job_log_dir, append_to_parent_log=True)
-        # log_utils.LoggerFactory.setDirectory(task_log_dir)
 
         task = Task()
         task.f_job_id = job_id
@@ -368,7 +367,19 @@ class JobController(object):
         job_tracker = Tracking(job_id=job_id, role=role, party_id=party_id)
         job_tracker.save_job_info(role=role, party_id=party_id, job_info=job_info, create=create)
         if create:
-            job_tracker.log_job_view({'partner': job_info['f_roles']})
+            partner = {}
+            for _role, _role_party in json_loads(job_info['f_roles']).items():
+                if _role != role:
+                    partner[_role] = partner.get(_role, [])
+                    partner[_role].extend(_role_party)
+                else:
+                    for _party_id in _role_party:
+                        if _party_id != party_id:
+                            partner[_role] = partner.get(_role, [])
+                            partner[_role].append(_party_id)
+            schedule_logger.info(role)
+            schedule_logger.info(partner)
+            job_tracker.log_job_view({'partner': partner})
 
     @staticmethod
     def task_status(job_id, component_name, task_id, role, party_id, task_info):
