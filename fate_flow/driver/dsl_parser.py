@@ -415,8 +415,11 @@ class DSLParser(object):
 
     def get_dependency(self):
         dependence_dict = {}
+        component_module = {}
         for component in self.components:
             name = component.get_name()
+            module = component.get_module()
+            component_module[name] = module
             upstream = self.component_upstream[self.component_name_index.get(name)]
             if upstream:
                 dependence_dict[name] = upstream
@@ -431,7 +434,8 @@ class DSLParser(object):
             component_list[topo_rak_idx] = key
 
         return {"component_list": component_list,
-                "dependencies": dependence_dict}
+                "dependencies": dependence_dict,
+                "component_module": component_module}
 
     def _auto_deduction(self):
         self.predict_dsl = {"components": {}}
@@ -566,8 +570,23 @@ class DSLParser(object):
 
         return self.components
 
-    def get_predict_dag(self):
-        return self.predict_dsl
+    def get_predict_dag(self, role):
+        return self.gen_predict_dsl_by_role(role) 
+        # return self.predict_dsl
+
+    def gen_predict_dsl_by_role(self, role):
+        if not self.predict_dsl:
+            return self.predict_dsl
+
+        role_predict_dsl = copy.deepcopy(self.predict_dsl)
+        component_list = list(self.predict_dsl.get("components").keys())
+        for component in component_list:
+            idx = self.component_name_index.get(component)
+            role_parameters = self.components[idx].get_role_parameters()
+            if role in role_parameters:
+                role_predict_dsl["components"][component]["CodePath"] = role_parameters[role][0].get("CodePath") 
+
+        return  role_predict_dsl
 
     def get_runtime_conf(self):
         return self.runtime_conf
