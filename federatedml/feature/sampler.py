@@ -518,9 +518,20 @@ def callback(tracker, method, callback_metrics):
         tracker.log_metric_data("sample_count",
                                 "random",
                                 callback_metrics)
+        
+        tracker.set_metric_meta("sample_count",
+                                "random",
+                                MetricMeta(name="sample_count",
+                                            metric_type="SAMPLE_TEXT"))
+
     else:
         tracker.log_metric_data("sample_count",
                                 "stratified",
                                 callback_metrics)
+
+        tracker.set_metric_meta("sample_count",
+                                "stratified",
+                                MetricMeta(name="sample_count",
+                                            metric_type="SAMPLE_TABLE"))
 
 
