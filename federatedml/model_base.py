@@ -17,7 +17,9 @@
 #  limitations under the License.
 #
 from federatedml.util.param_extract import ParamExtract
-from fate_flow.manager.tracking import Tracking
+from arch.api.utils import log_utils
+
+LOGGER = log_utils.getLogger()
 
 
 class ModelBase(object):
@@ -48,7 +50,7 @@ class ModelBase(object):
         except AttributeError:
             need_run = True
         self.need_run = need_run
-
+        LOGGER.debug("need_run: {}, need_cv: {}".format(self.need_run, self.need_cv))
         return need_cv
 
     def _init_model(self, model):
@@ -78,6 +80,7 @@ class ModelBase(object):
                 data = data_sets[data_key]["data"]
 
         if stage == 'cross_validation':
+            LOGGER.info("Need cross validation.")
             self.cross_validation(train_data)
 
         elif train_data:
@@ -105,6 +108,8 @@ class ModelBase(object):
                 self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
         else:
+            LOGGER.debug("stage is : {}".format(stage))
+
             if stage == "fit":
                 self.data_output = self.fit(data)
             else:
@@ -112,7 +117,6 @@ class ModelBase(object):
 
     def run(self, component_parameters=None, args=None):
         need_cv = self._init_runtime_parameters(component_parameters)
-        print("component_parameter: {}".format(component_parameters))
 
         if need_cv:
             stage = 'cross_validation'

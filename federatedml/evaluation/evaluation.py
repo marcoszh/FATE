@@ -173,7 +173,11 @@ class Evaluation(ModelBase):
 
             if 'auc' in eval_result:
                 LOGGER.info("Model auc: {}".format(eval_result['auc']))
+            for eval_key in eval_result:
+                LOGGER.debug("Evaluate result {} exist".format(eval_key))
             self.eval_results[data_type] = eval_result
+
+        # LOGGER.debug("Evaluation Result: {}".format(self.eval_results))
 
     def __save_single_value(self, result, metric_name, metric_namespace, eval_name):
         self.tracker.log_metric_data(metric_namespace, metric_name, [Metric(eval_name, result)])

@@ -290,7 +290,7 @@ class HeteroLRGuest(HeteroLRBase):
         LOGGER.info("Start predict ...")
 
         data_features = self.transform(data_instances)
-
+        LOGGER.debug("data count: {}, coef_: {}, intercept_: {}".format(data_features.count(), self.coef_, self.intercept_))
         prob_guest = self.compute_wx(data_features, self.coef_, self.intercept_)
         prob_host = federation.get(name=self.transfer_variable.host_prob.name,
                                    tag=self.transfer_variable.generate_transferid(

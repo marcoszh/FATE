@@ -114,7 +114,7 @@ class BaseHeteroFeatureSelection(ModelBase):
     def _load_model(self, model_dict):
 
         if 'model' in model_dict:
-            self._parse_need_run(model_dict, MODEL_META_NAME)
+            # self._parse_need_run(model_dict, MODEL_META_NAME)
             LOGGER.debug("Feature selection need run: {}".format(self.need_run))
             if not self.need_run:
                 return

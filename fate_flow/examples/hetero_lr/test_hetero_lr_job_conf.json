@@ -74,6 +74,32 @@
       "learning_rate": 0.15,
       "init_param": {
         "init_method": "random_uniform"
+      },
+      "cv_param": {
+        "n_splits": 5,
+        "shuffle": false,
+        "random_seed": 103,
+        "need_cv": true,
+        "evaluate_param": {
+          "metrics": [
+            "auc",
+            "precision",
+            "ks",
+            "lift",
+            "gain",
+            "precision",
+            "recall",
+            "accuracy",
+            "explained_variance",
+            "mean_absolute_error",
+            "mean_squared_error",
+            "mean_squared_log_error",
+            "median_absolute_error",
+            "r2_score",
+            "root_mean_squared_error",
+            "roc"
+          ]
+        }
       }
     },
     "evaluation_0": {
