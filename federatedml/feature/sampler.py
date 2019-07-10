@@ -19,6 +19,7 @@ from arch.api import federation
 from sklearn.utils import resample
 from fate_flow.manager.tracking import Tracking 
 from fate_flow.entity.metric import Metric
+from fate_flow.entity.metric import MetricMeta
 from federatedml.param.sample_param import SampleParam
 from federatedml.util import consts
 from federatedml.util.transfer_variable.sample_transfer_variable import SampleTransferVariable
@@ -518,9 +519,20 @@ def callback(tracker, method, callback_metrics):
         tracker.log_metric_data("sample_count",
                                 "random",
                                 callback_metrics)
+        
+        tracker.set_metric_meta("sample_count",
+                                "random",
+                                MetricMeta(name="sample_count",
+                                            metric_type="SAMPLE_TEXT"))
+
     else:
         tracker.log_metric_data("sample_count",
                                 "stratified",
                                 callback_metrics)
+
+        tracker.set_metric_meta("sample_count",
+                                "stratified",
+                                MetricMeta(name="sample_count",
+                                            metric_type="SAMPLE_TABLE"))
 
 

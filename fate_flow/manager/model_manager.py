@@ -13,11 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import os
 from arch.api.proto.model_meta_pb2 import ModelMeta
 from arch.api.proto.model_param_pb2 import ModelParam
 from arch.api.proto.data_transform_server_pb2 import DataTransformServer
-from arch.api.utils.core import json_loads, json_dumps, bytes_to_string, string_to_bytes
+from arch.api.utils.core import json_loads
 from arch.api.utils.format_transform import camel_to_pascal
 from fate_flow.storage.fate_storage import FateStorage
 from arch.api import RuntimeInstance
@@ -26,13 +26,19 @@ from fate_flow.manager import version_control
 import datetime
 import inspect
 import importlib
+from fate_flow.settings import stat_logger
+from arch.api.utils import file_utils
 
 
 def save_model(model_key, model_buffers, model_version, model_id, version_log=None):
     data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
                                    create_if_missing=True, error_if_exist=False)
+    model_class_map = {}
     for buffer_name, buffer_object in model_buffers.items():
-        data_table.put('{}.{}'.format(model_key, buffer_name), buffer_object.SerializeToString(), use_serialize=False)
+        storage_key = '{}.{}'.format(model_key, buffer_name)
+        data_table.put(storage_key, buffer_object.SerializeToString(), use_serialize=False)
+        model_class_map[storage_key] = type(buffer_object).__name__
+    FateStorage.save_data_table_meta(model_class_map, namespace=model_id, name=model_version)
     version_log = "[AUTO] save model at %s." % datetime.datetime.now() if not version_log else version_log
     version_control.save_version(name=model_version, namespace=model_id, version_log=version_log)
 
@@ -42,19 +48,39 @@ def read_model(model_key, model_version, model_id):
                                    create_if_missing=False, error_if_exist=False)
     model_buffers = {}
     if data_table:
-        for buffer_key, buffer_object_bytes in data_table.collect(use_serialize=False):
-            buffer_key_items = buffer_key.split('.')
-            buffer_name = buffer_key_items[-1]
+        model_class_map = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
+        for storage_key, buffer_object_bytes in data_table.collect(use_serialize=False):
+            storage_key_items = storage_key.split('.')
+            buffer_name = storage_key_items[-1]
 
-            current_model_key = '.'.join(buffer_key_items[:-1])
+            current_model_key = '.'.join(storage_key_items[:-1])
             if current_model_key == model_key:
-                buffer_object_class = get_proto_buffer_class(buffer_name)
+                buffer_object_class = get_proto_buffer_class(model_class_map.get(storage_key, ''))
                 if buffer_object_class:
                     buffer_object = buffer_object_class()
                 else:
-                    raise Exception('can not found this protobuffer class: {}'.format(buffer_name))
+                    raise Exception('can not found this protobuffer class: {}'.format(model_class_map.get(storage_key, '')))
                 buffer_object.ParseFromString(buffer_object_bytes)
                 model_buffers[buffer_name] = buffer_object
+    return model_buffers
+
+
+def collect_model(model_version, model_id):
+    data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
+                                   create_if_missing=False, error_if_exist=False)
+    model_buffers = {}
+    if data_table:
+        model_class_map = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
+        for storage_key, buffer_object_bytes in data_table.collect(use_serialize=False):
+            storage_key_items = storage_key.split('.')
+            buffer_name = storage_key_items[-1]
+            buffer_object_class = get_proto_buffer_class(model_class_map.get(storage_key, ''))
+            if buffer_object_class:
+                buffer_object = buffer_object_class()
+            else:
+                raise Exception('can not found this protobuffer class: {}'.format(model_class_map.get(storage_key, '')))
+            buffer_object.ParseFromString(buffer_object_bytes)
+            model_buffers[buffer_name] = buffer_object
     return model_buffers
 
 
@@ -67,11 +93,18 @@ def get_model_meta(model_version, model_id):
 
 
 def get_proto_buffer_class(class_name):
-    for name, obj in inspect.getmembers(importlib.import_module('arch.api.proto')):
-        if inspect.ismodule(obj):
-            for n, o in inspect.getmembers(obj):
-                if inspect.isclass(o) and n == class_name:
-                    return o
+    package_path = os.path.join(file_utils.get_project_base_directory(), 'arch', 'api', 'proto')
+    package_python_path = 'arch.api.proto'
+    for f in os.listdir(package_path):
+        if f.startswith('.'):
+            continue
+        try:
+            proto_module = importlib.import_module(package_python_path + '.' + f.rstrip('.py'))
+            for name, obj in inspect.getmembers(proto_module):
+                if inspect.isclass(obj) and name == class_name:
+                    return obj
+        except Exception as e:
+            stat_logger.warning(e)
     else:
         return None
 

@@ -19,8 +19,7 @@ import numpy as np
 
 from arch.api.proto import lr_model_meta_pb2, lr_model_param_pb2
 from arch.api.utils import log_utils
-from fate_flow.manager.tracking import Tracking
-# from federatedml.evaluation import Evaluation
+
 from federatedml.model_base import ModelBase
 from federatedml.model_selection.KFold import KFold
 from federatedml.optim import DiffConverge, AbsConverge, Optimizer

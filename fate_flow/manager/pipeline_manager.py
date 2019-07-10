@@ -13,13 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import numpy
+from fate_flow.db.db_models import DB, Job
+from fate_flow.utils import job_utils
 
 
-def dataset_to_list(src):
-    if isinstance(src, numpy.ndarray):
-        return src.tolist()
-    elif isinstance(src, list):
-        return src
+@DB.connection_context()
+def pipeline_dag_dependency(job_id):
+    jobs = Job.select(Job.f_dsl, Job.f_runtime_conf).where(Job.f_job_id == job_id, Job.f_is_initiator == 1)
+    if jobs:
+        job_dsl_path, job_runtime_conf_path = job_utils.get_job_conf_path(job_id=job_id)
+        job_dsl_parser = job_utils.get_job_dsl_parser(job_dsl_path=job_dsl_path,
+                                                      job_runtime_conf_path=job_runtime_conf_path)
+        return job_dsl_parser.get_dependency()
     else:
-        return src
+        return None

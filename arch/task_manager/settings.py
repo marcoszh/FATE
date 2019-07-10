@@ -16,8 +16,8 @@
 # -*- coding: utf-8 -*-
 from arch.api.utils import file_utils
 from arch.api.utils.log_utils import LoggerFactory
-LoggerFactory.setDirectory()
-logger = LoggerFactory.getLogger("task_manager")
+LoggerFactory.set_directory()
+logger = LoggerFactory.get_logger("task_manager")
 
 '''
 Constants

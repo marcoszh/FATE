@@ -14,10 +14,11 @@
 #  limitations under the License.
 #
 from arch.api.utils import file_utils
+from arch.api.utils.core import json_loads
 import subprocess
 import os
 import uuid
-from fate_flow.settings import logger
+from fate_flow.settings import stat_logger
 from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.manager.queue_manager import JOB_QUEUE
 import errno
@@ -47,12 +48,15 @@ id_counter = IdCounter()
 
 
 def generate_job_id():
-    return '_'.join([datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f"), str(id_counter.incr())])
+    return '_'.join([datetime.datetime.now().strftime("%Y%m%d%H%M%S%f"), str(id_counter.incr())])
 
 
-def get_job_directory(job_id=None):
-    _paths = ['jobs', job_id] if job_id else ['jobs']
-    return os.path.join(file_utils.get_project_base_directory(), *_paths)
+def get_job_directory(job_id):
+    return os.path.join(file_utils.get_project_base_directory(), 'jobs', job_id)
+
+
+def get_job_log_directory(job_id):
+    return os.path.join(file_utils.get_project_base_directory(), 'logs', job_id)
 
 
 def new_runtime_conf(job_dir, method, module, role, party_id):
@@ -66,7 +70,7 @@ def new_runtime_conf(job_dir, method, module, role, party_id):
 
 def save_job_conf(job_id, job_dsl, job_runtime_conf):
     job_dsl_path, job_runtime_conf_path = get_job_conf_path(job_id=job_id)
-    os.makedirs(os.path.dirname(job_dsl_path))
+    os.makedirs(os.path.dirname(job_dsl_path), exist_ok=True)
     for data, conf_path in [(job_dsl, job_dsl_path), (job_runtime_conf, job_runtime_conf_path)]:
         with open(conf_path, 'w+') as f:
             f.truncate()
@@ -78,20 +82,41 @@ def save_job_conf(job_id, job_dsl, job_runtime_conf):
 def get_job_conf_path(job_id):
     job_dir = get_job_directory(job_id)
     job_dsl_path = os.path.join(job_dir, 'job_dsl.json')
-    job_runtime_conf_path = os.path.join(job_dir, 'job_parameters.json')
+    job_runtime_conf_path = os.path.join(job_dir, 'job_runtime_conf.json')
     return job_dsl_path, job_runtime_conf_path
 
 
-def get_job_dsl_parser(job_id, job_dsl_path, job_runtime_conf_path):
-    dsl = DSLParser()
+@DB.connection_context()
+def get_job_dsl_parser_by_job_id(job_id):
+    jobs = Job.select(Job.f_dsl, Job.f_runtime_conf).where(Job.f_job_id == job_id)
+    if jobs:
+        job_dsl_path, job_runtime_conf_path = get_job_conf_path(job_id=job_id)
+        job_dsl_parser = get_job_dsl_parser(job_dsl_path=job_dsl_path, job_runtime_conf_path=job_runtime_conf_path)
+        return job_dsl_parser
+    else:
+        return None
+
+
+def get_job_dsl_parser(job_dsl_path, job_runtime_conf_path):
+    dsl_parser = DSLParser()
     default_runtime_conf_path = os.path.join(file_utils.get_project_base_directory(),
                                              *['federatedml', 'conf', 'default_runtime_conf'])
     setting_conf_path = os.path.join(file_utils.get_project_base_directory(), *['federatedml', 'conf', 'setting_conf'])
-    dsl.run(dsl_json_path=job_dsl_path,
-            runtime_conf=job_runtime_conf_path,
-            default_runtime_conf_prefix=default_runtime_conf_path,
-            setting_conf_prefix=setting_conf_path)
-    return dsl
+    dsl_parser.run(dsl_json_path=job_dsl_path,
+                   runtime_conf=job_runtime_conf_path,
+                   default_runtime_conf_prefix=default_runtime_conf_path,
+                   setting_conf_prefix=setting_conf_path)
+    return dsl_parser
+
+
+@DB.connection_context()
+def get_job_runtime_conf(job_id, role, party_id):
+    jobs = Job.select(Job.f_runtime_conf).where(Job.f_job_id == job_id, Job.f_role == role, Job.f_party_id == party_id)
+    if jobs:
+        job = jobs[0]
+        return json_loads(job.f_runtime_conf)
+    else:
+        return {}
 
 
 @DB.connection_context()
@@ -125,19 +150,11 @@ def running_job_amount():
     return Job.select().where(Job.f_status == "running").distinct().count()
 
 
-def clean_job(job_id):
-    try:
-        logger.info('ready clean job {}'.format(job_id))
-        eggroll.cleanup('*', namespace=job_id, persistent=False)
-        logger.info('send clean job {}'.format(job_id))
-    except Exception as e:
-        logger.exception(e)
-
-
 @DB.connection_context()
 def query_tasks(job_id, task_id, role=None, party_id=None):
     if role and party_id:
-        tasks = Task.select().where(Task.f_job_id == job_id, Task.f_task_id == task_id, Task.f_role == role, Task.f_party_id == party_id)
+        tasks = Task.select().where(Task.f_job_id == job_id, Task.f_task_id == task_id, Task.f_role == role,
+                                    Task.f_party_id == party_id)
     else:
         tasks = Task.select().where(Task.f_job_id == job_id, Task.f_task_id == task_id)
     return tasks
@@ -169,15 +186,15 @@ def check_job_process(pid):
         return True
 
 
-def run_subprocess(job_dir, job_role, progs):
-    logger.info('Starting progs: {}'.format(progs))
-    logger.info(' '.join(progs))
+def run_subprocess(config_dir, process_cmd, log_dir=None):
+    stat_logger.info('Starting process command: {}'.format(process_cmd))
+    stat_logger.info(' '.join(process_cmd))
 
-    std_dir = os.path.join(job_dir, job_role)
-    if not os.path.exists(std_dir):
-        os.makedirs(os.path.join(job_dir, job_role))
-    std_log = open(os.path.join(std_dir, 'std.log'), 'w')
-    task_pid_path = os.path.join(job_dir, 'pids')
+    os.makedirs(config_dir, exist_ok=True)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    std_log = open(os.path.join(log_dir if log_dir else config_dir, 'std.log'), 'w')
+    pid_path = os.path.join(config_dir, 'pid')
 
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
@@ -185,14 +202,39 @@ def run_subprocess(job_dir, job_role, progs):
         startupinfo.wShowWindow = subprocess.SW_HIDE
     else:
         startupinfo = None
-    p = subprocess.Popen(progs,
+    p = subprocess.Popen(process_cmd,
                          stdout=std_log,
                          stderr=std_log,
                          startupinfo=startupinfo
                          )
-    os.makedirs(task_pid_path, exist_ok=True)
-    with open(os.path.join(task_pid_path, job_role + ".pid"), 'w') as f:
+    with open(pid_path, 'w') as f:
         f.truncate()
         f.write(str(p.pid) + "\n")
         f.flush()
     return p
+
+
+def gen_all_party_key(all_party):
+    """
+    Join all party as party key
+    :param all_party:
+        "role": {
+            "guest": [9999],
+            "host": [10000],
+            "arbiter": [10000]
+         }
+    :return:
+    """
+    if not all_party:
+        all_party_key = 'all'
+    elif isinstance(all_party, dict):
+        sorted_role_name = sorted(all_party.keys())
+        all_party_key = '#'.join([
+            ('%s-%s' % (
+                role_name,
+                '_'.join([str(p) for p in sorted(set(all_party[role_name]))]))
+             )
+            for role_name in sorted_role_name])
+    else:
+        all_party_key = None
+    return all_party_key

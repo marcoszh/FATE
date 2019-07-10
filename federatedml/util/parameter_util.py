@@ -26,7 +26,6 @@ class ParameterOverride(object):
     def override_parameter(default_runtime_conf_prefix=None, setting_conf_prefix=None, submit_conf=None, module=None,
                            module_alias=None):
 
-        print ("module and alias is {}, {}".format(module, module_alias))
         _module_setting_path = os.path.join(setting_conf_prefix, module + ".json")
         _module_setting = None
         with open(_module_setting_path, "r") as fin:
@@ -41,8 +40,6 @@ class ParameterOverride(object):
         param_module = importlib.import_module(param_module_path)
         param_obj = getattr(param_module, param_class)()
         default_runtime_dict = ParameterOverride.change_object_to_dict(param_obj) 
-        from pprint import pprint
-        pprint (default_runtime_dict)
 
         default_runtime_conf_suf = _module_setting["default_runtime_conf"]
         try:
