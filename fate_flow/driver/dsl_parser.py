@@ -570,8 +570,8 @@ class DSLParser(object):
 
         return self.components
 
-    def get_predict_dag(self, role):
-        return self.gen_predict_dsl_by_role(role) 
+    def get_predict_dsl(self, role):
+        return self.gen_predict_dsl_by_role(role)
         # return self.predict_dsl
 
     def gen_predict_dsl_by_role(self, role):
@@ -584,7 +584,7 @@ class DSLParser(object):
             idx = self.component_name_index.get(component)
             role_parameters = self.components[idx].get_role_parameters()
             if role in role_parameters:
-                role_predict_dsl["components"][component]["CodePath"] = role_parameters[role][0].get("CodePath") 
+                role_predict_dsl["components"][component]["CodePath"] = role_parameters[role][0].get("CodePath")
 
         return  role_predict_dsl
 

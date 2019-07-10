@@ -19,13 +19,13 @@ from fate_flow.utils import publish_model
 from fate_flow.utils.job_utils import generate_job_id
 from fate_flow.utils.api_utils import get_json_result, federated_api
 from fate_flow.manager.version_control import version_history
-from fate_flow.settings import logger, SERVINGS
+from fate_flow.settings import stat_logger, SERVINGS, API_VERSION
 manager = Flask(__name__)
 
 
 @manager.errorhandler(500)
 def internal_server_error(e):
-    logger.exception(e)
+    stat_logger.exception(e)
     return get_json_result(retcode=100, retmsg=str(e))
 
 
@@ -33,8 +33,11 @@ def internal_server_error(e):
 def load_model():
     request_config = request.json
     _job_id = generate_job_id()
-    if request_config.get('gen_table_info', False):
-        publish_model.generate_model_info(request_config)
+    initiator = request_config.get('initiator', {})
+    initiator_party_id = initiator.get('party_id', 0)
+    status = publish_model.generate_publish_model_info(request_config)
+    if not status:
+        return get_json_result(retcode=101, retmsg='can not found model')
     for role_name, role_partys in request_config.get("role").items():
         if role_name == 'arbiter':
             continue
@@ -42,7 +45,8 @@ def load_model():
             request_config['local'] = {'role': role_name, 'party_id': _party_id}
             st, msg = federated_api(job_id=_job_id,
                                     method='POST',
-                                    url='/model/load/do',
+                                    url='{}/model/load/do'.format(API_VERSION),
+                                    src_party_id=initiator_party_id,
                                     dest_party_id=_party_id,
                                     json_body=request_config)
     return get_json_result(job_id=_job_id)
@@ -51,7 +55,7 @@ def load_model():
 @manager.route('/load/do', methods=['POST'])
 def do_load_model():
     request_data = request.json
-    request_data["servings"] = server_conf.get("servers", {}).get("servings", [])
+    request_data["servings"] = SERVINGS
     publish_model.load_model(config_data=request_data)
     return get_json_result()
 

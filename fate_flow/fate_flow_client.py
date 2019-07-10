@@ -32,7 +32,8 @@ def get_err_result(msg, body):
 def prettify(response, verbose=True):
     response['created_at'] = time.strftime('%Y-%m-%d %H:%M:%S')
     if verbose:
-        print(json.dumps(response))
+        print(json.dumps(response, indent=4))
+        print()
     return response
 
 

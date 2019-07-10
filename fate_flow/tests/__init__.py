@@ -13,13 +13,3 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import numpy
-
-
-def dataset_to_list(src):
-    if isinstance(src, numpy.ndarray):
-        return src.tolist()
-    elif isinstance(src, list):
-        return src
-    else:
-        return src
