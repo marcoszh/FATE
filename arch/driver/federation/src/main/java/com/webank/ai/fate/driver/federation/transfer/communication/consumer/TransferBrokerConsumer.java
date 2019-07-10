@@ -52,7 +52,7 @@ public class TransferBrokerConsumer implements Runnable, TransferBrokerListener 
     private long maxIdleTime = 3600000;
     private int maxConcurrency = 10;
     private boolean isIdleTimeout;
-    private boolean inited;
+    private volatile boolean inited;
 
     public TransferBrokerConsumer() {
         this.inited = false;
@@ -108,14 +108,18 @@ public class TransferBrokerConsumer implements Runnable, TransferBrokerListener 
 
                 long now = System.currentTimeMillis();
                 if (!latchAwaitResult) {
-                    LOGGER.info("[FEDERATION][CONSUMER] updating status. transferBroker: {}. isClosable: {}, queueSize: {}, isFinished: {}",
-                            this, transferBroker.isClosable(), transferBroker.getQueueSize(), transferBroker.isFinished());
-
-                    if (!transferBroker.isReady()) {
-                        if (now - startIdleTime > maxIdleTime) {
-                            LOGGER.info("[FEDERATION][CONSUMER] timeout for transferMetaId: {}");
-                            break;
+                    if (transferBroker != null) {
+                        LOGGER.info("[FEDERATION][CONSUMER] updating status. transferBroker: {}. isClosable: {}, queueSize: {}, isFinished: {}",
+                                this, transferBroker.isClosable(), transferBroker.getQueueSize(), transferBroker.isFinished());
+                        if (!transferBroker.isReady()) {
+                            if (now - startIdleTime > maxIdleTime) {
+                                LOGGER.info("[FEDERATION][CONSUMER] timeout for transferMetaId: {}");
+                                break;
+                            }
+                            continue;
                         }
+                    } else {
+                        LOGGER.info("[FEDERATION][CONSUMER] waiting for initialization");
                         continue;
                     }
                 }
