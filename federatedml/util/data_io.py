@@ -26,6 +26,7 @@ import numpy as np
 from arch.api.utils import log_utils
 from fate_flow.manager.tracking import Tracking 
 from fate_flow.entity.metric import Metric
+from fate_flow.entity.metric import MetricMeta
 from federatedml.feature.instance import Instance
 from federatedml.feature.sparse_vector import SparseVector
 from federatedml.util import consts
