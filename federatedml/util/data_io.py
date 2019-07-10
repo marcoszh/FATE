@@ -881,16 +881,27 @@ def callback(keyword="missing_impute",
              value_list=None,
              tracker=None):
     # tracker = Tracking("abc", "123")
+    metric_type=None
     if keyword.endswith("ratio"):
         metric_list = []
         for i in range(len(value_list)):
             metric_list.append(Metric(i, value_list[i]))
 
         tracker.log_metric_data(keyword, "DATAIO", metric_list)
+
+        metric_type = "DATAIO_TABLE"
+
     else:
         metric_list = []
         for i in range(len(value_list)):
             metric_list.append(Metric(value_list[i], i))
 
         tracker.log_metric_data(keyword, "DATAIO", metric_list)
+        
+        metric_type = "DATAIO_TEXT"
+
+    tracker.set_metric_meta(keyword,
+                            "DATAIO",
+                            MetricMeta(name=keyword,
+                                        metric_type=metric_type))
 

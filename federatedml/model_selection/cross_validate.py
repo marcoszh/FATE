@@ -51,13 +51,3 @@ class BaseCrossValidator(object):
                 std_value = np.around(np.std(eva_result_list), 4)
                 LOGGER.info("{}，evaluate name: {}, mean: {}, std: {}".format(self.role,
                                                                              eval_name, mean_value, std_value))
-
-
-
-
-
-
-
-
-
-
