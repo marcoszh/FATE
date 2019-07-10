@@ -69,7 +69,7 @@ class Job(DataBaseModel):
     f_party_id = CharField(max_length=50, index=True)
     f_roles = TextField()
     f_initiator_party_id = CharField(max_length=50, index=True)
-    f_is_initiator = IntegerField(default=0, index=True)
+    f_is_initiator = IntegerField(null=True, index=True)
     f_dsl = TextField()
     f_runtime_conf = TextField()
     f_run_ip = CharField(max_length=100)
@@ -97,7 +97,7 @@ class Task(DataBaseModel):
     f_operator = CharField(max_length=100)
     f_run_ip = CharField(max_length=100)
     f_run_pid = IntegerField()
-    f_status = CharField(max_length=50)  # waiting/ready/start/running/success/failed/partial/setFailed
+    f_status = CharField(max_length=50)  # running/success/failed
     f_create_time = BigIntegerField()
     f_update_time = BigIntegerField(null=True)
     f_start_time = BigIntegerField(null=True)

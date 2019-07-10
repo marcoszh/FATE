@@ -195,6 +195,7 @@ class Evaluation(ModelBase):
                           curve_name=None, best=None):
         extra_metas = {}
         key_list = ["unit_name", "unit_name", "ordinate_name", "best"]
+        metric_type = "_".join([metric_type, "EVALUATION"])
         for key in key_list:
             value = locals()[key]
             if value:

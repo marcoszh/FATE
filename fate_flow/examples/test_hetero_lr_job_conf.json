@@ -1,105 +1,55 @@
 {
-  "initiator": {
-    "role": "guest",
-    "party_id": 10000
-  },
-  "role": {
-    "guest": [
-      10000
-    ],
-    "host": [
-      10000
-    ],
-    "arbiter": [
-      10000
-    ]
-  },
-  "role_parameters": {
-    "guest": {
-      "args": {
-        "data": {
-          "train_data": [
-            {
-              "name": "beed5e109f0511e9827b5254005e961b",
-              "namespace": "guest#10000#arbiter-10000#guest-10000#host-10000#train_input"
-            }
-          ]
-        }
-      },
-      "dataio_0": {
-        "with_label": [
-          true
-        ],
-        "label_idx": [
-          0
-        ],
-        "label_type": [
-          "int"
-        ],
-        "output_format": [
-          "dense"
-        ]
-      }
+    "initiator": {
+        "role": "guest",
+        "party_id": 10000
     },
-    "host": {
-      "args": {
-        "data": {
-          "train_data": [
-            {
-              "name": "e6e7c7c09f0511e9a1595254005e961b",
-              "namespace": "host#10000#arbiter-10000#guest-10000#host-10000#train_input"
-            }
-          ]
-        }
-      },
-      "dataio_0": {
-        "with_label": [
-          false
-        ],
-        "output_format": [
-          "dense"
-        ]
-      }
-    }
-  },
-  "algorithm_parameters": {
-    "hetero_lr_0": {
-      "penalty": "L2",
-      "optimizer": "rmsprop",
-      "eps": 1e-5,
-      "alpha": 0.01,
-      "max_iter": 10,
-      "converge_func": "diff",
-      "batch_size": 320,
-      "learning_rate": 0.15,
-      "init_param": {
-        "init_method": "random_uniform"
-      }
+    "job_parameters": {
+        "model_id": "online_inference_hetero_lr_test"
     },
-    "evaluation_0": {
-      "metrics": [
-        "auc",
-        "precision",
-        "ks",
-        "lift",
-        "gain",
-        "precision",
-        "recall",
-        "accuracy",
-        "explained_variance",
-        "mean_absolute_error",
-        "mean_squared_error",
-        "mean_squared_log_error",
-        "median_absolute_error",
-        "r2_score",
-        "root_mean_squared_error",
-        "roc"
-      ],
-      "eval_type": "binary",
-      "pos_label": 1,
-      "thresholds": [
-        0.5
-      ]
+    "role": {
+        "guest": [10000],
+        "host": [10000],
+        "arbiter": [10000]
+    },
+    "role_parameters": {
+        "guest": {
+            "args": {
+                "data": {
+                    "train_data": [{"name": "6154f3d2a24611e9a36f00e04c6c66f9", "namespace": "arbiter-10000#guest-10000#host-10000#train_input#guest#10000"}]
+                }
+            },
+            "dataio_0":{
+                "with_label": [true],
+                "label_idx": [0],
+                "label_type": ["int"],
+                "output_format": ["dense"]
+            }
+        },
+        "host": {
+            "args": {
+                "data": {
+                    "train_data": [{"name": "647a206ea24611e9996000e04c6c66f9", "namespace": "arbiter-10000#guest-10000#host-10000#train_input#host#10000"}]
+                }
+            },
+             "dataio_0":{
+                "with_label": [false],
+                "output_format": ["dense"]
+            }
+        }
+    },
+    "algorithm_parameters": {
+        "hetero_lr_0": {
+            "penalty": "L2",
+            "optimizer": "rmsprop",
+            "eps": 1e-5,
+            "alpha": 0.01,
+            "max_iter": 3,
+            "converge_func": "diff",
+            "batch_size": 320,
+            "learning_rate": 0.15,
+            "init_param": {
+				"init_method": "random_uniform"
+            }
+        }
     }
-  }
 }

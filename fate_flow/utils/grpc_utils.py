@@ -18,8 +18,7 @@ import json
 from arch.api.proto import proxy_pb2, proxy_pb2_grpc
 from arch.api.proto import basic_meta_pb2
 import grpc
-from arch.task_manager.settings import ROLE, IP, GRPC_PORT, LOCAL_URL, PROXY_HOST, PROXY_PORT, \
-    PARTY_ID, HEADERS, DEFAULT_GRPC_OVERALL_TIMEOUT
+from fate_flow.settings import ROLE, IP, GRPC_PORT, LOCAL_URL, PROXY_HOST, PROXY_PORT, HEADERS, DEFAULT_GRPC_OVERALL_TIMEOUT
 
 
 def get_proxy_data_channel():
@@ -28,9 +27,9 @@ def get_proxy_data_channel():
     return channel, stub
 
 
-def wrap_grpc_packet(_json_body, _method, _url, _dst_party_id=None, job_id=None, overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):
+def wrap_grpc_packet(_json_body, _method, _url, _src_party_id, _dst_party_id, job_id=None, overall_timeout=DEFAULT_GRPC_OVERALL_TIMEOUT):
     _src_end_point = basic_meta_pb2.Endpoint(ip=IP, port=GRPC_PORT)
-    _src = proxy_pb2.Topic(name=job_id, partyId="{}".format(PARTY_ID), role=ROLE, callback=_src_end_point)
+    _src = proxy_pb2.Topic(name=job_id, partyId="{}".format(_src_party_id), role=ROLE, callback=_src_end_point)
     _dst = proxy_pb2.Topic(name=job_id, partyId="{}".format(_dst_party_id), role=ROLE, callback=None)
     _task = proxy_pb2.Task(taskId=job_id)
     _command = proxy_pb2.Command(name=ROLE)
@@ -52,7 +51,8 @@ class UnaryServicer(proxy_pb2_grpc.DataTransferServiceServicer):
         param_bytes = packet.body.value
         param = bytes.decode(param_bytes)
         job_id = header.task.taskId
-        dst = header.src
+        src = header.src
+        dst = header.dst
         method = header.operator
 
         action = getattr(requests, method.lower(), None)
@@ -61,4 +61,4 @@ class UnaryServicer(proxy_pb2_grpc.DataTransferServiceServicer):
         else:
             pass
         resp_json = resp.json()
-        return wrap_grpc_packet(resp_json, method, _suffix, dst.partyId, job_id)
+        return wrap_grpc_packet(resp_json, method, _suffix, dst.partyId, src.partyId, job_id)
