@@ -65,6 +65,25 @@ def read_model(model_key, model_version, model_id):
     return model_buffers
 
 
+def collect_model(model_version, model_id):
+    data_table = FateStorage.table(name=model_version, namespace=model_id, partition=get_model_table_partition_count(),
+                                   create_if_missing=False, error_if_exist=False)
+    model_buffers = {}
+    if data_table:
+        model_class_map = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
+        for storage_key, buffer_object_bytes in data_table.collect(use_serialize=False):
+            storage_key_items = storage_key.split('.')
+            buffer_name = storage_key_items[-1]
+            buffer_object_class = get_proto_buffer_class(model_class_map.get(storage_key, ''))
+            if buffer_object_class:
+                buffer_object = buffer_object_class()
+            else:
+                raise Exception('can not found this protobuffer class: {}'.format(model_class_map.get(storage_key, '')))
+            buffer_object.ParseFromString(buffer_object_bytes)
+            model_buffers[buffer_name] = buffer_object
+    return model_buffers
+
+
 def save_model_meta(kv, model_version, model_id):
     FateStorage.save_data_table_meta(kv, namespace=model_id, name=model_version)
 
@@ -74,14 +93,12 @@ def get_model_meta(model_version, model_id):
 
 
 def get_proto_buffer_class(class_name):
-    stat_logger.info(class_name)
     package_path = os.path.join(file_utils.get_project_base_directory(), 'arch', 'api', 'proto')
     package_python_path = 'arch.api.proto'
     for f in os.listdir(package_path):
         if f.startswith('.'):
             continue
         try:
-            stat_logger.info(f)
             proto_module = importlib.import_module(package_python_path + '.' + f.rstrip('.py'))
             for name, obj in inspect.getmembers(proto_module):
                 if inspect.isclass(obj) and name == class_name:

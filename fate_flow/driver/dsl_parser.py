@@ -570,7 +570,7 @@ class DSLParser(object):
 
         return self.components
 
-    def get_predict_dag(self, role):
+    def get_predict_dsl(self, role):
         return self.gen_predict_dsl_by_role(role)
         # return self.predict_dsl
 

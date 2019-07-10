@@ -71,8 +71,7 @@ def get_lan_ip():
 
         def get_interface_ip(ifname):
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s',
-                                                                                ifname[:15]))[20:24])
+            return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', string_to_bytes(ifname[:15])))[20:24])
 
     #ip = socket.gethostbyname(socket.gethostname())
     ip = socket.gethostbyname(socket.getfqdn())

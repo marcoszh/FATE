@@ -9,7 +9,7 @@ from werkzeug.wsgi import DispatcherMiddleware
 from werkzeug.serving import run_simple
 from fate_flow.utils.grpc_utils import UnaryServicer
 from fate_flow.apps.data_access_app import manager as data_access_app_manager
-from fate_flow.apps.data_access_app import manager as model_app_manager
+from fate_flow.apps.machine_learning_model_app import manager as model_app_manager
 from fate_flow.apps.job_apps import manager as job_app_manager
 from fate_flow.apps.data_table_app import manager as data_table_app_manager
 from fate_flow.apps.tracking_app import manager as tracking_app_manager

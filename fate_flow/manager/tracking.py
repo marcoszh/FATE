@@ -38,7 +38,7 @@ class Tracking(object):
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
         self.job_table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id)])
-        self.model_id = dtable_utils.gen_namespace_by_prefix(prefix=model_id, role=role, party_id=party_id) if model_id else None
+        self.model_id = Tracking.gen_party_model_id(federated_model_id=model_id, role=role, party_id=party_id)
         self.model_version = self.job_id
 
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
@@ -70,11 +70,15 @@ class Tracking(object):
         return MetricMeta(name=kv.get('name'), metric_type=kv.get('metric_type'), extra_metas=kv)
 
     def put_into_metric_list(self, metric_namespace: str, metric_name: str):
+        stat_logger.debug(self.table_namespace)
+        stat_logger.debug(Tracking.metric_list_table_name())
         kv = {'%s:%s' % (metric_namespace, metric_name): metric_name}
         FateStorage.save_data(kv.items(), namespace=self.table_namespace, name=Tracking.metric_list_table_name(),
                               partition=Tracking.METRIC_LIST_PARTITION, create_if_missing=True, error_if_exist=True)
 
     def get_metric_list(self):
+        stat_logger.debug(self.table_namespace)
+        stat_logger.debug(Tracking.metric_list_table_name())
         kv = FateStorage.read_data(namespace=self.table_namespace, name=Tracking.metric_list_table_name())
         metrics = dict()
         for k, v in kv:
@@ -136,6 +140,10 @@ class Tracking(object):
         model_buffers = model_manager.read_model(model_key=self.component_name,
                                                  model_version=self.model_version,
                                                  model_id=self.model_id)
+        return model_buffers
+
+    def collect_model(self):
+        model_buffers = model_manager.collect_model(model_version=self.model_version, model_id=self.model_id)
         return model_buffers
 
     def save_output_model_meta(self, kv: dict):
@@ -231,6 +239,10 @@ class Tracking(object):
     @staticmethod
     def job_view_table_name():
         return '_'.join(['job', 'view'])
+
+    @staticmethod
+    def gen_party_model_id(federated_model_id, role, party_id):
+        return dtable_utils.gen_namespace_by_prefix(prefix=federated_model_id, role=role, party_id=party_id) if federated_model_id else None
 
 
 if __name__ == '__main__':

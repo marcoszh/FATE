@@ -99,7 +99,12 @@ class JobController(object):
         schedule_logger.info(
             'submit job successfully, job id is {}, model id is {}'.format(job.f_job_id, job_parameters['model_id']))
         model_version = job_id
-        return job_id, job_dsl_path, job_runtime_conf_path, job_parameters['model_id'], model_version
+        all_role_model_id = {}
+        for _role, role_partys in job_runtime_conf['role'].items():
+            all_role_model_id[_role] = []
+            for _party_id in role_partys:
+                all_role_model_id[_role].append(Tracking.gen_party_model_id(job_parameters['model_id'], role=_role, party_id=_party_id))
+        return job_id, job_dsl_path, job_runtime_conf_path, all_role_model_id, model_version
 
     @staticmethod
     def run_job(job_id, job_dsl_path, job_runtime_conf_path):
@@ -203,7 +208,6 @@ class JobController(object):
 
     @staticmethod
     def start_task(job_id, component_name, task_id, role, party_id, task_config):
-        schedule_logger.info('start task subprocess {} {} {} {}'.format(job_id, component_name, role, party_id, task_config))
         task_dir = os.path.join(job_utils.get_job_directory(job_id=job_id), role, party_id, component_name)
         os.makedirs(task_dir, exist_ok=True)
         task_config_path = os.path.join(task_dir, 'task_config.json')
@@ -241,7 +245,6 @@ class JobController(object):
         role = args.role
         party_id = int(args.party_id)
         task_config = file_utils.load_json_conf(args.config)
-        schedule_logger.info('task info {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))
         request_url_without_host = task_config['request_url_without_host']
         job_parameters = task_config.get('job_parameters', None)
         job_initiator = task_config.get('job_initiator', None)
@@ -278,12 +281,14 @@ class JobController(object):
             task_run_args = JobController.get_task_run_args(job_id=job_id, role=role, party_id=party_id,
                                                             job_parameters=job_parameters, job_args=job_args,
                                                             input_dsl=task_input_dsl)
-            schedule_logger.info(task_run_args)
             run_object = getattr(importlib.import_module(run_class_package), run_class_name)()
             run_object.set_tracker(tracker=tracker)
             task.f_status = 'running'
             tracker.save_task(role=role, party_id=party_id, task_info=task.to_json(), create=True)
 
+            schedule_logger.info('run task {} {} {} {} {}'.format(job_id, component_name, task_id, role, party_id))
+            schedule_logger.info(parameters)
+            schedule_logger.info(task_run_args)
             run_object.run(parameters, task_run_args)
             if task_output_dsl:
                 if task_output_dsl.get('data', {}):
@@ -385,6 +390,7 @@ class JobController(object):
     def task_status(job_id, component_name, task_id, role, party_id, task_info):
         tracker = Tracking(job_id=job_id, role=role, party_id=party_id, component_name=component_name, task_id=task_id)
         tracker.save_task(role=role, party_id=party_id, task_info=task_info)
+        schedule_logger.info('job {} {} {} {} status {}'.format(job_id, component_name, role, party_id, task_info.get('f_status', '')))
 
     @staticmethod
     def finish_job(job_id, job_runtime_conf):
@@ -420,11 +426,13 @@ class JobController(object):
     @staticmethod
     def save_pipeline(job_id, role, party_id, model_id):
         dsl_parser = job_utils.get_job_dsl_parser_by_job_id(job_id=job_id)
-        predict_dsl = dsl_parser.get_predict_dsl()
+        predict_dsl = dsl_parser.get_predict_dsl(role=role)
         pipeline = pipeline_pb2.Pipeline()
         pipeline.inference_dsl = json_dumps(predict_dsl, byte=True)
         job_tracker = Tracking(job_id=job_id, role=role, party_id=party_id, model_id=model_id)
-        job_tracker.save_output_model({'pipeline': pipeline}, 'Pipeline')
+        job_tracker.save_output_model({'Pipeline': pipeline}, 'Pipeline')
+        model_buffers = job_tracker.collect_model()
+        schedule_logger.info(model_buffers)
 
     @staticmethod
     def clean_job(job_id, role, party_id):
