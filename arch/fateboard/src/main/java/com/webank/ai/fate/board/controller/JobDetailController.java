@@ -137,7 +137,8 @@ public class JobDetailController {
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
-        String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, param);
+        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, jsonObject);
         JSONObject resultObject = JSON.parseObject(result);
         Integer retcode = resultObject.getInteger(Dict.RETCODE);
 

@@ -1,9 +1,5 @@
 package com.webank.ai.fate.board.utils;
 
-/**
- * @Description TODO
- * @Author kaideng
- **/
 public class Dict {
 
     static public final  String ID = "id";
@@ -18,6 +14,8 @@ public class Dict {
     static public final  String ROLE="role";
     static public final  String PARTY_ID="party_id";
 
+    static public final  String DEPENDENCY_DATA= "dependency_data";
+    static public final  String DATAVIEW_DATA= "dataview_data";
 
 
     static public  final String METRIC_NAMESPACE="metric_namespace";

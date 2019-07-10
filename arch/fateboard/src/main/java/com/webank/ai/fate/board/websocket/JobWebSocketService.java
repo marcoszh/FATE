@@ -1,10 +1,15 @@
 package com.webank.ai.fate.board.websocket;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.conf.Configurator;
+import com.webank.ai.fate.board.controller.JobDetailController;
+import com.webank.ai.fate.board.controller.JobManagerController;
+import com.webank.ai.fate.board.global.ErrorCode;
+import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.Dict;
@@ -17,19 +22,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 @ServerEndpoint(value = "/websocket/progress/{jobId}/{role}/{partyId}", configurator = Configurator.class)
@@ -42,12 +46,17 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
     static ApplicationContext  applicationContext;
 
+    static JobDetailController jobDetailController;
+
+    static JobManagerController jobManagerController;
+
     static Logger logger = LoggerFactory.getLogger(JobWebSocketService.class);
 
     static ConcurrentHashMap jobSessionMap = new ConcurrentHashMap();
 
-    private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    static ThreadPoolTaskExecutor asyncServiceExecutor;
 
+    private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     /**
      *
@@ -124,11 +133,16 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
                     String[] args = k.split(":");
                     Preconditions.checkArgument(args.length==3);
+                    String jobId =  args[0];
+                    String role = args[1];
+                    Integer partyId = new Integer(args[2]);
+
+
                     Job job = jobManagerService.queryJobByConditions(args[0],args[1],args[2]);
                     if (job != null) {
                         //logger.info("try to query job process {} ", k);
 
-                        HashMap<String, Object> stringObjectHashMap = new HashMap<>(8);
+                        HashMap<String, Object> flushToWebData = new HashMap<>(16);
                         Integer process = job.getfProgress();
                         long  now=  System.currentTimeMillis();
                         long duration =0;
@@ -144,19 +158,47 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
                         String status = job.getfStatus();
 
-                        stringObjectHashMap.put(Dict.JOB_PROCESS, process);
-                        stringObjectHashMap.put(Dict.JOB_DURATION, duration);
-                        stringObjectHashMap.put(Dict.JOB_STATUS, status);
+                        flushToWebData.put(Dict.JOB_PROCESS, process);
+                        flushToWebData.put(Dict.JOB_DURATION, duration);
+                        flushToWebData.put(Dict.JOB_STATUS, status);
 
-                        if(JobManagerService.jobFinishStatus.contains(status)){
+                        Map  param = Maps.newHashMap();
+                        param.put(Dict.JOBID,jobId);
+                        param.put(Dict.ROLE,role);
+                        param.put(Dict.PARTY_ID,partyId);
 
+                        Future<?>   dependencyFuture= asyncServiceExecutor.submit(()->{
+
+                            ResponseResult  responseResult = jobDetailController.getDagDependencies(JSON.toJSONString(param));
+
+
+                            return  responseResult;
+                        });
+                        Future<?> dataViewFuture = asyncServiceExecutor.submit(() -> {
+
+                            ResponseResult  responseResult = jobManagerController.queryJobDataset(JSON.toJSONString(param));
+
+                            return responseResult;
+                        });
+
+                        try {
+                            flushToWebData.put(Dict.DEPENDENCY_DATA, dependencyFuture.get());
+
+                            flushToWebData.put(Dict.DATAVIEW_DATA, dataViewFuture.get());
+
+                        }catch(Exception e){
+
+                            logger.error("job websocket error ",e);
 
                         }
+
+
+
                         v.forEach(session -> {
 
                             if (session.isOpen()) {
                                 try {
-                                    session.getBasicRemote().sendText(JSON.toJSONString(stringObjectHashMap));
+                                    session.getBasicRemote().sendText(JSON.toJSONString(flushToWebData));
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                     logger.error("IOException", e);
@@ -181,7 +223,9 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
     public void afterPropertiesSet() throws Exception {
         jobManagerService =(JobManagerService)applicationContext.getBean("jobManagerService");
         httpClientPool  =  (HttpClientPool)applicationContext.getBean("httpClientPool");
-
+        jobDetailController = (JobDetailController)applicationContext.getBean("jobDetailController");
+        asyncServiceExecutor = (ThreadPoolTaskExecutor) applicationContext.getBean("asyncServiceExecutor");
+        jobManagerController = (JobManagerController) applicationContext.getBean("jobManagerController");
     }
 
     @Override

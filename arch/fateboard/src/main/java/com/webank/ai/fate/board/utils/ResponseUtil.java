@@ -4,10 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.webank.ai.fate.board.global.ResponseResult;
 
-/**
- * @Description TODO
- * @Author kaideng
- **/
 public class ResponseUtil {
 
 

@@ -38,7 +38,7 @@ public class JobManagerController {
     String fateUrl;
     @Autowired
     ThreadPoolTaskExecutor asyncServiceExecutor;
-    //ExecutorService executorService = Executors.newFixedThreadPool(20);
+
 
     /**
      * query status of jobs
@@ -48,9 +48,6 @@ public class JobManagerController {
     @RequestMapping(value = "/query/status", method = RequestMethod.GET)
     public ResponseResult queryJobStatus() {
         List<Job> jobs = jobManagerService.queryJobStatus();
-//        if (jobs.size() == 0) {
-//            return new ResponseResult<>(ErrorCode.SUCCESS, "There is no job on running or waiting!");
-//        }
         return new ResponseResult<>(ErrorCode.SUCCESS, jobs);
     }
 
