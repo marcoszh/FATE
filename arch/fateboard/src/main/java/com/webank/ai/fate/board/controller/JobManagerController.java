@@ -200,12 +200,14 @@ public class JobManagerController {
                                    @Param(value = "pageNum") long pageNum,
                                    @Param(value = "pageSize") long pageSize,
                                    @Param(value = "orderField") String orderField,
-                                   @Param(value = "orderType") String orderType) {
+                                   @Param(value = "orderType") String orderType,
+                                   @Param(value = "jobId") String jobId) {
+
 
         PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
 
         long startIndex = listPageBean.getStartIndex();
-        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType);
+        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType,jobId);
 
         ArrayList<Map> jobList = new ArrayList<>();
 
@@ -224,7 +226,7 @@ public class JobManagerController {
                     Map  params =Maps.newHashMap();
                     params.put(Dict.JOBID,jobId);
                     params.put(Dict.ROLE,role);
-                    params.put(Dict.PARTY_ID,new  Integer(partyId));
+                    params.put(Dict.PARTY_ID, new Integer(partyId));
                     String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
                     JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
                     return data;
