@@ -177,7 +177,7 @@ class HeteroSecureBoostingTreeHost(BoostingTree):
         model_meta.tree_dim = self.tree_dim
         model_meta.need_run = self.need_run 
 
-        meta_name = "HeteroSecureBoostingTreeHost.meta"
+        meta_name = "HeteroSecureBoostingTreeHostMeta"
 
         return meta_name, model_meta
 
@@ -196,7 +196,7 @@ class HeteroSecureBoostingTreeHost(BoostingTree):
         model_param.trees_.extend(self.trees_)
         model_param.feature_name_fid_mapping.update(self.feature_name_fid_mapping)
 
-        param_name = "HeteroSecureBoostingTreeHost.param"
+        param_name = "HeteroSecureBoostingTreeHostParam"
 
         return param_name, model_param
 

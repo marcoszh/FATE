@@ -442,7 +442,7 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
         model_meta.num_classes = self.num_classes
         model_meta.classes_.extend(map(str, self.classes_))
         model_meta.need_run = self.need_run 
-        meta_name = "HeteroSecureBoostingTreeGuest.meta"
+        meta_name = "HeteroSecureBoostingTreeGuestMeta"
           
         return meta_name, model_meta
 
@@ -482,7 +482,7 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
         model_param.feature_importances.extend(feature_importance_param)
         model_param.feature_name_fid_mapping.update(self.feature_name_fid_mapping)
 
-        param_name = "HeteroSecureBoostingTreeGuest.param"
+        param_name = "HeteroSecureBoostingTreeGuestParam"
 
         return param_name, model_param
 
