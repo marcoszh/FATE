@@ -33,6 +33,7 @@ from sklearn.metrics import roc_curve
 
 from arch.api.utils import log_utils
 from fate_flow.entity.metric import Metric, MetricMeta
+from fate_flow.manager.tracking import Tracking
 from fate_flow.storage.fate_storage import FateStorage
 
 from federatedml.param import EvaluateParam
@@ -88,10 +89,12 @@ class Evaluation(ModelBase):
         ]
 
         FateStorage.init_storage()
+        # self.tracker = Tracking('123456', 'hetero_lr')
 
     def _init_model(self, model):
         self.model_param = model
         self.eval_type = self.model_param.eval_type
+        self.thresholds = self.model_param.thresholds
         self.metrics = self.model_param.metrics
         self.pos_label = self.model_param.pos_label
 
@@ -168,7 +171,13 @@ class Evaluation(ModelBase):
                     eval_result[eval_metric].append(mode)
                     eval_result[eval_metric].append(res)
 
+            if 'auc' in eval_result:
+                LOGGER.info("Model auc: {}".format(eval_result['auc']))
+            for eval_key in eval_result:
+                LOGGER.debug("Evaluate result {} exist".format(eval_key))
             self.eval_results[data_type] = eval_result
+
+        # LOGGER.debug("Evaluation Result: {}".format(self.eval_results))
 
     def __save_single_value(self, result, metric_name, metric_namespace, eval_name):
         self.tracker.log_metric_data(metric_namespace, metric_name, [Metric(eval_name, result)])

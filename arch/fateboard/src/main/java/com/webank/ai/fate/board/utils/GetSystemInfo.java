@@ -48,6 +48,7 @@ public class GetSystemInfo {
     }
 
 
+
     /** 
      * 获取操作系统名称 
      * @return 
@@ -141,9 +142,10 @@ public class GetSystemInfo {
 
        System.err.println(getProcessCpuLoad());
 
-        System.err.println(getSystemCpuLoad());
+       System.err.println(getSystemCpuLoad());
 
-        test();
+       System.err.println(getLocalIp());
+       test();
 
     }
 }  

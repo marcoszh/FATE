@@ -88,7 +88,7 @@ class HeteroFeatureBinningHost(BaseHeteroFeatureBinning):
         for col_name, iv_attr in self.binning_result.items():
             split_points[col_name] = iv_attr.split_points
 
-        data_bin_table = self.binning_obj.get_data_bin(data_instances, split_points, use_index=True)
+        data_bin_table = self.binning_obj.get_data_bin(data_instances, split_points)
 
         encrypted_label_table_id = self.transfer_variable.generate_transferid(self.transfer_variable.encrypted_label)
         encrypted_label_table = federation.get(name=self.transfer_variable.encrypted_label.name,

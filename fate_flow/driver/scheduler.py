@@ -15,7 +15,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from fate_flow.manager.queue_manager import BaseQueue
-from fate_flow.driver import job_controller
+from fate_flow.driver.job_controller import JobController
+from fate_flow.settings import schedule_logger
 import threading
 
 
@@ -47,9 +48,9 @@ class Scheduler(threading.Thread):
     @staticmethod
     def handle_event(job_event):
         try:
-            return job_controller.run_job(**job_event)
+            return JobController.run_job(**job_event)
         except Exception as e:
-            print(e)
+            schedule_logger.exception(e)
             return False
 
     @staticmethod

@@ -21,6 +21,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
@@ -33,9 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * @Description TODO
- **/
+
 
 @ServerEndpoint(value = "/log/{jobId}/{role}/{partyId}/{componentId}/{type}", configurator = Configurator.class)
 @Component
@@ -49,18 +48,16 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
     static LogFileService logFileService;
 
-    private Integer tailNum = 10;
+    private Integer tailNum = 50;
 
-   // success/failed/partial/setFailed
 
 
 
     private static final Logger logger = LoggerFactory.getLogger(LogWebSocketSSHService.class);
 
     static LogFileTransferEventProducer logFileTransferEventProducer;
-    // private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    ExecutorService executorService = Executors.newCachedThreadPool();
 
+    static ThreadPoolTaskExecutor asyncServiceExecutor;
 
     Map<Session, LogScanner> sessionMap = Maps.newHashMap();
 
@@ -112,9 +109,6 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
             LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId,role,partyId);
 
-
-
-
             Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip));
 
              String localIp  = GetSystemInfo.getLocalIp();
@@ -124,13 +118,11 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
                  return ;
              }
 
-
             SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
 
             Preconditions.checkArgument(sshInfo != null);
 
             if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
-
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
             }
@@ -193,6 +185,8 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
         LogWebSocketSSHService.sshService = (SshService) applicationContext.getBean("sshService");
         //    LogWebSocketSSHService.applicationEventPublisher  =  (ApplicationEventPublisher)applicationContext.getBean(ApplicationEventPublisher.class);
         LogWebSocketSSHService.logFileTransferEventProducer = (LogFileTransferEventProducer) applicationContext.getBean("logFileTransferEventProducer");
+        asyncServiceExecutor = (ThreadPoolTaskExecutor) applicationContext.getBean("asyncServiceExecutor");
+
     }
 
     @Override

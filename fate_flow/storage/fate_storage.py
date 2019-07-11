@@ -139,3 +139,10 @@ class FateStorage(object):
     @staticmethod
     def get_data_table_meta_by_instance(data_table):
         return FateStorage.get_data_table_meta(namespace=data_table._namespace, name=data_table._name)
+
+    @staticmethod
+    def clean_job(namespace, regex_string='*'):
+        try:
+            eggroll.cleanup(regex_string, namespace=namespace, persistent=False)
+        except Exception as e:
+            print(e)

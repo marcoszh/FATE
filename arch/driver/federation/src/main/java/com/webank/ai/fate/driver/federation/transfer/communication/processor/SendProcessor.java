@@ -136,7 +136,7 @@ public class SendProcessor extends BaseTransferProcessor {
             broker.addSubscriber(consumer);
 
             // todo: add result tracking and retry mechanism
-            ListenableFuture<BasicMeta.ReturnStatus> producerResult = ThreadPoolTaskExecutorUtil.submitListenable(ioProducerPool,producer,new int[]{500,1000,5000},new int[]{5,5,3});
+            ListenableFuture<BasicMeta.ReturnStatus> producerResult = (ListenableFuture<BasicMeta.ReturnStatus>)ThreadPoolTaskExecutorUtil.submitListenable(ioProducerPool,producer,new int[]{500,1000,5000},new int[]{5,5,3});
             producerResult.addCallback(
                     federationCallbackFactory.createDtableSendProducerListenableCallback(results, broker, errorContainer, null, -1));
             ListenableFuture<?> consumerListenableFuture = ThreadPoolTaskExecutorUtil.submitListenable(ioConsumerPool,consumer,new int[]{500,1000,5000},new int[]{5,5,3});

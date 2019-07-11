@@ -26,6 +26,7 @@ import numpy as np
 from arch.api.utils import log_utils
 from fate_flow.manager.tracking import Tracking 
 from fate_flow.entity.metric import Metric
+from fate_flow.entity.metric import MetricMeta
 from federatedml.feature.instance import Instance
 from federatedml.feature.sparse_vector import SparseVector
 from federatedml.util import consts
@@ -63,6 +64,8 @@ class DenseFeatureReader(object):
         self.label_idx = data_io_param.label_idx
         self.label_type = data_io_param.label_type
         self.output_format = data_io_param.output_format
+        self.missing_impute_rate = None
+        self.outlier_replace_rate = None
         self.header = None
         self.tracker = None
 
@@ -154,10 +157,10 @@ class DenseFeatureReader(object):
             if self.missing_impute is None:
                 self.missing_impute = imputer_processor.get_missing_value_list()
 
-            missing_impute_rate = imputer_processor.get_impute_rate(mode)
-            callback("missing_value_ratio",
-                     missing_impute_rate,
-                     self.tracker)
+            self.missing_impute_rate = imputer_processor.get_impute_rate(mode)
+            # callback("missing_value_ratio",
+            #         missing_impute_rate,
+            #         self.tracker)
 
             callback("missing_value_list",
                      self.missing_impute,
@@ -181,10 +184,10 @@ class DenseFeatureReader(object):
                 input_data_features = imputer_processor.transform(input_data_features,
                                                                   transform_value=self.outlier_replace_value)
 
-            outlier_replace_rate = imputer_processor.get_impute_rate(mode)
-            callback("outlier_value_ratio",
-                     outlier_replace_rate,
-                     self.tracker)
+            self.outlier_replace_rate = imputer_processor.get_impute_rate(mode)
+            # callback("outlier_value_ratio",
+            #         outlier_replace_rate,
+            #         self.tracker)
 
             callback("outlier_value_list",
                      self.outlier_impute,
@@ -276,6 +279,7 @@ class DenseFeatureReader(object):
                                                                                  self.missing_fill_method,
                                                                                  self.missing_impute,
                                                                                  self.default_value,
+                                                                                 self.missing_impute_rate,
                                                                                  self.header,
                                                                                  "Imputer")
 
@@ -286,6 +290,7 @@ class DenseFeatureReader(object):
                                                          self.outlier_replace_method,
                                                          self.outlier_impute,
                                                          self.outlier_replace_value,
+                                                         self.outlier_replace_rate,
                                                          self.header,
                                                          "Outlier")
 
@@ -771,6 +776,7 @@ def save_missing_imputer_model(missing_fill=False,
                                missing_replace_method=None,
                                missing_impute=None,
                                missing_fill_value=None,
+                               missing_replace_rate=None,
                                header=None,
                                model_name="Imputer"):
     model_meta = ImputerMeta()
@@ -787,8 +793,11 @@ def save_missing_imputer_model(missing_fill=False,
 
         if missing_fill_value is not None:
             feature_value_dict = dict(zip(header, map(str, missing_fill_value)))
-
             model_param.missing_replace_value.update(feature_value_dict)
+
+        if missing_replace_rate is not None:
+            missing_replace_rate_dict = dict(zip(header, missing_replace_rate))
+            model_param.missing_value_ratio.update(missing_replace_rate_dict)
 
     return model_meta, model_param
 
@@ -827,6 +836,7 @@ def save_outlier_model(outlier_replace=False,
                        outlier_replace_method=None,
                        outlier_impute=None,
                        outlier_replace_value=None,
+                       outlier_replace_rate=None,
                        header=None,
                        model_name="Outlier"):
     model_meta = OutlierMeta()
@@ -843,6 +853,10 @@ def save_outlier_model(outlier_replace=False,
         if outlier_replace_value:
             outlier_value_dict = dict(zip(header, map(str, outlier_replace_value)))
             model_param.outlier_replace_value.update(outlier_value_dict)
+
+        if outlier_replace_rate:
+            outlier_value_ratio_dict = dict(zip(header, outlier_replace_rate))
+            model_param.outlier_value_ratio.update(outlier_value_ratio_dict)
 
     return model_meta, model_param
 
@@ -881,16 +895,27 @@ def callback(keyword="missing_impute",
              value_list=None,
              tracker=None):
     # tracker = Tracking("abc", "123")
+    metric_type=None
+    """
     if keyword.endswith("ratio"):
         metric_list = []
         for i in range(len(value_list)):
             metric_list.append(Metric(i, value_list[i]))
 
         tracker.log_metric_data(keyword, "DATAIO", metric_list)
-    else:
-        metric_list = []
-        for i in range(len(value_list)):
-            metric_list.append(Metric(value_list[i], i))
 
-        tracker.log_metric_data(keyword, "DATAIO", metric_list)
+        metric_type = "DATAIO_TABLE"
+    """
+    metric_list = []
+    for i in range(len(value_list)):
+        metric_list.append(Metric(value_list[i], i))
+
+    tracker.log_metric_data(keyword, "DATAIO", metric_list)
+        
+    metric_type = "DATAIO_TEXT"
+
+    tracker.set_metric_meta(keyword,
+                            "DATAIO",
+                            MetricMeta(name=keyword,
+                                        metric_type=metric_type))
 

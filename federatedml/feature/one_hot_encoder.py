@@ -215,7 +215,7 @@ class OneHotEncoder(ModelBase):
         result_obj = onehot_param_pb2.OneHotParam(col_map=pb_dict)
         return result_obj
 
-    def save_model(self):
+    def export_model(self):
         meta_obj = self._get_meta()
         param_obj = self._get_param()
         result = {

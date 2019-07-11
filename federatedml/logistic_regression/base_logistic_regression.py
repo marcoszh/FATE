@@ -14,12 +14,11 @@
 #  limitations under the License.
 #
 
-from google.protobuf import json_format
 import numpy as np
+from google.protobuf import json_format
 
 from arch.api.proto import lr_model_meta_pb2, lr_model_param_pb2
 from arch.api.utils import log_utils
-
 from federatedml.model_base import ModelBase
 from federatedml.model_selection.KFold import KFold
 from federatedml.optim import DiffConverge, AbsConverge, Optimizer
@@ -175,6 +174,10 @@ class BaseLogisticRegression(ModelBase):
 
     def _get_param(self):
         header = self.header
+
+        if header is None:
+            param_protobuf_obj = lr_model_param_pb2.LRModelParam()
+
         weight_dict = {}
         for idx, header_name in enumerate(header):
             coef_i = self.coef_[idx]
@@ -204,6 +207,11 @@ class BaseLogisticRegression(ModelBase):
         self._parse_need_run(model_dict, self.model_meta_name)
         result_obj = list(model_dict.get('model').values())[0].get(self.model_param_name)
         self.header = list(result_obj.header)
+
+        # For hetero-lr arbiter predict function
+        if self.header is None:
+            return
+
         feature_shape = len(self.header)
         self.coef_ = np.zeros(feature_shape)
         weight_dict = dict(result_obj.weight)
@@ -296,11 +304,11 @@ class BaseLogisticRegression(ModelBase):
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
         # tracker = Tracking('123', 'abc')
         self.tracker.set_metric_meta(metric_name=metric_name,
-                                metric_namespace=metric_namespace,
-                                metric_meta=metric_meta)
+                                     metric_namespace=metric_namespace,
+                                     metric_meta=metric_meta)
 
     def callback_metric(self, metric_name, metric_namespace, metric_data):
         # tracker = Tracking('123', 'abc')
         self.tracker.log_metric_data(metric_name=metric_name,
-                                metric_namespace=metric_namespace,
-                                metrics=metric_data)
+                                     metric_namespace=metric_namespace,
+                                     metrics=metric_data)

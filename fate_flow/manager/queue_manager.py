@@ -15,7 +15,7 @@
 #
 import redis
 import json
-from fate_flow.settings import REDIS
+from fate_flow.settings import REDIS, REDIS_QUEUE_DB_INDEX
 
 
 class BaseQueue:
@@ -40,7 +40,7 @@ class BaseQueue:
 class RedisQueue(BaseQueue):
     def __init__(self, queue_name, host, port, password, max_connections):
         self.queue_name = queue_name
-        self.pool = redis.ConnectionPool(host=host, port=port, password=password, max_connections=max_connections)
+        self.pool = redis.ConnectionPool(host=host, port=port, password=password, max_connections=max_connections, db=REDIS_QUEUE_DB_INDEX)
 
     def get_conn(self):
         return redis.Redis(connection_pool=self.pool, decode_responses=True)

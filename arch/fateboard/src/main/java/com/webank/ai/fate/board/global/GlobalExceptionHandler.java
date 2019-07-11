@@ -14,11 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.concurrent.RejectedExecutionException;
 
-/**
- * 统一异常样处理类
- *
- * @author kaideng
- */
+
 @RestController
 @ControllerAdvice
 

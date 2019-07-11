@@ -4,11 +4,11 @@
   "partition": 10,
   "gen_table_info": true,
   "local": {
-    "party_id": 9999,
+    "party_id": 10000,
     "role": "guest"
   },
   "role": {
-    "guest": [9999],
+    "guest": [10000],
     "host": [10000],
     "arbiter": [10000]
   },

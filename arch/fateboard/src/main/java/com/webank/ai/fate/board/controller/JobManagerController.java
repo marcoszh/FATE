@@ -11,6 +11,7 @@ import com.webank.ai.fate.board.pojo.JobWithBLOBs;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.annotations.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class JobManagerController {
     String fateUrl;
     @Autowired
     ThreadPoolTaskExecutor asyncServiceExecutor;
-    //ExecutorService executorService = Executors.newFixedThreadPool(20);
+
 
     /**
      * query status of jobs
@@ -48,9 +49,6 @@ public class JobManagerController {
     @RequestMapping(value = "/query/status", method = RequestMethod.GET)
     public ResponseResult queryJobStatus() {
         List<Job> jobs = jobManagerService.queryJobStatus();
-//        if (jobs.size() == 0) {
-//            return new ResponseResult<>(ErrorCode.SUCCESS, "There is no job on running or waiting!");
-//        }
         return new ResponseResult<>(ErrorCode.SUCCESS, jobs);
     }
 
@@ -196,7 +194,63 @@ public class JobManagerController {
 
         return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
     }
+    @RequestMapping(value = "/query/all", method = RequestMethod.GET)
 
+    public ResponseResult queryJob(@Param(value = "totalRecord") long totalRecord,
+                                   @Param(value = "pageNum") long pageNum,
+                                   @Param(value = "pageSize") long pageSize,
+                                   @Param(value = "orderField") String orderField,
+                                   @Param(value = "orderType") String orderType) {
+
+        PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
+
+        long startIndex = listPageBean.getStartIndex();
+        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType);
+
+        ArrayList<Map> jobList = new ArrayList<>();
+
+        Map<JobWithBLOBs, Future> jobDataMap = new LinkedHashMap<>();
+
+        for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
+
+            ListenableFuture<?>   future =ThreadPoolTaskExecutorUtil.submitListenable(this.asyncServiceExecutor,new Callable<JSONObject>() {
+
+                @Override
+                public JSONObject  call() throws Exception {
+                    String jobId = jobWithBLOBs.getfJobId();
+                    String role = jobWithBLOBs.getfRole();
+                    String partyId = jobWithBLOBs.getfPartyId();
+
+                    Map  params =Maps.newHashMap();
+                    params.put(Dict.JOBID,jobId);
+                    params.put(Dict.ROLE,role);
+                    params.put(Dict.PARTY_ID,new  Integer(partyId));
+                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
+                    JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
+                    return data;
+                }
+            },new  int[]{500,1000},new int[]{3,3});
+
+            jobDataMap.put(jobWithBLOBs, future);
+        }
+
+        jobDataMap.forEach((k, v) -> {
+            try {
+                HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+                stringObjectHashMap.put(Dict.JOB, k);
+                jobList.add(stringObjectHashMap);
+                stringObjectHashMap.put(Dict.DATASET, v.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+
+        });
+        listPageBean.setList(jobList);
+
+        return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
+    }
 
 //    /**
 //     *

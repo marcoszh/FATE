@@ -18,7 +18,7 @@ public class PipelineTask {
     public int initModel(Map<String, byte[]> modelProtoMap) {
         LOGGER.info("start init Pipeline");
         try {
-            String pipelineProtoName = "Pipeline";
+            String pipelineProtoName = "pipeline";
             PipelineProto.Pipeline pipeLineProto = PipelineProto.Pipeline.parseFrom(modelProtoMap.get(pipelineProtoName));
             LOGGER.info("Finish get Pipeline proto");
             List<String> pipeLineMeta = pipeLineProto.getNodeMetaList();

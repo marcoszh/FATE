@@ -13,9 +13,9 @@ public class ThreadPoolTaskExecutorUtil {
 
     private static Logger LOGGER = LogManager.getLogger();
 
-    public static ListenableFuture<?>  submitListenable(ThreadPoolTaskExecutor executor, Callable callable, int[] sleepTimes, int[] tryCount){
+    public static <T> ListenableFuture<T>  submitListenable(ThreadPoolTaskExecutor executor, Callable<T> callable, int[] sleepTimes, int[] tryCount){
 
-        ListenableFuture<?> resultListenableFuture = null;
+        ListenableFuture<T> resultListenableFuture = null;
 
             try {
                 resultListenableFuture = executor.submitListenable(callable);

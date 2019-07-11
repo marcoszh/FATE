@@ -120,7 +120,7 @@ public class LogFileService {
                 case  "error":       filePath = filePath.replace("$file_name", "ERROR.log");  break;
                 case  "debug":       filePath = filePath.replace("$file_name", "DEBUG.log");  break;
                 case   "info":          filePath = filePath.replace("$file_name", "INFO.log");  break;
-
+                case  "warning":  filePath =filePath.replace("$file_name", "WARN.log");  break;
                 default:   filePath = filePath.replace("$file_name", "INFO.log");
 
             }
