@@ -16,17 +16,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from google.protobuf import json_format
+
 from arch.api.proto import feature_binning_meta_pb2, feature_binning_param_pb2
 from arch.api.utils import log_utils
 from federatedml.feature.binning.base_binning import IVAttributes
 from federatedml.feature.binning.bucket_binning import BucketBinning
 from federatedml.feature.binning.quantile_binning import QuantileBinning
 from federatedml.model_base import ModelBase
+from federatedml.param.feature_binning_param import FeatureBinningParam
 from federatedml.statistic.data_overview import get_header
 from federatedml.util import abnormal_detection
 from federatedml.util import consts
-from federatedml.util.transfer_variable.hetero_feature_binning_transfer_variable import HeteroFeatureBinningTransferVariable
-from federatedml.param.feature_binning_param import FeatureBinningParam
+from federatedml.util.transfer_variable.hetero_feature_binning_transfer_variable import \
+    HeteroFeatureBinningTransferVariable
 
 LOGGER = log_utils.getLogger()
 
@@ -126,7 +129,8 @@ class BaseHeteroFeatureBinning(ModelBase):
 
         result_obj = feature_binning_param_pb2.FeatureBinningParam(binning_result=binning_result_obj,
                                                                    host_results=final_host_results)
-
+        json_result = json_format.MessageToJson(result_obj)
+        LOGGER.debug("json_result: {}".format(json_result))
         return result_obj
 
     def _load_model(self, model_dict):
@@ -211,4 +215,3 @@ class BaseHeteroFeatureBinning(ModelBase):
         """
         abnormal_detection.empty_table_detection(data_instances)
         abnormal_detection.empty_feature_detection(data_instances)
-

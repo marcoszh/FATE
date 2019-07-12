@@ -21,7 +21,6 @@ from federatedml.optim import activation
 from federatedml.optim.federated_aggregator import HomoFederatedAggregator
 from federatedml.secureprotol import PaillierEncrypt, FakeEncrypt
 from federatedml.util import consts
-from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
 from fate_flow.entity.metric import MetricMeta
 from fate_flow.entity.metric import Metric
 
@@ -33,7 +32,6 @@ class HomoLRArbiter(HomoLRBase):
         super(HomoLRArbiter, self).__init__()
         self.aggregator = HomoFederatedAggregator()
 
-        self.transfer_variable = HomoLRTransferVariable()
 
         self.classes_ = [0, 1]
 
@@ -81,7 +79,7 @@ class HomoLRArbiter(HomoLRBase):
             metric_meta = MetricMeta(name='train',
                                      metric_type="LOSS",
                                      extra_metas={
-                                         "unit_name": "homo_lr"
+                                         "unit_name": "number of iteration"
                                      })
             metric_name = self.get_metric_name('loss')
             self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
@@ -138,8 +136,7 @@ class HomoLRArbiter(HomoLRBase):
 
         # synchronize encryption information
         if not self.has_sychronized_encryption:
-            print("Has not synchronized yet")
-            self.__synchronize_encryption()
+            self.__synchronize_encryption(mode='predict')
             self.__send_host_mode()
 
         for idx, use_encrypt in enumerate(self.host_use_encryption):
@@ -210,13 +207,13 @@ class HomoLRArbiter(HomoLRBase):
             self.re_encrypt_times[idx] = re_encrypt_times
         LOGGER.info("re encrypt times for all parties: {}".format(self.re_encrypt_times))
 
-    def __synchronize_encryption(self):
+    def __synchronize_encryption(self, mode='train'):
         """
         Communicate with hosts. Specify whether use encryption or not and transfer the public keys.
         """
         # 1. Use Encrypt: Specify which host use encryption
         host_use_encryption_id = self.transfer_variable.generate_transferid(
-            self.transfer_variable.use_encrypt
+            self.transfer_variable.use_encrypt, mode
         )
         host_use_encryption = federation.get(name=self.transfer_variable.use_encrypt.name,
                                              tag=host_use_encryption_id,
@@ -232,7 +229,8 @@ class HomoLRArbiter(HomoLRBase):
                 encrypter = PaillierEncrypt()
                 encrypter.generate_key(self.encrypt_param.key_length)
                 pub_key = encrypter.get_public_key()
-                pubkey_id = self.transfer_variable.generate_transferid(self.transfer_variable.paillier_pubkey)
+                pubkey_id = self.transfer_variable.generate_transferid(self.transfer_variable.paillier_pubkey,
+                                                                       mode)
                 # LOGGER.debug("Start to remote pub_key: {}, transfer_id: {}".format(pub_key, pubkey_id))
                 federation.remote(pub_key, name=self.transfer_variable.paillier_pubkey.name,
                                   tag=pubkey_id, role=consts.HOST, idx=idx)
@@ -247,6 +245,9 @@ class HomoLRArbiter(HomoLRBase):
         for idx, use_encrypt in enumerate(self.host_use_encryption):
             if use_encrypt:
                 encrypter = self.host_encrypter[idx]
+                LOGGER.debug("Before send host model, encrypter length: {}, idx: {}".format(
+                    len(self.host_encrypter), idx
+                ))
                 final_model = encrypter.encrypt_list(model)
             else:
                 final_model = model

@@ -17,8 +17,13 @@
 #  limitations under the License.
 
 from federatedml.logistic_regression.base_logistic_regression import BaseLogisticRegression
+from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
 from federatedml.optim import Optimizer
 from federatedml.util import consts
+from arch.api.utils import log_utils
+
+LOGGER = log_utils.getLogger()
+
 
 class HomoLRBase(BaseLogisticRegression):
     def __init__(self):
@@ -31,4 +36,6 @@ class HomoLRBase(BaseLogisticRegression):
     def _init_model(self, params):
         super(HomoLRBase, self)._init_model(params)
         self.optimizer = Optimizer(learning_rate=self.learning_rate, opt_method_name=params.optimizer)
-
+        self.transfer_variable = HomoLRTransferVariable()
+        self.transfer_variable.set_taskid(self.taskid)
+        LOGGER.debug("In homoLR base Task id is : {}".format(self.taskid))

@@ -30,7 +30,6 @@ from federatedml.optim.gradient import LogisticGradient
 from fate_flow.entity.metric import MetricMeta
 from fate_flow.entity.metric import Metric
 from federatedml.util import consts
-from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
 from federatedml.statistic import data_overview
 
 LOGGER = log_utils.getLogger()
@@ -42,7 +41,6 @@ class HomoLRGuest(HomoLRBase):
         self.aggregator = HomoFederatedAggregator
         self.gradient_operator = LogisticGradient()
 
-        self.transfer_variable = HomoLRTransferVariable()
         self.initializer = Initializer()
         self.classes_ = [0, 1]
 
@@ -99,7 +97,7 @@ class HomoLRGuest(HomoLRBase):
             metric_meta = MetricMeta(name='train',
                                      metric_type="LOSS",
                                      extra_metas={
-                                         "unit_name": "homo_lr"
+                                         "unit_name": "number of iteration"
                                      })
             metric_name = self.get_metric_name('loss')
             self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
@@ -192,9 +190,12 @@ class HomoLRGuest(HomoLRBase):
         return w
 
     def predict(self, data_instances):
+        LOGGER.debug("Get in predict, data_instance count: {}, need_run: {}".format(data_instances.count(),
+                                                                                    self.need_run))
+
         if not self.need_run:
             return data_instances
-
+        LOGGER.debug("homo_lr guest need run predict, coef: {}, instercept: {}".format(len(self.coef_), self.intercept_))
         wx = self.compute_wx(data_instances, self.coef_, self.intercept_)
         pred_prob = wx.mapValues(lambda x: activation.sigmoid(x))
         pred_label = self.classified(pred_prob, self.predict_param.threshold)

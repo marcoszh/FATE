@@ -42,7 +42,6 @@ class HomoLRHost(HomoLRBase):
 
         self.aggregator = HomoFederatedAggregator()
 
-        self.transfer_variable = HomoLRTransferVariable()
         self.initializer = Initializer()
         self.mini_batch_obj = None
         self.classes_ = [0, 1]
@@ -71,7 +70,7 @@ class HomoLRHost(HomoLRBase):
             return data_instances
 
         self.header = data_instances.schema.get('header')  # ['x1', 'x2', 'x3' ... ]
-
+        LOGGER.debug("Before trainning, self.header: {}".format(self.header))
         self._abnormal_detection(data_instances)
 
         self.__init_parameters(data_instances)
@@ -106,7 +105,7 @@ class HomoLRHost(HomoLRBase):
                     metric_meta = MetricMeta(name='train',
                                              metric_type="LOSS",
                                              extra_metas={
-                                                 "unit_name": "homo_lr"
+                                                 "unit_name": "number of iteration"
                                              })
                     metric_name = self.get_metric_name('loss')
 
@@ -188,6 +187,9 @@ class HomoLRHost(HomoLRBase):
             if converge_flag:
                 break
                 # self.save_model()
+        LOGGER.debug("After trained, self.header: {}, data_instance.header: {}".format(
+            self.header,
+            data_instances.schema['header']))
         self.data_output = data_instances
 
     def __init_parameters(self, data_instances):
@@ -221,13 +223,13 @@ class HomoLRHost(HomoLRBase):
                               idx=0)
             LOGGER.info("sent re_encrypt_times: {}".format(re_encrypt_times))
 
-    def __synchronize_encryption(self):
+    def __synchronize_encryption(self, mode='train'):
         """
         Communicate with hosts. Specify whether use encryption or not and transfer the public keys.
         """
         # Send if this host use encryption or not
         use_encryption_id = self.transfer_variable.generate_transferid(
-            self.transfer_variable.use_encrypt
+            self.transfer_variable.use_encrypt, mode
         )
         LOGGER.debug("Start to remote use_encrypt: {}, transfer_id: {}".format(self.use_encrypt, use_encryption_id))
 
@@ -239,7 +241,7 @@ class HomoLRHost(HomoLRBase):
 
         # Set public key
         if self.use_encrypt:
-            pubkey_id = self.transfer_variable.generate_transferid(self.transfer_variable.paillier_pubkey)
+            pubkey_id = self.transfer_variable.generate_transferid(self.transfer_variable.paillier_pubkey, mode)
             pubkey = federation.get(name=self.transfer_variable.paillier_pubkey.name,
                                     tag=pubkey_id,
                                     idx=0)
@@ -253,7 +255,7 @@ class HomoLRHost(HomoLRBase):
             return data_instances
 
         if not self.has_sychronized_encryption:
-            self.__synchronize_encryption()
+            self.__synchronize_encryption(mode='predict')
             self.__load_arbiter_model()
         else:
             LOGGER.info("in predict, has synchronize encryption information")
@@ -261,7 +263,8 @@ class HomoLRHost(HomoLRBase):
         from federatedml.statistic.data_overview import get_features_shape
         feature_shape = get_features_shape(data_instances)
         LOGGER.debug("Shape of coef_ : {}, feature shape: {}".format(len(self.coef_), feature_shape))
-
+        local_data = data_instances.first()
+        LOGGER.debug("One data, features: {}".format(local_data[1].features))
         wx = self.compute_wx(data_instances, self.coef_, self.intercept_)
 
         if self.use_encrypt:
@@ -314,8 +317,8 @@ class HomoLRHost(HomoLRBase):
         final_model = federation.get(name=self.transfer_variable.final_model.name,
                                      tag=final_model_id,
                                      idx=0)
-        LOGGER.info("Received arbiter's model")
-        LOGGER.debug("final_model: {}".format(final_model))
+        # LOGGER.info("Received arbiter's model")
+        # LOGGER.debug("final_model: {}".format(final_model))
         self.set_coef_(final_model)
 
     def _get_param(self):

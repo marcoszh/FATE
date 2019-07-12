@@ -102,6 +102,7 @@ class ModelBase(object):
                     self.data_output = eval_data_output
 
         elif eval_data:
+            LOGGER.debug("Before getting in predict, need_run: {}".format(self.need_run))
             self.data_output = self.predict(eval_data)
 
             if self.data_output:
@@ -121,7 +122,9 @@ class ModelBase(object):
         if need_cv:
             stage = 'cross_validation'
         elif "model" in args:
+            LOGGER.debug("Before load_model, need_run: {}".format(self.need_run))
             self._load_model(args)
+            LOGGER.debug("After load_model, need_run: {}".format(self.need_run))
             stage = "transform"
         elif "isometric_model" in args:
             self._load_model(args)
@@ -131,7 +134,7 @@ class ModelBase(object):
 
         if args.get("data", None) is None:
             return
-
+        LOGGER.debug("Before _run_data, need_run: {}".format(self.need_run))
         self._run_data(args["data"], stage)
 
     def predict(self, data_inst):
@@ -161,8 +164,7 @@ class ModelBase(object):
 
     def set_taskid(self, taskid):
         self.taskid = taskid
-        if self.transfer_variable is not None:
-            self.transfer_variable.set_taskid(self.taskid)
+        LOGGER.debug("Taskid is : {}".format(self.taskid))
 
     def get_metric_name(self, name_prefix):
         if not self.need_cv:

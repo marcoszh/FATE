@@ -20,7 +20,7 @@
         "data": {
           "train_data": [
             {
-              "name": "beed5e109f0511e9827b5254005e961b",
+              "name": "090ff6089cb111e9bddf5254005e961b",
               "namespace": "guest#10000#arbiter-10000#guest-10000#host-10000#train_input"
             }
           ]
@@ -46,8 +46,8 @@
         "data": {
           "train_data": [
             {
-              "name": "e6e7c7c09f0511e9a1595254005e961b",
-              "namespace": "host#10000#arbiter-10000#guest-10000#host-10000#train_input"
+              "name": "090ff6089cb111e9bddf5254005e961b",
+              "namespace": "guest#10000#arbiter-10000#guest-10000#host-10000#train_input"
             }
           ]
         }

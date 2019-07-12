@@ -19,6 +19,7 @@
 import functools
 
 import numpy as np
+from google.protobuf import json_format
 
 from arch.api.proto import feature_selection_meta_pb2, feature_selection_param_pb2
 from federatedml.model_base import ModelBase
@@ -96,6 +97,8 @@ class BaseHeteroFeatureSelection(ModelBase):
 
         result_obj = feature_selection_param_pb2.FeatureSelectionParam(results=self.results,
                                                                        final_left_cols=left_col_obj)
+        json_result = json_format.MessageToJson(result_obj)
+        LOGGER.debug("json_result: {}".format(json_result))
         return result_obj
 
     def save_data(self):
@@ -127,7 +130,7 @@ class BaseHeteroFeatureSelection(ModelBase):
             self.header = original_headers
             self.cols = [int(i) for i in self.cols]
             left_col_name_dict = dict(left_col_obj.left_cols)
-            print("In load model, left_col_name_dict: {}, original_headers: {}".format(left_col_name_dict,
+            LOGGER.debug("In load model, left_col_name_dict: {}, original_headers: {}".format(left_col_name_dict,
                                                                                        original_headers))
             for col_name, is_left in left_col_name_dict.items():
                 col_idx = original_headers.index(col_name)
