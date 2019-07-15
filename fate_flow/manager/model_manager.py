@@ -51,9 +51,8 @@ def read_model(model_key, model_version, model_id):
         model_class_map = FateStorage.get_data_table_meta_by_instance(data_table=data_table)
         for storage_key, buffer_object_bytes in data_table.collect(use_serialize=False):
             storage_key_items = storage_key.split('.')
-            buffer_name = storage_key_items[-1]
-
-            current_model_key = '.'.join(storage_key_items[:-1])
+            buffer_name = '.'.join(storage_key_items[1:])
+            current_model_key = storage_key_items[0]
             if current_model_key == model_key:
                 buffer_object_class = get_proto_buffer_class(model_class_map.get(storage_key, ''))
                 if buffer_object_class:

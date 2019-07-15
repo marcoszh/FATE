@@ -51,6 +51,10 @@ def generate_job_id():
     return '_'.join([datetime.datetime.now().strftime("%Y%m%d%H%M%S%f"), str(id_counter.incr())])
 
 
+def generate_task_id(job_id, component_name):
+    return '{}_{}'.format(job_id, component_name)
+
+
 def get_job_directory(job_id):
     return os.path.join(file_utils.get_project_base_directory(), 'jobs', job_id)
 

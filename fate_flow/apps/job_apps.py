@@ -52,7 +52,7 @@ def job_status(job_id, role, party_id):
 
 @manager.route('/<job_id>/<role>/<party_id>/<model_id>/save/pipeline', methods=['POST'])
 def save_pipeline(job_id, role, party_id, model_id):
-    JobController.save_pipeline(job_id=job_id, role=role, party_id=party_id, model_id=base64_decode(model_id))
+    JobController.save_pipeline(job_id=job_id, role=role, party_id=party_id, model_key=base64_decode(model_id))
     return get_json_result(retcode=0, retmsg='success')
 
 

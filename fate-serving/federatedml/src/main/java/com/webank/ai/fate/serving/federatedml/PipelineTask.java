@@ -21,8 +21,10 @@ public class PipelineTask {
             String pipelineProtoName = "pipeline";
             PipelineProto.Pipeline pipeLineProto = PipelineProto.Pipeline.parseFrom(modelProtoMap.get(pipelineProtoName));
             LOGGER.info("Finish get Pipeline proto");
-            List<String> pipeLineMeta = pipeLineProto.getNodeMetaList();
-            List<String> pipeLineParam = pipeLineProto.getNodeParamList();
+            String inferenceDSL = pipeLineProto.getInferenceDsl().toStringUtf8();
+            LOGGER.info(inferenceDSL);
+            List<String> pipeLineMeta = null;
+            List<String> pipeLineParam = null;
 
             for (int i = 0; i < pipeLineMeta.size(); i++) {
                 String className = pipeLineMeta.get(i).split("\\.")[0];

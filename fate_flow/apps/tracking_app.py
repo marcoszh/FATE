@@ -13,15 +13,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from fate_flow.utils.api_utils import get_json_result
-from fate_flow.settings import stat_logger
 from flask import Flask, request
-from fate_flow.manager.tracking import Tracking
-from fate_flow.db.db_models import Job, DB
-from fate_flow.utils import job_utils, data_utils
-from arch.api.utils.core import json_loads
 from google.protobuf import json_format
+
+from arch.api.utils.core import json_loads
+from fate_flow.db.db_models import Job, DB
+from fate_flow.manager.tracking import Tracking
+from fate_flow.settings import stat_logger
 from fate_flow.storage.fate_storage import FateStorage
+from fate_flow.utils import job_utils, data_utils
+from fate_flow.utils.api_utils import get_json_result
 from federatedml.feature.instance import Instance
 
 manager = Flask(__name__)
@@ -40,6 +41,16 @@ def job_view():
     job_tracker = Tracking(job_id=request_data['job_id'], role=request_data['role'], party_id=request_data['party_id'])
     job_view_data = job_tracker.get_job_view()
     if job_view_data:
+        job_metric_list = job_tracker.get_metric_list(job_level=True)
+        job_view_data['model_summary'] = {}
+        for metric_namespace, namespace_metrics in job_metric_list.items():
+            job_view_data['model_summary'][metric_namespace] = job_view_data['model_summary'].get(metric_namespace, {})
+            for metric_name in namespace_metrics:
+                job_view_data['model_summary'][metric_namespace][metric_name] = job_view_data['model_summary'][
+                    metric_namespace].get(metric_name, {})
+                for metric_data in job_tracker.get_job_metric_data(metric_namespace=metric_namespace,
+                                                                   metric_name=metric_name):
+                    job_view_data['model_summary'][metric_namespace][metric_name][metric_data.key] = metric_data.value
         return get_json_result(retcode=0, retmsg='success', data=job_view_data)
     else:
         return get_json_result(retcode=101, retmsg='error')
@@ -55,7 +66,7 @@ def component_metrics():
     if metrics:
         return get_json_result(retcode=0, retmsg='success', data=metrics)
     else:
-        return get_json_result(retcode=101, retmsg='error')
+        return get_json_result(retcode=0, retmsg='no data', data={})
 
 
 @manager.route('/component/metric_data', methods=['post'])
@@ -64,15 +75,17 @@ def component_metric_data():
     check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'])
-    metric_data = tracker.read_metric_data(metric_namespace=request_data['metric_namespace'],
-                                           metric_name=request_data['metric_name'])
-    metric_meta = tracker.get_metric_meta(metric_namespace=request_data['metric_namespace'], metric_name=request_data['metric_name'])
+    metric_data = tracker.get_metric_data(metric_namespace=request_data['metric_namespace'],
+                                          metric_name=request_data['metric_name'])
+    metric_meta = tracker.get_metric_meta(metric_namespace=request_data['metric_namespace'],
+                                          metric_name=request_data['metric_name'])
     if metric_data:
         metric_data_list = [(metric.key, metric.value) for metric in metric_data]
         metric_data_list.sort(key=lambda x: x[0])
-        return get_json_result(retcode=0, retmsg='success', data=metric_data_list, meta=metric_meta.to_dict() if metric_meta else {})
+        return get_json_result(retcode=0, retmsg='success', data=metric_data_list,
+                               meta=metric_meta.to_dict() if metric_meta else {})
     else:
-        return get_json_result(retcode=101, retmsg='error')
+        return get_json_result(retcode=0, retmsg='no data', data=[])
 
 
 @manager.route('/component/parameters', methods=['post'])
@@ -104,10 +117,11 @@ def component_parameters():
 def component_output_model():
     request_data = request.json
     check_request_parameters(request_data)
-    job_runtime_conf = job_utils.get_job_runtime_conf(job_id=request_data['job_id'], role=request_data['role'], party_id=request_data['party_id'])
-    model_id = job_runtime_conf['job_parameters']['model_id']
+    job_runtime_conf = job_utils.get_job_runtime_conf(job_id=request_data['job_id'], role=request_data['role'],
+                                                      party_id=request_data['party_id'])
+    model_key = job_runtime_conf['job_parameters']['model_key']
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
-                       role=request_data['role'], party_id=request_data['party_id'], model_id=model_id)
+                       role=request_data['role'], party_id=request_data['party_id'], model_key=model_key)
     output_model = tracker.get_output_model()
     output_model_json = {}
     for buffer_name, buffer_object in output_model.items():
@@ -126,7 +140,7 @@ def component_output_model():
                     this_component_model_meta[k] = v
         return get_json_result(retcode=0, retmsg='success', data=output_model_json, meta=this_component_model_meta)
     else:
-        return get_json_result(retcode=101, retmsg='can not found model')
+        return get_json_result(retcode=0, retmsg='no data', data={})
 
 
 @manager.route('/component/output/data', methods=['post'])
@@ -137,7 +151,7 @@ def component_output_data():
                        role=request_data['role'], party_id=request_data['party_id'])
     output_data_table = tracker.get_output_data_table('train')
     output_data = []
-    num = 10
+    num = 100
     if output_data_table:
         for k, v in output_data_table.collect():
             if num == 0:
@@ -153,13 +167,14 @@ def component_output_data():
         output_data_meta = FateStorage.get_data_table_meta_by_instance(output_data_table)
         return get_json_result(retcode=0, retmsg='success', data=output_data, meta=output_data_meta)
     else:
-        return get_json_result(retcode=101, retmsg='no data')
+        return get_json_result(retcode=0, retmsg='no data', data=[])
 
 
 @DB.connection_context()
 def check_request_parameters(request_data):
     if 'role' not in request_data and 'party_id' not in request_data:
-        jobs = Job.select(Job.f_runtime_conf).where(Job.f_job_id == request_data.get('job_id', ''), Job.f_is_initiator == 1)
+        jobs = Job.select(Job.f_runtime_conf).where(Job.f_job_id == request_data.get('job_id', ''),
+                                                    Job.f_is_initiator == 1)
         if jobs:
             job = jobs[0]
             job_runtime_conf = json_loads(job.f_runtime_conf)

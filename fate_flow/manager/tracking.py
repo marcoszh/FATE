@@ -17,7 +17,7 @@ from typing import List
 from fate_flow.manager import model_manager
 from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.storage.fate_storage import FateStorage
-from fate_flow.entity.metric import Metric, MetricMeta
+from fate_flow.entity.metric import Metric, MetricMeta, MetricType
 from arch.api.utils.core import current_timestamp
 from arch.api.utils import dtable_utils
 from fate_flow.settings import stat_logger
@@ -28,7 +28,7 @@ class Tracking(object):
     METRIC_LIST_PARTITION = 48
     JOB_VIEW_PARTITION = 8
 
-    def __init__(self, job_id: str, role: str, party_id: int, model_id: str = None, component_name: str = None, task_id: str = None):
+    def __init__(self, job_id: str, role: str, party_id: int, model_key: str = None, component_name: str = None, task_id: str = None):
         self.job_id = job_id
         self.role = role
         self.party_id = party_id
@@ -38,20 +38,32 @@ class Tracking(object):
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id), self.component_name])
         self.job_table_namespace = '_'.join(
             ['fate_flow', 'tracking', 'data', self.job_id, self.role, str(self.party_id)])
-        self.model_id = Tracking.gen_party_model_id(federated_model_id=model_id, role=role, party_id=party_id)
+        self.model_id = Tracking.gen_party_model_id(model_key=model_key, role=role, party_id=party_id)
         self.model_version = self.job_id
 
+    def log_job_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
+        self.save_metric_data(metric_namespace=metric_namespace, metric_name=metric_name, metrics=metrics, job_level=True)
+
     def log_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric]):
+        self.save_metric_data(metric_namespace=metric_namespace, metric_name=metric_name, metrics=metrics, job_level=False)
+
+    def save_metric_data(self, metric_namespace: str, metric_name: str, metrics: List[Metric], job_level=False):
         kv = {}
         for metric in metrics:
             kv[metric.key] = metric.value
-        FateStorage.save_data(kv.items(), namespace=self.table_namespace,
+        FateStorage.save_data(kv.items(), namespace=self.get_table_namespace(job_level),
                               name=Tracking.metric_table_name(metric_namespace, metric_name),
                               partition=Tracking.METRIC_DATA_PARTITION, create_if_missing=True, error_if_exist=True)
-        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name)
+        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name, job_level=job_level)
 
-    def read_metric_data(self, metric_namespace: str, metric_name: str):
-        kv = FateStorage.read_data(namespace=self.table_namespace,
+    def get_job_metric_data(self, metric_namespace: str, metric_name: str):
+        return self.read_metric_data(metric_namespace=metric_namespace, metric_name=metric_name, job_level=True)
+
+    def get_metric_data(self, metric_namespace: str, metric_name: str):
+        return self.read_metric_data(metric_namespace=metric_namespace, metric_name=metric_name, job_level=False)
+
+    def read_metric_data(self, metric_namespace: str, metric_name: str, job_level=False):
+        kv = FateStorage.read_data(namespace=self.table_namespace if not job_level else self.job_table_namespace,
                                    name=Tracking.metric_table_name(metric_namespace, metric_name))
         metrics = []
         for k, v in kv:
@@ -59,30 +71,26 @@ class Tracking(object):
         metrics.sort(key=lambda x: x.key)
         return metrics
 
-    def set_metric_meta(self, metric_namespace: str, metric_name: str, metric_meta: MetricMeta):
-        FateStorage.save_data_table_meta(metric_meta.to_dict(), namespace=self.table_namespace,
+    def set_metric_meta(self, metric_namespace: str, metric_name: str, metric_meta: MetricMeta, job_level: bool = False):
+        FateStorage.save_data_table_meta(metric_meta.to_dict(), namespace=self.get_table_namespace(job_level),
                                          name=Tracking.metric_table_name(metric_namespace, metric_name))
-        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name)
+        self.put_into_metric_list(metric_namespace=metric_namespace, metric_name=metric_name, job_level=job_level)
 
-    def get_metric_meta(self, metric_namespace: str, metric_name: str):
-        kv = FateStorage.get_data_table_meta(namespace=self.table_namespace,
+    def get_metric_meta(self, metric_namespace: str, metric_name: str, job_level: bool = False):
+        kv = FateStorage.get_data_table_meta(namespace=self.get_table_namespace(job_level),
                                              name=Tracking.metric_table_name(metric_namespace, metric_name))
         return MetricMeta(name=kv.get('name'), metric_type=kv.get('metric_type'), extra_metas=kv)
 
-    def put_into_metric_list(self, metric_namespace: str, metric_name: str):
-        stat_logger.debug(self.table_namespace)
-        stat_logger.debug(Tracking.metric_list_table_name())
+    def put_into_metric_list(self, metric_namespace: str, metric_name: str, job_level: bool = False):
         kv = {'%s:%s' % (metric_namespace, metric_name): metric_name}
-        FateStorage.save_data(kv.items(), namespace=self.table_namespace, name=Tracking.metric_list_table_name(),
+        FateStorage.save_data(kv.items(), namespace=self.get_table_namespace(job_level), name=Tracking.metric_list_table_name(),
                               partition=Tracking.METRIC_LIST_PARTITION, create_if_missing=True, error_if_exist=True)
 
-    def get_metric_list(self):
-        stat_logger.debug(self.table_namespace)
-        stat_logger.debug(Tracking.metric_list_table_name())
-        kv = FateStorage.read_data(namespace=self.table_namespace, name=Tracking.metric_list_table_name())
+    def get_metric_list(self, job_level: bool = False):
+        kv = FateStorage.read_data(namespace=self.get_table_namespace(job_level), name=Tracking.metric_list_table_name())
         metrics = dict()
         for k, v in kv:
-            metric_namespace = k.rstrip(':%s' % v)
+            metric_namespace = k.split(':')[0]
             metrics[metric_namespace] = metrics.get(metric_namespace, [])
             metrics[metric_namespace].append(v)
         return metrics
@@ -176,7 +184,7 @@ class Tracking(object):
                 # TODO:
                 pass
         for k, v in job_info.items():
-            if k in ['f_job_id', 'f_role', 'f_party_id'] or v is None:
+            if k in ['f_job_id', 'f_role', 'f_party_id'] or v == getattr(Job, k).default:
                 continue
             setattr(job, k, v)
         if is_insert:
@@ -212,7 +220,7 @@ class Tracking(object):
                 # TODO:
                 pass
         for k, v in task_info.items():
-            if k in ['f_job_id', 'f_component_name', 'f_task_id', 'f_role', 'f_party_id'] or v is None:
+            if k in ['f_job_id', 'f_component_name', 'f_task_id', 'f_role', 'f_party_id'] or v == getattr(Task, k).default:
                 continue
             setattr(task, k, v)
         if is_insert:
@@ -223,6 +231,9 @@ class Tracking(object):
 
     def clean_job(self):
         FateStorage.clean_job(namespace=self.job_id, regex_string='*')
+
+    def get_table_namespace(self, job_level: bool = False):
+        return self.table_namespace if not job_level else self.job_table_namespace
 
     @staticmethod
     def metric_table_name(metric_namespace: str, metric_name: str):
@@ -241,8 +252,8 @@ class Tracking(object):
         return '_'.join(['job', 'view'])
 
     @staticmethod
-    def gen_party_model_id(federated_model_id, role, party_id):
-        return dtable_utils.gen_namespace_by_prefix(prefix=federated_model_id, role=role, party_id=party_id) if federated_model_id else None
+    def gen_party_model_id(model_key, role, party_id):
+        return dtable_utils.gen_namespace_by_key(namespace_key=model_key, role=role, party_id=party_id) if model_key else None
 
 
 if __name__ == '__main__':
@@ -252,11 +263,11 @@ if __name__ == '__main__':
     metric_name = 'LOSS0'
     tracker.log_metric_data(metric_namespace, metric_name, [Metric(1, 0.2), Metric(2, 0.3)])
 
-    metrics = tracker.read_metric_data(metric_namespace, metric_name)
+    metrics = tracker.get_metric_data(metric_namespace, metric_name)
     for metric in metrics:
         print(metric.key, metric.value)
 
     tracker.set_metric_meta(metric_namespace, metric_name,
-                            MetricMeta(name=metric_name, metric_type='LOSS', extra_metas={'BEST': 0.2}))
+                            MetricMeta(name=metric_name, metric_type=MetricType.LOSS, extra_metas={'BEST': 0.2}))
     metric_meta = tracker.get_metric_meta(metric_namespace, metric_name)
     print(metric_meta.name, metric_meta.metric_type, metric_meta.metas)

@@ -38,11 +38,11 @@ def get_table_info(config, create=False):
 
 
 def gen_namespace(all_party, data_type, role, party_id):
-    return gen_namespace_separator.join([all_party_key(all_party), data_type, role, str(party_id)])
+    return gen_namespace_separator.join([role, str(party_id), all_party_key(all_party), data_type])
 
 
-def gen_namespace_by_prefix(prefix, role, party_id):
-    return gen_namespace_separator.join([prefix, role, str(party_id)])
+def gen_namespace_by_key(namespace_key, role, party_id):
+    return gen_namespace_separator.join([role, str(party_id), namespace_key])
 
 
 def all_party_key(all_party):

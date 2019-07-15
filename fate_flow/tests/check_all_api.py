@@ -15,7 +15,8 @@
 #
 import sys
 import requests
-from fate_flow.settings import API_VERSION, IP, HTTP_PORT
+import json
+from fate_flow.settings import API_VERSION, HTTP_PORT
 
 fate_flow_server_host = 'http://127.0.0.1:{}/{}'.format(HTTP_PORT, API_VERSION)
 job_id = sys.argv[1]
@@ -31,7 +32,7 @@ print(response.json())
 print('dependency')
 response = requests.post('{}/pipeline/dag/dependency'.format(fate_flow_server_host), json={'job_id': job_id})
 dependency_response = response.json()
-print(dependency_response)
+print(json.dumps(dependency_response))
 print()
 for component_name in dependency_response['data']['component_list']:
     print('component name is {}'.format(component_name))
