@@ -97,7 +97,7 @@ class HomoLRGuest(HomoLRBase):
             metric_meta = MetricMeta(name='train',
                                      metric_type="LOSS",
                                      extra_metas={
-                                         "unit_name": "number of iteration"
+                                         "unit_name": "iters"
                                      })
             metric_name = self.get_metric_name('loss')
             self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)

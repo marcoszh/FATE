@@ -105,7 +105,7 @@ class HomoLRHost(HomoLRBase):
                     metric_meta = MetricMeta(name='train',
                                              metric_type="LOSS",
                                              extra_metas={
-                                                 "unit_name": "number of iteration"
+                                                 "unit_name": "iters"
                                              })
                     metric_name = self.get_metric_name('loss')
 

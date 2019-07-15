@@ -90,9 +90,16 @@ class BaseHeteroFeatureBinning(ModelBase):
             # self.binning_obj = QuantileBinning(self.bin_param)
             raise ValueError("Binning method: {} is not supported yet".format(self.model_param.method))
 
+    def transform(self, data_instances):
+        transform_cols_idx = self.model_param.transform_param.transform_cols
+        transform_type = self.model_param.transform_param.transform_type
+        data_instances = self.binning_obj.transform(data_instances, transform_cols_idx, transform_type)
+        self.set_schema(data_instances)
+        self.data_output = data_instances
+        return data_instances
+
     def _get_meta(self):
         meta_protobuf_obj = feature_binning_meta_pb2.FeatureBinningMeta(
-            method=self.model_param.method,
             compress_thres=self.model_param.compress_thres,
             head_size=self.model_param.head_size,
             error=self.model_param.error,
@@ -113,7 +120,23 @@ class BaseHeteroFeatureBinning(ModelBase):
         iv_attrs = {}
         for col_name, iv_attr in binning_result.items():
             iv_result = iv_attr.result_dict()
+            LOGGER.debug("in _get_param, iv_result is : {}".format(iv_result))
             iv_object = feature_binning_param_pb2.IVParam(**iv_result)
+
+            json_result = json_format.MessageToJson(iv_object)
+            LOGGER.debug("iv_object: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam()
+            json_result = json_format.MessageToJson(iv_object_test)
+            LOGGER.debug("iv_object_test_1: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam(is_woe_monotonic=False)
+            json_result = json_format.MessageToDict(iv_object_test)
+            LOGGER.debug("iv_object_test_2: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam(is_woe_monotonic=True)
+            json_result = json_format.MessageToDict(iv_object_test, including_default_value_fields=True)
+            LOGGER.debug("iv_object_test_3: {}".format(json_result))
 
             iv_attrs[col_name] = iv_object
         binning_result_obj = feature_binning_param_pb2.FeatureBinningResult(binning_result=iv_attrs)
