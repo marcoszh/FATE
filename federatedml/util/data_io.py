@@ -82,7 +82,9 @@ class DenseFeatureReader(object):
             feature_shape = data_overview.get_data_shape(input_data_feature)
             self.header = ["fid" + str(i) for i in range(feature_shape)]
             self.sid_name = "sid"
-            self.label_name = "label"
+            
+            if self.with_label:
+                self.label_name = "label"
         else:
             self.sid_name = data_meta.get("sid")
             if self.with_label:
@@ -92,10 +94,7 @@ class DenseFeatureReader(object):
             else:
                 self.header = self.header.split(self.delimitor, -1)
 
-        schema = {"header": self.header,
-                  "sid": self.sid_name,
-                  "label": self.label_name}
-
+        schema = make_schema(self.header, self.sid_name, self.label_name)
         set_schema(input_data_feature, schema)
         
         return schema
