@@ -126,7 +126,7 @@ def component_output_model():
     output_model_json = {}
     for buffer_name, buffer_object in output_model.items():
         if buffer_name.endswith('Param'):
-            output_model_json = json_format.MessageToDict(buffer_object)
+            output_model_json = json_format.MessageToDict(buffer_object, including_default_value_fields=True)
     if output_model_json:
         pipeline_output_model = tracker.get_output_model_meta()
         this_component_model_meta = {}
