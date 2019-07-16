@@ -173,8 +173,8 @@ class Evaluation(ModelBase):
 
             if 'auc' in eval_result:
                 LOGGER.info("Model auc: {}".format(eval_result['auc']))
-            for eval_key in eval_result:
-                LOGGER.debug("Evaluate result {} exist".format(eval_key))
+            # for eval_key in eval_result:
+            #     LOGGER.debug("Evaluate result {} exist".format(eval_key))
             self.eval_results[data_type] = eval_result
 
         # LOGGER.debug("Evaluation Result: {}".format(self.eval_results))
