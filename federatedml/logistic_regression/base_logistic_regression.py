@@ -143,12 +143,18 @@ class BaseLogisticRegression(ModelBase):
         return w
 
     def set_coef_(self, w):
+        self.coef_ = []
+        self.intercept_ = []
         if self.fit_intercept:
             self.coef_ = w[: -1]
             self.intercept_ = w[-1]
         else:
             self.coef_ = w
             self.intercept_ = 0
+
+        LOGGER.debug("In set_coef_, coef: {}, intercept: {}, fit_intercept: {}".format(
+            self.coef_, self.intercept_, self.fit_intercept
+        ))
 
     def classified(self, prob_table, threshold):
         """
@@ -175,9 +181,10 @@ class BaseLogisticRegression(ModelBase):
 
     def _get_param(self):
         header = self.header
-
+        LOGGER.debug("In get_param, header: {}".format(header))
         if header is None:
             param_protobuf_obj = lr_model_param_pb2.LRModelParam()
+            return param_protobuf_obj
 
         weight_dict = {}
         for idx, header_name in enumerate(header):
@@ -205,10 +212,10 @@ class BaseLogisticRegression(ModelBase):
         return result
 
     def _load_model(self, model_dict):
-        self._parse_need_run(model_dict, self.model_meta_name)
+        # self._parse_need_run(model_dict, self.model_meta_name)
         result_obj = list(model_dict.get('model').values())[0].get(self.model_param_name)
         self.header = list(result_obj.header)
-
+        LOGGER.debug("In load model, header: {}".format(self.header))
         # For hetero-lr arbiter predict function
         if self.header is None:
             return
@@ -220,6 +227,10 @@ class BaseLogisticRegression(ModelBase):
 
         for idx, header_name in enumerate(self.header):
             self.coef_[idx] = weight_dict.get(header_name)
+
+        LOGGER.debug("In load model, coef_: {}, intercept: {}, weight_dict: {}".format(
+            self.coef_, self.intercept_, weight_dict
+        ))
 
     def _abnormal_detection(self, data_instances):
         """

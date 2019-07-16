@@ -101,19 +101,23 @@ class ModelBase(object):
                 elif not self.data_output and eval_data_output:
                     self.data_output = eval_data_output
 
+            self.set_predict_data_schema(self.data_output)
+        
         elif eval_data:
             self.data_output = self.predict(eval_data)
 
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
+            self.set_predict_data_schema(self.data_output)
+        
         else:
-            LOGGER.debug("stage is : {}".format(stage))
-
             if stage == "fit":
                 self.data_output = self.fit(data)
             else:
                 self.data_output = self.transform(data)
+
+        LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
 
     def run(self, component_parameters=None, args=None):
         need_cv = self._init_runtime_parameters(component_parameters)
@@ -147,6 +151,8 @@ class ModelBase(object):
         pass
 
     def save_data(self):
+        if self.data_output is not None:
+            LOGGER.debug("data output is {}".format(list(self.data_output.collect())))
         return self.data_output
 
     def export_model(self):
@@ -172,6 +178,9 @@ class ModelBase(object):
 
     def set_tracker(self, tracker):
         self.tracker = tracker
+
+    def set_predict_data_schema(self, predict_data):
+        predict_data.schema = {"header": ["label", "predict_result", "predict_score", "predict_detail", "type"]}
 
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
         # tracker = Tracking('123', 'abc')

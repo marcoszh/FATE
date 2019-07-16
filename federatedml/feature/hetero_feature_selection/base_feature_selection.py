@@ -19,6 +19,7 @@
 import functools
 
 import numpy as np
+from google.protobuf import json_format
 
 from arch.api.proto import feature_selection_meta_pb2, feature_selection_param_pb2
 from federatedml.model_base import ModelBase
@@ -62,7 +63,7 @@ class BaseHeteroFeatureSelection(ModelBase):
         self.unique_meta = None
         self.iv_value_meta = None
         self.iv_percentile_meta = None
-        self.coe_meta = None
+        self.variance_coe_meta = None
         self.outlier_meta = None
 
         # Use to save each model's result
@@ -71,18 +72,18 @@ class BaseHeteroFeatureSelection(ModelBase):
     def _init_model(self, params):
         self.model_param = params
         self.cols_index = params.select_cols
-        self.filter_method = params.filter_method
+        self.filter_methods = params.filter_methods
         self.local_only = params.local_only
 
     def _get_meta(self):
         cols = [str(i) for i in self.cols]
-        meta_protobuf_obj = feature_selection_meta_pb2.FeatureSelectionMeta(filter_methods=self.filter_method,
+        meta_protobuf_obj = feature_selection_meta_pb2.FeatureSelectionMeta(filter_methods=self.filter_methods,
                                                                             local_only=self.model_param.local_only,
                                                                             cols=cols,
                                                                             unique_meta=self.unique_meta,
                                                                             iv_value_meta=self.iv_value_meta,
                                                                             iv_percentile_meta=self.iv_percentile_meta,
-                                                                            coe_meta=self.coe_meta,
+                                                                            variance_coe_meta=self.variance_coe_meta,
                                                                             outlier_meta=self.outlier_meta)
         return meta_protobuf_obj
 
@@ -96,6 +97,8 @@ class BaseHeteroFeatureSelection(ModelBase):
 
         result_obj = feature_selection_param_pb2.FeatureSelectionParam(results=self.results,
                                                                        final_left_cols=left_col_obj)
+        json_result = json_format.MessageToJson(result_obj)
+        LOGGER.debug("json_result: {}".format(json_result))
         return result_obj
 
     def save_data(self):
@@ -127,7 +130,7 @@ class BaseHeteroFeatureSelection(ModelBase):
             self.header = original_headers
             self.cols = [int(i) for i in self.cols]
             left_col_name_dict = dict(left_col_obj.left_cols)
-            print("In load model, left_col_name_dict: {}, original_headers: {}".format(left_col_name_dict,
+            LOGGER.debug("In load model, left_col_name_dict: {}, original_headers: {}".format(left_col_name_dict,
                                                                                        original_headers))
             for col_name, is_left in left_col_name_dict.items():
                 col_idx = original_headers.index(col_name)

@@ -106,9 +106,10 @@ class KFold(BaseCrossValidator):
 
             model.fit(train_data)
             pred_res = model.predict(test_data)
-            fold_name = "_".join(['fold', str(flowid)])
-            pred_res = pred_res.mapValues(lambda value: value + [fold_name])
-            self.evaluate(pred_res, fold_name, model)
+            if pred_res is not None:
+                fold_name = "_".join(['fold', str(flowid)])
+                pred_res = pred_res.mapValues(lambda value: value + [fold_name])
+                self.evaluate(pred_res, fold_name, model)
             flowid += 1
 
         return
@@ -120,6 +121,8 @@ class KFold(BaseCrossValidator):
             model.set_flowid(flowid)
             model.fit()
             pred_res = model.predict()
+            if pred_res is None:
+                continue
             fold_name = "_".join(['fold', str(flowid)])
             self.evaluate(pred_res, fold_name, model)
 
