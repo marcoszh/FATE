@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 from arch.api.utils import file_utils
-from arch.api.utils.core import json_loads
+from arch.api.utils.core import json_loads, json_dumps
 import subprocess
 import os
 import uuid
@@ -22,11 +22,11 @@ from fate_flow.settings import stat_logger
 from fate_flow.db.db_models import DB, Job, Task
 from fate_flow.manager.queue_manager import JOB_QUEUE
 import errno
-from arch.api import eggroll
 import datetime
 import json
 import threading
 from fate_flow.driver.dsl_parser import DSLParser
+from arch.api.utils.core import current_timestamp
 
 
 class IdCounter:
@@ -162,6 +162,35 @@ def query_tasks(job_id, task_id, role=None, party_id=None):
     else:
         tasks = Task.select().where(Task.f_job_id == job_id, Task.f_task_id == task_id)
     return tasks
+
+
+@DB.connection_context()
+def get_success_tasks(job_id):
+    tasks = Task.select().where(Task.f_job_id == job_id)
+    return tasks
+
+
+def success_task_count(job_id):
+    count = 0
+    tasks = get_success_tasks(job_id=job_id)
+    job_component_status = {}
+    for task in tasks:
+        job_component_status[task.f_component_name] = job_component_status.get(task.f_component_name, set())
+        job_component_status[task.f_component_name].add(task.f_status)
+    for component_name, role_status in job_component_status.items():
+        if len(role_status) == 1 and 'success' in role_status:
+            count += 1
+    return count
+
+
+def update_job_progress(job_id, dag, current_task_id):
+    component_count = len(dag.get_dependency()['component_list'])
+    success_count = success_task_count(job_id=job_id)
+    job = Job()
+    job.f_progress = float(success_count) / component_count * 100
+    job.f_update_time = current_timestamp()
+    job.f_current_tasks = json_dumps([current_task_id])
+    return job
 
 
 def gen_status_id():

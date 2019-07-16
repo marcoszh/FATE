@@ -149,15 +149,26 @@ def component_output_data():
     check_request_parameters(request_data)
     tracker = Tracking(job_id=request_data['job_id'], component_name=request_data['component_name'],
                        role=request_data['role'], party_id=request_data['party_id'])
-    output_data_table = tracker.get_output_data_table('train')
+    job_dsl_parser = job_utils.get_job_dsl_parser_by_job_id(job_id=request_data['job_id'])
+    if not job_dsl_parser:
+        return get_json_result(retcode=101, retmsg='can not new parser', data=[])
+    component = job_dsl_parser.get_component_info(request_data['component_name'])
+    if not component:
+        return get_json_result(retcode=102, retmsg='can found component', data=[])
+    output_dsl = component.get_output()
+    output_data_table = tracker.get_output_data_table(output_dsl.get('data')[0])
     output_data = []
     num = 100
+    data_label = False
     if output_data_table:
         for k, v in output_data_table.collect():
             if num == 0:
                 break
             l = [k]
             if isinstance(v, Instance):
+                if v.label is not None:
+                    l.append(v.label)
+                    data_label = True
                 l.extend(data_utils.dataset_to_list(v.features))
             else:
                 l.extend(data_utils.dataset_to_list(v))
@@ -165,7 +176,12 @@ def component_output_data():
             num -= 1
     if output_data:
         output_data_meta = FateStorage.get_data_table_meta_by_instance(output_data_table)
-        return get_json_result(retcode=0, retmsg='success', data=output_data, meta=output_data_meta)
+        schema = output_data_meta.get('schema', {})
+        header = [schema.get('sid_name', 'sid')]
+        if data_label:
+            header.append(schema.get('label_name'))
+        header.extend(schema.get('header', []))
+        return get_json_result(retcode=0, retmsg='success', data=output_data, meta={'header': header})
     else:
         return get_json_result(retcode=0, retmsg='no data', data=[])
 

@@ -128,14 +128,14 @@ class JobController(object):
                                         initiator_party_id=job_initiator['party_id'], job_info=job.to_json())
 
         top_level_task_status = set()
-        component_count = len(dag.get_dependency()['component_list'])
         components = dag.get_next_components(None)
         schedule_logger.info(
             '{} root components is {}'.format(job.f_job_id, [component.get_name() for component in components], None))
         for component in components:
             try:
                 # run a component as task
-                run_status = JobController.run_component(job_id, job_parameters, job_initiator, job_args, dag,
+                run_status = JobController.run_component(job_id, job_runtime_conf, job_parameters, job_initiator,
+                                                         job_args, dag,
                                                          component)
             except Exception as e:
                 schedule_logger.info(e)
@@ -151,7 +151,8 @@ class JobController(object):
             job.f_status = 'failed'
         job.f_end_time = current_timestamp()
         job.f_elapsed = job.f_end_time - job.f_start_time
-        job.f_progress = 100
+        if job.f_status == 'success':
+            job.f_progress = 100
         job.f_update_time = current_timestamp()
         JobController.update_job_status(job_id=job_id, roles=job_runtime_conf['role'],
                                         initiator_party_id=job_initiator['party_id'], job_info=job.to_json())
@@ -159,10 +160,10 @@ class JobController(object):
         schedule_logger.info('job {} finished, status is {}'.format(job.f_job_id, job.f_status))
 
     @staticmethod
-    def run_component(job_id, job_parameters, job_initiator, job_args, dag, next_component):
-        parameters = next_component.get_role_parameters()
-        component_name = next_component.get_name()
-        module_name = next_component.get_module()
+    def run_component(job_id, job_runtime_conf, job_parameters, job_initiator, job_args, dag, component):
+        parameters = component.get_role_parameters()
+        component_name = component.get_name()
+        module_name = component.get_module()
         task_id = job_utils.generate_task_id(job_id=job_id, component_name=component_name)
         schedule_logger.info('run {} component {}'.format(job_id, component_name))
         for role, partys_parameters in parameters.items():
@@ -189,15 +190,20 @@ class JobController(object):
                                          'job_args': party_job_args,
                                          'parameters': party_parameters,
                                          'module_name': module_name,
-                                         'input': next_component.get_input(),
-                                         'output': next_component.get_output()})
-        component_task_status = JobController.check_task_status(job_id=job_id, component=next_component)
+                                         'input': component.get_input(),
+                                         'output': component.get_output()})
+        component_task_status = JobController.check_task_status(job_id=job_id, component=component)
         if component_task_status:
             task_success = True
         else:
             task_success = False
         schedule_logger.info(
             '{} component {} run {}'.format(job_id, component_name, 'success' if task_success else 'failed'))
+        # update progress
+        JobController.update_job_status(job_id=job_id, roles=job_runtime_conf['role'],
+                                        initiator_party_id=job_initiator['party_id'],
+                                        job_info=job_utils.update_job_progress(job_id=job_id, dag=dag,
+                                                                               current_task_id=task_id).to_json())
         if task_success:
             next_components = dag.get_next_components(component_name)
             schedule_logger.info('{} component {} next components is {}'.format(job_id, component_name,
@@ -213,7 +219,8 @@ class JobController(object):
                         '{} component {} dependencies status is {}'.format(job_id, next_component.get_name(),
                                                                            dependencies_status))
                     if dependencies_status:
-                        run_status = JobController.run_component(job_id, job_parameters, job_initiator, job_args, dag,
+                        run_status = JobController.run_component(job_id, job_runtime_conf, job_parameters,
+                                                                 job_initiator, job_args, dag,
                                                                  next_component)
                     else:
                         run_status = False
@@ -449,9 +456,20 @@ class JobController(object):
     def job_status(job_id, role, party_id, job_info, create=False):
         job_tracker = Tracking(job_id=job_id, role=role, party_id=party_id)
         if create:
+            save_job_conf(job_id=job_id,
+                          job_dsl=json_loads(job_info['f_dsl']),
+                          job_runtime_conf=json_loads(job_info['f_runtime_conf']))
             roles = json_loads(job_info['f_roles'])
             partner = {}
+            show_role = {}
+            is_initiator = job_info.get('f_is_initiator', 0)
             for _role, _role_party in roles.items():
+                if is_initiator or _role == role:
+                    show_role[_role] = show_role.get(_role, [])
+                    for _party_id in _role_party:
+                        if is_initiator or _party_id == party_id:
+                            show_role[_role].append(_party_id)
+
                 if _role != role:
                     partner[_role] = partner.get(_role, [])
                     partner[_role].extend(_role_party)
@@ -466,7 +484,6 @@ class JobController(object):
                                      job_runtime_conf_path=job_runtime_conf_path)
             job_args = dag.get_args_input()
             dataset = {}
-            is_initiator = job_info.get('f_is_initiator', 0)
             for _role, _role_party_args in job_args.items():
                 if is_initiator or _role == role:
                     for _party_index in range(len(_role_party_args)):
@@ -477,7 +494,7 @@ class JobController(object):
                             for _data_type, _data_location in _role_party_args[_party_index]['args']['data'].items():
                                 dataset[_role][_party_id][_data_type] = '{}.{}'.format(_data_location['namespace'],
                                                                                        _data_location['name'])
-            job_tracker.log_job_view({'partner': partner, 'dataset': dataset})
+            job_tracker.log_job_view({'partner': partner, 'dataset': dataset, 'roles': show_role})
         job_tracker.save_job_info(role=role, party_id=party_id, job_info=job_info, create=create)
 
     @staticmethod
