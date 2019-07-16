@@ -102,6 +102,26 @@ public class JobManagerService {
     }
 
 
+    public List<JobWithBLOBs> queryPagedJobsByCondition(long startIndex, long pageSize, Object orderField, String orderType,String jobId) {
+        String order= orderField+" "+orderType;
+        String limit= startIndex +","+pageSize;
+
+        JobExample jobExample = new JobExample();
+        jobExample.setOrderByClause(order);
+        jobExample.setLimitClause(limit);
+        if(jobId!=null){
+            JobExample.Criteria criteria = jobExample.createCriteria();
+            jobId= "%"+jobId+"%";
+            criteria.andFJobIdLike(jobId);
+
+        }
+        List<JobWithBLOBs> jobWithBLOBs = jobMapper.selectByExampleWithBLOBs(jobExample);
+
+        return jobWithBLOBs;
+    }
+
+
+
 
 
 

@@ -23,6 +23,7 @@ from arch.api.utils import log_utils
 from federatedml.model_selection.cross_validate import BaseCrossValidator
 from federatedml.model_selection.indices import collect_index
 from federatedml.util import consts
+from federatedml.evaluation.evaluation import Evaluation
 from federatedml.util.transfer_variable.hetero_workflow_transfer_variable import HeteroWorkFlowTransferVariable
 
 LOGGER = log_utils.getLogger()
@@ -89,9 +90,8 @@ class KFold(BaseCrossValidator):
         if data_inst is None:
             cv_results = self._arbiter_run(original_model)
             return cv_results
-        print("data_inst count: {}".format(data_inst.count()))
+        LOGGER.debug("data_inst count: {}".format(data_inst.count()))
         data_generator = self.split(data_inst)
-        cv_results = []
         flowid = 0
         for train_data, test_data in data_generator:
             LOGGER.info("KFold flowid is: {}".format(flowid))
@@ -102,29 +102,29 @@ class KFold(BaseCrossValidator):
                 LOGGER.info("Test data Synchronized")
             model = copy.deepcopy(original_model)
             model.set_flowid(flowid)
-            print("train_data count: {}".format(train_data.count()))
+            LOGGER.debug("train_data count: {}".format(train_data.count()))
 
             model.fit(train_data)
             pred_res = model.predict(test_data)
-            evaluation_results = self.evaluate(pred_res, model)
-
-            cv_results.append(evaluation_results)
+            if pred_res is not None:
+                fold_name = "_".join(['fold', str(flowid)])
+                pred_res = pred_res.mapValues(lambda value: value + [fold_name])
+                self.evaluate(pred_res, fold_name, model)
             flowid += 1
-        self.display_cv_result(cv_results)
-        return cv_results
+
+        return
 
     def _arbiter_run(self, original_model):
-        cv_results = []
         for flowid in range(self.n_splits):
             LOGGER.info("KFold flowid is: {}".format(flowid))
             model = copy.deepcopy(original_model)
             model.set_flowid(flowid)
             model.fit()
             pred_res = model.predict()
-            evaluation_results = self.evaluate(pred_res, model)
-            cv_results.append(evaluation_results)
-        return cv_results
-
+            if pred_res is None:
+                continue
+            fold_name = "_".join(['fold', str(flowid)])
+            self.evaluate(pred_res, fold_name, model)
 
     def _init_model(self, param):
         self.model_param = param
@@ -172,25 +172,14 @@ class KFold(BaseCrossValidator):
             join_data_insts.schema['header'] = header
             return join_data_insts
 
-    def evaluate(self, eval_data, model):
+    def evaluate(self, eval_data, fold_name, model):
         if eval_data is None:
-            return None
+            return
+        eval_obj = Evaluation()
+        LOGGER.debug("In KFold, evaluate_param is: {}".format(self.evaluate_param.__dict__))
+        eval_obj._init_model(self.evaluate_param)
+        eval_obj.set_tracker(model.tracker)
+        eval_data = {fold_name: eval_data}
+        eval_obj.fit(eval_data)
+        eval_obj.save_data()
 
-        eval_data_local = eval_data.collect()
-        labels = []
-        pred_prob = []
-        pred_labels = []
-        data_num = 0
-        for data in eval_data_local:
-            data_num += 1
-            labels.append(data[1][0])
-            pred_prob.append(data[1][1])
-            pred_labels.append(data[1][2])
-
-        labels = np.array(labels)
-        pred_prob = np.array(pred_prob)
-        pred_labels = np.array(pred_labels)
-
-        evaluation_result = model.evaluate(labels, pred_prob, pred_labels,
-                                           evaluate_param=self.evaluate_param)
-        return evaluation_result

@@ -10,6 +10,16 @@ public class JobExample {
 
     protected List<Criteria> oredCriteria;
 
+    public String getLimitClause() {
+        return limitClause;
+    }
+
+    public void setLimitClause(String limitClause) {
+        this.limitClause = limitClause;
+    }
+
+    protected String limitClause;
+
     public JobExample() {
         oredCriteria = new ArrayList<Criteria>();
     }
@@ -61,6 +71,7 @@ public class JobExample {
         oredCriteria.clear();
         orderByClause = null;
         distinct = false;
+        limitClause = null;
     }
 
     protected abstract static class GeneratedCriteria {

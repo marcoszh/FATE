@@ -163,7 +163,7 @@ public class SendProcessor extends BaseTransferProcessor {
         final List<BasicMeta.ReturnStatus> results = Collections.synchronizedList(Lists.newArrayList());
         CountDownLatch finishLatch = new CountDownLatch(1);
 
-        ListenableFuture<BasicMeta.ReturnStatus> producerListenableFuture = (ListenableFuture<BasicMeta.ReturnStatus>)ThreadPoolTaskExecutorUtil.submitListenable(ioProducerPool,producer,new int[]{500,1000,5000},new int[]{5,5,3});
+        ListenableFuture<BasicMeta.ReturnStatus> producerListenableFuture = ThreadPoolTaskExecutorUtil.submitListenable(ioProducerPool,producer,new int[]{500,1000,5000},new int[]{5,5,3});
 
         producerListenableFuture.addCallback(
                 federationCallbackFactory.createDtableSendProducerListenableCallback(results, broker, errorContainer, null, -1));

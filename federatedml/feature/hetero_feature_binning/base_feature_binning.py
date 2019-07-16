@@ -16,17 +16,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from google.protobuf import json_format
+
 from arch.api.proto import feature_binning_meta_pb2, feature_binning_param_pb2
 from arch.api.utils import log_utils
 from federatedml.feature.binning.base_binning import IVAttributes
 from federatedml.feature.binning.bucket_binning import BucketBinning
 from federatedml.feature.binning.quantile_binning import QuantileBinning
 from federatedml.model_base import ModelBase
+from federatedml.param.feature_binning_param import FeatureBinningParam
 from federatedml.statistic.data_overview import get_header
 from federatedml.util import abnormal_detection
 from federatedml.util import consts
-from federatedml.util.transfer_variable.hetero_feature_binning_transfer_variable import HeteroFeatureBinningTransferVariable
-from federatedml.param.feature_binning_param import FeatureBinningParam
+from federatedml.util.transfer_variable.hetero_feature_binning_transfer_variable import \
+    HeteroFeatureBinningTransferVariable
 
 LOGGER = log_utils.getLogger()
 
@@ -87,9 +90,16 @@ class BaseHeteroFeatureBinning(ModelBase):
             # self.binning_obj = QuantileBinning(self.bin_param)
             raise ValueError("Binning method: {} is not supported yet".format(self.model_param.method))
 
+    def transform(self, data_instances):
+        transform_cols_idx = self.model_param.transform_param.transform_cols
+        transform_type = self.model_param.transform_param.transform_type
+        data_instances = self.binning_obj.transform(data_instances, transform_cols_idx, transform_type)
+        self.set_schema(data_instances)
+        self.data_output = data_instances
+        return data_instances
+
     def _get_meta(self):
         meta_protobuf_obj = feature_binning_meta_pb2.FeatureBinningMeta(
-            method=self.model_param.method,
             compress_thres=self.model_param.compress_thres,
             head_size=self.model_param.head_size,
             error=self.model_param.error,
@@ -110,7 +120,23 @@ class BaseHeteroFeatureBinning(ModelBase):
         iv_attrs = {}
         for col_name, iv_attr in binning_result.items():
             iv_result = iv_attr.result_dict()
+            LOGGER.debug("in _get_param, iv_result is : {}".format(iv_result))
             iv_object = feature_binning_param_pb2.IVParam(**iv_result)
+
+            json_result = json_format.MessageToJson(iv_object)
+            LOGGER.debug("iv_object: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam()
+            json_result = json_format.MessageToJson(iv_object_test)
+            LOGGER.debug("iv_object_test_1: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam(is_woe_monotonic=False)
+            json_result = json_format.MessageToDict(iv_object_test)
+            LOGGER.debug("iv_object_test_2: {}".format(json_result))
+
+            iv_object_test = feature_binning_param_pb2.IVParam(is_woe_monotonic=True)
+            json_result = json_format.MessageToDict(iv_object_test, including_default_value_fields=True)
+            LOGGER.debug("iv_object_test_3: {}".format(json_result))
 
             iv_attrs[col_name] = iv_object
         binning_result_obj = feature_binning_param_pb2.FeatureBinningResult(binning_result=iv_attrs)
@@ -126,12 +152,13 @@ class BaseHeteroFeatureBinning(ModelBase):
 
         result_obj = feature_binning_param_pb2.FeatureBinningParam(binning_result=binning_result_obj,
                                                                    host_results=final_host_results)
-
+        json_result = json_format.MessageToJson(result_obj)
+        LOGGER.debug("json_result: {}".format(json_result))
         return result_obj
 
     def _load_model(self, model_dict):
         model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
-        self._parse_need_run(model_dict, MODEL_META_NAME)
+        # self._parse_need_run(model_dict, MODEL_META_NAME)
 
         binning_result_obj = dict(model_param.binning_result.binning_result)
         host_params = dict(model_param.host_results)
@@ -211,4 +238,3 @@ class BaseHeteroFeatureBinning(ModelBase):
         """
         abnormal_detection.empty_table_detection(data_instances)
         abnormal_detection.empty_feature_detection(data_instances)
-

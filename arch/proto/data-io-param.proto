@@ -5,10 +5,12 @@ option java_outer_classname = "DataIOParamProto";
 
 message ImputerParam{
     map<string, string> missing_replace_value = 1;
+	map<string, double> missing_value_ratio = 2;
 }
 
 message OutlierParam{
     map<string, string> outlier_replace_value = 1;
+	map<string, double> outlier_value_ratio = 2;
 }
 
 message DataIOParam {

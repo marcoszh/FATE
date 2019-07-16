@@ -73,12 +73,12 @@ class FilterMethod(object):
         """
         pass
 
-    def display_feature_result(self, party_name='Base'):
-        class_name = self.__class__.__name__
-        for col_name, feature_value in self.feature_values.items():
-            LOGGER.info("[Result][FeatureSelection][{}], in {}, col: {} 's feature value is {}".format(
-                party_name, class_name, col_name, feature_value
-            ))
+    # def display_feature_result(self, party_name='Base'):
+    #     class_name = self.__class__.__name__
+    #     for col_name, feature_value in self.feature_values.items():
+    #         LOGGER.info("[Result][FeatureSelection][{}], in {}, col: {} 's feature value is {}".format(
+    #             party_name, class_name, col_name, feature_value
+    #         ))
 
     def _keep_one_feature(self, pick_high=True, left_cols=None, feature_values=None):
         """
@@ -204,6 +204,7 @@ class UnionPercentileFilter(FilterMethod):
         ----------
         data_instances : Useless, exist for extension
         """
+        LOGGER.debug("Before get_value_threshold, host_variances: {}".format(self.host_variances))
         self.get_value_threshold()
         local_left_cols = self.filter_one_party(self.local_variance, self.pick_high, self.value_threshold)
         local_left_cols = self.keep_one(self.local_variance, local_left_cols)
@@ -248,7 +249,8 @@ class UnionPercentileFilter(FilterMethod):
             total_values.extend(list(h_v.values()))
 
         sorted_value = sorted(total_values, reverse=self.pick_high)
-        thres_idx = int(math.floor(self.percentiles * len(sorted_value)))
+        thres_idx = int(math.floor(self.percentiles * len(sorted_value) - consts.FLOAT_ZERO))
+        LOGGER.debug("sorted_value: {}, thres_idx: {}, len_sort_value: {}".format(sorted_value, thres_idx, len(sorted_value)))
         self.value_threshold = sorted_value[thres_idx]
 
 
@@ -435,6 +437,7 @@ class IVPercentileFilter(FilterMethod):
             self.feature_values[col_name] = iv_attr.iv
 
         host_feature_values = {}
+
         for host_name, host_bin_result in self.binning_obj.host_results.items():
             if host_name not in self.host_cols:
                 continue
@@ -442,12 +445,12 @@ class IVPercentileFilter(FilterMethod):
                 host_to_select_cols = self.host_cols.get(host_name)
             tmp_host_value = {}
             for host_col_idx, host_iv_attr in host_bin_result.items():
-                if host_col_idx not in host_to_select_cols:
+                if int(host_col_idx) not in host_to_select_cols:
                     continue
                 tmp_host_value[host_col_idx] = host_iv_attr.iv
             host_feature_values[host_name] = tmp_host_value
             self.host_feature_values = host_feature_values
-
+        LOGGER.debug("After the loop, host_feature_values: {}".format(host_feature_values))
         union_filter = UnionPercentileFilter(local_variance=self.feature_values,
                                              host_variances=host_feature_values,
                                              percentile=self.percentile_thres,
@@ -545,7 +548,7 @@ class CoeffOfVarValueFilter(FilterMethod):
         return result
 
     def get_meta_obj(self):
-        result = feature_selection_meta_pb2.CoeffOfVarSelectionMeta(value_threshold=self.value_threshold)
+        result = feature_selection_meta_pb2.VarianceOfCoeSelectionMeta(value_threshold=self.value_threshold)
         return result
 
 

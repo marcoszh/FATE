@@ -17,7 +17,9 @@
 #  limitations under the License.
 #
 from federatedml.util.param_extract import ParamExtract
-from fate_flow.manager.tracking import Tracking
+from arch.api.utils import log_utils
+
+LOGGER = log_utils.getLogger()
 
 
 class ModelBase(object):
@@ -48,7 +50,7 @@ class ModelBase(object):
         except AttributeError:
             need_run = True
         self.need_run = need_run
-
+        LOGGER.debug("need_run: {}, need_cv: {}".format(self.need_run, self.need_cv))
         return need_cv
 
     def _init_model(self, model):
@@ -78,6 +80,7 @@ class ModelBase(object):
                 data = data_sets[data_key]["data"]
 
         if stage == 'cross_validation':
+            LOGGER.info("Need cross validation.")
             self.cross_validation(train_data)
 
         elif train_data:
@@ -98,21 +101,26 @@ class ModelBase(object):
                 elif not self.data_output and eval_data_output:
                     self.data_output = eval_data_output
 
+            self.set_predict_data_schema(self.data_output)
+        
         elif eval_data:
             self.data_output = self.predict(eval_data)
 
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
+            self.set_predict_data_schema(self.data_output)
+        
         else:
             if stage == "fit":
                 self.data_output = self.fit(data)
             else:
                 self.data_output = self.transform(data)
 
+        LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
+
     def run(self, component_parameters=None, args=None):
         need_cv = self._init_runtime_parameters(component_parameters)
-        print("component_parameter: {}".format(component_parameters))
 
         if need_cv:
             stage = 'cross_validation'
@@ -143,6 +151,8 @@ class ModelBase(object):
         pass
 
     def save_data(self):
+        if self.data_output is not None:
+            LOGGER.debug("data output is {}".format(list(self.data_output.collect())))
         return self.data_output
 
     def export_model(self):
@@ -168,6 +178,9 @@ class ModelBase(object):
 
     def set_tracker(self, tracker):
         self.tracker = tracker
+
+    def set_predict_data_schema(self, predict_data):
+        predict_data.schema = {"header": ["label", "predict_result", "predict_score", "predict_detail", "type"]}
 
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
         # tracker = Tracking('123', 'abc')
