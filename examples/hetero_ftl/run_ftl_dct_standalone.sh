@@ -1,4 +1,4 @@
-#!/usr/env/bin bash
+#!/usr/bin/env bash
 
 #
 #  Copyright 2019 The FATE Authors. All Rights Reserved.

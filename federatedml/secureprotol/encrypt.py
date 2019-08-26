@@ -162,7 +162,7 @@ class PaillierEncrypt(Encrypt):
     def __init__(self):
         super(PaillierEncrypt, self).__init__()
 
-    def generate_key(self, n_length=1024):
+    def generate_key(self, n_length=2048):
         self.public_key, self.privacy_key = \
             PaillierKeypair.generate_keypair(n_length=n_length)
 

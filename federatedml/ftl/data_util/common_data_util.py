@@ -342,6 +342,32 @@ def add_random_mask(value):
         raise TypeError("does not support type of ", type(value))
 
 
+def add_random_mask_for_list_of_values_mock(value_list):
+    if type(value_list) is list or type(value_list) is tuple:
+        masked_value_list = []
+        masks = []
+        for value in value_list:
+            masked_value, mask = add_random_mask_mock(value)
+            masked_value_list.append(masked_value)
+            masks.append(mask)
+        return masked_value_list, masks
+    else:
+        raise TypeError("the input is not a list")
+
+
+def add_random_mask_mock(value):
+    if isinstance(value, np.ndarray):
+        # mask = np.random.random_sample(value.shape)
+        mask = np.zeros(value.shape, dtype=int)
+        return value, mask
+    elif hasattr(value, '__add__'):
+        # mask = np.random.rand(1)[0]
+        mask = 0
+        return value, mask
+    else:
+        raise TypeError("does not support type of ", type(value))
+
+
 def remove_random_mask_from_list_of_values(value_list, mask_list):
     if type(value_list) is list or type(value_list) is tuple:
         cleared_value_list = []

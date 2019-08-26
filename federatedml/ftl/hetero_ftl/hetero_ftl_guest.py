@@ -17,13 +17,15 @@
 import time
 
 import numpy as np
+import pysnooper
 
 from arch.api.utils import log_utils
 from federatedml.ftl.data_util.common_data_util import overlapping_samples_converter, load_model_parameters, \
     save_model_parameters, convert_instance_table_to_dict, convert_instance_table_to_array, \
-    add_random_mask_for_list_of_values, add_random_mask, remove_random_mask_from_list_of_values, remove_random_mask
+    add_random_mask_for_list_of_values, add_random_mask, remove_random_mask_from_list_of_values, remove_random_mask, \
+    add_random_mask_for_list_of_values_mock, add_random_mask_mock
 from federatedml.ftl.data_util.log_util import create_shape_msg
-from federatedml.ftl.eggroll_computation.helper import distribute_decrypt_matrix
+from federatedml.ftl.eggroll_computation.helper import distribute_decrypt_matrix, distribute_decrypt_matrix_batch
 from federatedml.ftl.encrypted_ftl import EncryptedFTLGuestModel
 from federatedml.ftl.encryption.encryption import generate_encryption_key_pair, decrypt_array
 from federatedml.ftl.faster_encrypted_ftl import FasterEncryptedFTLGuestModel
@@ -304,6 +306,8 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
                                                 self.transfer_variable.host_public_key, self.n_iter_),
                                             idx=-1)[0]
 
+
+    @pysnooper.snoop('log_no_batch_guest.log', depth=2)
     def fit(self, guest_data):
         LOGGER.info("@ start guest fit")
         self.prepare_encryption_key_pair()
@@ -327,14 +331,16 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
             # Stage 1: compute and encrypt components (using guest public key) required by host to
             #          calculate gradients.
             LOGGER.debug("@ Stage 1: ")
-            guest_comp = self.guest_model.send_components()
+            guest_comp, guest_shape, guest_sign = self.guest_model.send_components()
+            # guest_comp = self.guest_model.send_components()
             LOGGER.debug("send enc guest_comp: " + create_shape_msg(guest_comp))
+            guest_comp = [guest_comp, guest_shape, guest_sign]
             self._do_remote(guest_comp, name=self.transfer_variable.guest_component_list.name,
                             tag=self.transfer_variable.generate_transferid(self.transfer_variable.guest_component_list,
                                                                            self.n_iter_),
                             role=consts.HOST,
                             idx=-1)
-
+            #
             # Stage 2: receive host components in encrypted form (encrypted by host public key),
             #          calculate guest gradients and loss in encrypted form (encrypted by host public key),
             #          and send them to host for decryption
@@ -343,8 +349,11 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
                                      tag=self.transfer_variable.generate_transferid(
                                          self.transfer_variable.host_component_list, self.n_iter_),
                                      idx=-1)[0]
+            host_shape = host_comp[1]
+            host_sign = host_comp[2]
+            host_comp = host_comp[0]
             LOGGER.debug("receive enc host_comp: " + create_shape_msg(host_comp))
-            self.guest_model.receive_components(host_comp)
+            self.guest_model.receive_components_batch(host_comp, host_shape, host_sign)
 
             self._precompute()
 
@@ -354,9 +363,9 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
             encrypt_loss = self.guest_model.send_loss()
 
             # add random mask to encrypt_guest_gradients and encrypt_loss, and send them to host for decryption
-            masked_enc_guest_gradients, gradients_masks = add_random_mask_for_list_of_values(encrypt_guest_gradients)
-            masked_enc_loss, loss_mask = add_random_mask(encrypt_loss)
-
+            masked_enc_guest_gradients, gradients_masks = add_random_mask_for_list_of_values_mock(encrypt_guest_gradients)
+            masked_enc_loss, loss_mask = add_random_mask_mock(encrypt_loss)
+            #
             LOGGER.debug("send masked_enc_guest_gradients: " + create_shape_msg(masked_enc_guest_gradients))
             self._do_remote(masked_enc_guest_gradients, name=self.transfer_variable.masked_enc_guest_gradients.name,
                             tag=self.transfer_variable.generate_transferid(
@@ -427,6 +436,7 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
             LOGGER.info("@ time: " + str(time.time()) + ", ep:" + str(self.n_iter_) + ", loss:" + str(loss))
             LOGGER.info("@ converged: " + str(is_stop))
             self.n_iter_ += 1
+            # is_stop = False
             if is_stop:
                 break
 
@@ -434,6 +444,9 @@ class HeteroDecentralizedEncryptFTLGuest(HeteroFTLGuest):
         LOGGER.info("@ running time: " + str(end_time - start_time))
 
     def __decrypt_gradients(self, encrypt_gradients):
+        return distribute_decrypt_matrix_batch(self.private_key, encrypt_gradients[0]), distribute_decrypt_matrix_batch(self.private_key,
+                                                                                                encrypt_gradients[1])
+    def __decrypt_gradients_batch(self, encrypt_gradients):
         return distribute_decrypt_matrix(self.private_key, encrypt_gradients[0]), decrypt_array(self.private_key,
                                                                                                 encrypt_gradients[1])
 

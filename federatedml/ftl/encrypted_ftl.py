@@ -17,22 +17,26 @@
 import numpy as np
 
 from federatedml.ftl.eggroll_computation.helper import distribute_compute_sum_XY, \
-    distribute_compute_XY, distribute_encrypt_matrix, distribute_compute_XY_plus_Z, \
-    distribute_encrypt_matmul_2_ob, distribute_encrypt_matmul_3, distribute_compute_X_plus_Y
+    distribute_compute_XY, distribute_encrypt_matrix, distribute_encrypt_matrix_batch, distribute_compute_XY_plus_Z, \
+    distribute_encrypt_matmul_2_ob, distribute_encrypt_matmul_3, distribute_compute_X_plus_Y, restore_shape
 from federatedml.ftl.encryption import encryption
 from federatedml.ftl.encryption.encryption import decrypt_array, decrypt_matrix, decrypt_scalar
 from federatedml.ftl.plain_ftl import PlainFTLGuestModel, PlainFTLHostModel
+
+import pysnooper
 
 
 class EncryptedFTLGuestModel(PlainFTLGuestModel):
 
     def __init__(self, local_model, model_param, public_key=None, host_public_key=None, private_key=None,
-                 is_min_gen_enc=True, is_trace=False):
+                 is_min_gen_enc=False, is_trace=True, is_batch=True):
         super(EncryptedFTLGuestModel, self).__init__(local_model, model_param, is_trace)
         self.public_key = public_key
         self.private_key = private_key
         self.host_public_key = host_public_key
         self.is_min_gen_enc = is_min_gen_enc
+        self.is_batch = is_batch
+        self.batch_size = 32
 
     def set_public_key(self, public_key):
         self.public_key = public_key
@@ -42,6 +46,10 @@ class EncryptedFTLGuestModel(PlainFTLGuestModel):
 
     def set_private_key(self, private_key):
         self.private_key = private_key
+
+    def set_batch_size(self, is_batch, batch_size=32):
+        self.is_batch = is_batch
+        self.batch_size = batch_size
 
     def send_components(self):
         if self.is_min_gen_enc:
@@ -64,13 +72,22 @@ class EncryptedFTLGuestModel(PlainFTLGuestModel):
             return [enc_y_overlap_2_phi_2, enc_y_overlap_phi, enc_mapping_comp_A]
         else:
             components = super(EncryptedFTLGuestModel, self).send_components()
-            return self.__encrypt_components(components)
+            if self.is_batch:
+                return self.__encrypt_components_batch(components)
+            else:
+                return self.__encrypt_components(components)
 
     def __encrypt_components(self, components):
         enc_comp_0 = distribute_encrypt_matrix(self.public_key, components[0])
         enc_comp_1 = distribute_encrypt_matrix(self.public_key, components[1])
         enc_comp_2 = distribute_encrypt_matrix(self.public_key, components[2])
         return [enc_comp_0, enc_comp_1, enc_comp_2]
+
+    def __encrypt_components_batch(self, components):
+        enc_comp_0, shape_0, sign_0 = distribute_encrypt_matrix_batch(self.public_key, components[0])
+        enc_comp_1, shape_1, sign_1 = distribute_encrypt_matrix_batch(self.public_key, components[1])
+        enc_comp_2, shape_2, sign_2 = distribute_encrypt_matrix_batch(self.public_key, components[2])
+        return [enc_comp_0, enc_comp_1, enc_comp_2], [shape_0, shape_1, shape_2], [sign_0, sign_1, sign_2]
 
     def receive_components(self, components):
         self.enc_uB_overlap = components[0]
@@ -79,7 +96,87 @@ class EncryptedFTLGuestModel(PlainFTLGuestModel):
         self._update_gradients()
         self._update_loss()
 
+    # def _restore_shape(self, component, shape, batch_size=32, bit_width=8, pad_zero=3):
+    #     num_ele = np.prod(shape)
+    #     num_ele_w_pad = batch_size * len(component)
+    #
+    #     un_batched_nums = np.zeros(num_ele_w_pad, dtype=int)
+    #
+    #     for i in range(batch_size):
+    #         filter = (pow(2, bit_width+pad_zero) - 1) << ((bit_width + pad_zero) * i)
+    #         # filtered_nums = [x & filter for x in component]
+    #         for j in len(component):
+    #             un_batched_nums[batch_size*j + batch_size-1-i] = (filter & component[j]) >> ((bit_width + pad_zero) * i)
+    #
+    #     un_batched_nums = un_batched_nums[:num_ele]
+    #     re = np.reshape(un_batched_nums, shape)
+    #     return re
+
+    def receive_components_batch(self, components, shapes, signs):
+        self.enc_uB_overlap = restore_shape(components[0], shapes[0], signs[0])
+        self.enc_uB_overlap_2 = restore_shape(components[1], shapes[1], signs[1])
+        self.enc_mapping_comp_B = restore_shape(components[2], shapes[2], signs[2])
+        # self.enc_uB_overlap_shape = shapes[0]
+        # self.enc_uB_overlap_2_shape = shapes[1]
+        # self.enc_mapping_comp_B_shape = shapes[2]
+        self._update_gradients_batch()
+        self._update_loss_batch()
+
     def _update_gradients(self):
+
+        # y_overlap_2 have shape (len(overlap_indexes), 1),
+        # phi has shape (1, feature_dim),
+        # y_overlap_2_phi has shape (len(overlap_indexes), 1, feature_dim)
+        y_overlap_2_phi = np.expand_dims(self.y_overlap_2 * self.phi, axis=1)
+
+        # uB_2_overlap has shape (len(overlap_indexes), feature_dim, feature_dim)
+        enc_y_overlap_2_phi_uB_overlap_2 = distribute_encrypt_matmul_3(y_overlap_2_phi, self.enc_uB_overlap_2)
+        enc_loss_grads_const_part1 = np.sum(0.25 * np.squeeze(enc_y_overlap_2_phi_uB_overlap_2, axis=1), axis=0)
+
+        if self.is_trace:
+            self.logger.debug("enc_y_overlap_2_phi_uB_overlap_2 shape" + str(enc_y_overlap_2_phi_uB_overlap_2.shape))
+            self.logger.debug("enc_loss_grads_const_part1 shape" + str(enc_loss_grads_const_part1.shape))
+
+        y_overlap = np.tile(self.y_overlap, (1, self.enc_uB_overlap.shape[-1]))
+        enc_loss_grads_const_part2 = distribute_compute_sum_XY(y_overlap * 0.5, self.enc_uB_overlap)
+
+        enc_const = enc_loss_grads_const_part1 - enc_loss_grads_const_part2
+        enc_const_overlap = np.tile(enc_const, (len(self.overlap_indexes), 1))
+        enc_const_nonoverlap = np.tile(enc_const, (len(self.non_overlap_indexes), 1))
+        y_non_overlap = np.tile(self.y[self.non_overlap_indexes], (1, self.enc_uB_overlap.shape[-1]))
+
+        if self.is_trace:
+            self.logger.debug("enc_const shape:" + str(enc_const.shape))
+            self.logger.debug("enc_const_overlap shape" + str(enc_const_overlap.shape))
+            self.logger.debug("enc_const_nonoverlap shape" + str(enc_const_nonoverlap.shape))
+            self.logger.debug("y_non_overlap shape" + str(y_non_overlap.shape))
+
+        enc_grad_A_nonoverlap = distribute_compute_XY(self.alpha * y_non_overlap / len(self.y), enc_const_nonoverlap)
+        enc_grad_A_overlap = distribute_compute_XY_plus_Z(self.alpha * y_overlap / len(self.y), enc_const_overlap,
+                                                          self.enc_mapping_comp_B)
+
+        if self.is_trace:
+            self.logger.debug("enc_grad_A_nonoverlap shape" + str(enc_grad_A_nonoverlap.shape))
+            self.logger.debug("enc_grad_A_overlap shape" + str(enc_grad_A_overlap.shape))
+
+        enc_loss_grad_A = [[0 for _ in range(self.enc_uB_overlap.shape[1])] for _ in range(len(self.y))]
+        # TODO: need more efficient way to do following task
+        for i, j in enumerate(self.non_overlap_indexes):
+            enc_loss_grad_A[j] = enc_grad_A_nonoverlap[i]
+        for i, j in enumerate(self.overlap_indexes):
+            enc_loss_grad_A[j] = enc_grad_A_overlap[i]
+
+        enc_loss_grad_A = np.array(enc_loss_grad_A)
+
+        if self.is_trace:
+            self.logger.debug("enc_loss_grad_A shape" + str(enc_loss_grad_A.shape))
+            self.logger.debug("enc_loss_grad_A" + str(enc_loss_grad_A))
+
+        self.loss_grads = enc_loss_grad_A
+        self.enc_grads_W, self.enc_grads_b = self.localModel.compute_encrypted_params_grads(
+            self.X, enc_loss_grad_A)
+
+    def _update_gradients_batch(self):
 
         # y_overlap_2 have shape (len(overlap_indexes), 1),
         # phi has shape (1, feature_dim),
@@ -159,6 +256,20 @@ class EncryptedFTLGuestModel(PlainFTLGuestModel):
             y_overlap) * np.log(2)
         return enc_loss_y
 
+    def _update_loss_batch(self):
+        uA_overlap_prime = - self.uA_overlap / self.feature_dim
+        enc_loss_overlap = np.sum(distribute_compute_sum_XY(uA_overlap_prime, self.enc_uB_overlap))
+        enc_loss_y = self.__compute_encrypt_loss_y_batch(self.enc_uB_overlap, self.enc_uB_overlap_2, self.y_overlap, self.phi)
+        self.loss = self.alpha * enc_loss_y + enc_loss_overlap
+
+    def __compute_encrypt_loss_y_batch(self, enc_uB_overlap, enc_uB_overlap_2, y_overlap, phi):
+        enc_uB_phi = distribute_encrypt_matmul_2_ob(enc_uB_overlap, phi.transpose())
+        enc_uB_2 = np.sum(enc_uB_overlap_2, axis=0)
+        enc_phi_uB_2_Phi = distribute_encrypt_matmul_2_ob(distribute_encrypt_matmul_2_ob(phi, enc_uB_2), phi.transpose())
+        enc_loss_y = (-0.5 * distribute_compute_sum_XY(y_overlap, enc_uB_phi)[0] + 1.0 / 8 * np.sum(enc_phi_uB_2_Phi)) + len(
+            y_overlap) * np.log(2)
+        return enc_loss_y
+
     def get_loss_grads(self):
         return self.loss_grads
 
@@ -166,12 +277,14 @@ class EncryptedFTLGuestModel(PlainFTLGuestModel):
 class EncryptedFTLHostModel(PlainFTLHostModel):
 
     def __init__(self, local_model, model_param, public_key=None, guest_public_key=None, private_key=None,
-                 is_min_gen_enc=True, is_trace=False):
+                 is_min_gen_enc=False, is_trace=True, is_batch=True):
         super(EncryptedFTLHostModel, self).__init__(local_model, model_param, is_trace)
         self.public_key = public_key
         self.private_key = private_key
         self.guest_public_key = guest_public_key
         self.is_min_gen_enc = is_min_gen_enc
+        self.is_batch = is_batch
+        self.batch_size = 32
 
     def set_public_key(self, public_key):
         self.public_key = public_key
@@ -181,6 +294,10 @@ class EncryptedFTLHostModel(PlainFTLHostModel):
 
     def set_private_key(self, private_key):
         self.private_key = private_key
+
+    def set_batch_size(self, is_batch, batch_size=32):
+        self.is_batch = is_batch
+        self.batch_size = batch_size
 
     def send_components(self):
         if self.is_min_gen_enc:
@@ -203,7 +320,10 @@ class EncryptedFTLHostModel(PlainFTLHostModel):
             return [enc_uB_overlap, enc_uB_overlap_2, enc_mapping_comp_B]
         else:
             components = super(EncryptedFTLHostModel, self).send_components()
-            return self.__encrypt_components(components)
+            if self.is_batch:
+                return self.__encrypt_components_batch(components)
+            else:
+                return self.__encrypt_components(components)
 
     def __encrypt_components(self, components):
         enc_comp_0 = distribute_encrypt_matrix(self.public_key, components[0])
@@ -211,13 +331,36 @@ class EncryptedFTLHostModel(PlainFTLHostModel):
         enc_comp_2 = distribute_encrypt_matrix(self.public_key, components[2])
         return [enc_comp_0, enc_comp_1, enc_comp_2]
 
+    def __encrypt_components_batch(self, components):
+        enc_comp_0, shape_0, sign_0 = distribute_encrypt_matrix_batch(self.public_key, components[0])
+        enc_comp_1, shape_1, sign_1 = distribute_encrypt_matrix_batch(self.public_key, components[1])
+        enc_comp_2, shape_2, sign_2 = distribute_encrypt_matrix_batch(self.public_key, components[2])
+        return [enc_comp_0, enc_comp_1, enc_comp_2], [shape_0, shape_1, shape_2], [sign_0, sign_1, sign_2]
+
     def receive_components(self, components):
         self.enc_y_overlap_2_phi_2 = components[0]
         self.enc_y_overlap_phi = components[1]
         self.enc_mapping_comp_A = components[2]
         self._update_gradients()
 
+
+    def receive_components_batch(self, components, shapes, signs):
+        self.enc_y_overlap_2_phi_2 = restore_shape(components[0], shapes[0], signs[0])
+        self.enc_y_overlap_phi = restore_shape(components[1], shapes[1], signs[1])
+        self.enc_mapping_comp_A = restore_shape(components[2], shapes[2], signs[2])
+        self._update_gradients_batch()
+
     def _update_gradients(self):
+        uB_overlap_ex = np.expand_dims(self.uB_overlap, axis=1)
+        enc_uB_overlap_y_overlap_2_phi_2 = distribute_encrypt_matmul_3(uB_overlap_ex, self.enc_y_overlap_2_phi_2)
+        enc_l1_grad_B = distribute_compute_X_plus_Y(np.squeeze(enc_uB_overlap_y_overlap_2_phi_2, axis=1), self.enc_y_overlap_phi)
+        enc_loss_grad_B = distribute_compute_X_plus_Y(self.alpha * enc_l1_grad_B, self.enc_mapping_comp_A)
+
+        self.loss_grads = enc_loss_grad_B
+        self.enc_grads_W, self.enc_grads_b = self.localModel.compute_encrypted_params_grads(
+            self.X[self.overlap_indexes], enc_loss_grad_B)
+
+    def _update_gradients_batch(self):
         uB_overlap_ex = np.expand_dims(self.uB_overlap, axis=1)
         enc_uB_overlap_y_overlap_2_phi_2 = distribute_encrypt_matmul_3(uB_overlap_ex, self.enc_y_overlap_2_phi_2)
         enc_l1_grad_B = distribute_compute_X_plus_Y(np.squeeze(enc_uB_overlap_y_overlap_2_phi_2, axis=1), self.enc_y_overlap_phi)
@@ -245,7 +388,8 @@ class LocalEncryptedFederatedTransferLearning(object):
         self.host = host
         self.private_key = private_key
 
-    def fit(self, X_A, X_B, y, overlap_indexes, non_overlap_indexes):
+    @pysnooper.snoop('log_no_batch.log', depth=2)
+    def fit(self, X_A, X_B, y, overlap_indexes, non_overlap_indexes, is_batch=False):
         self.guest.set_batch(X_A, y, non_overlap_indexes, overlap_indexes)
         self.host.set_batch(X_B, overlap_indexes)
 

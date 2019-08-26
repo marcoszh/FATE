@@ -22,6 +22,7 @@ import numpy as np
 from arch.api.eggroll import parallelize, table
 from federatedml.ftl.eggroll_computation.util import eggroll_compute_vAvg_XY, eggroll_compute_hSum_XY, \
     eggroll_encrypt, eggroll_decrypt, eggroll_compute_XY, eggroll_compute_X_plus_Y
+from federatedml.secureprotol.fate_paillier import PaillierEncryptedNumber
 
 
 def prepare_table(matrix, batch_size=1, max_partition=20):
@@ -163,6 +164,95 @@ def distribute_decrypt_matrix(private_key, matrix):
     return result
 
 
+def restore_shape(component, shape, sign, batch_size=16, bit_width=8, pad_zero=3):
+    num_ele = np.prod(shape)
+    num_ele_w_pad = batch_size * len(component)
+
+    un_batched_nums = np.zeros(num_ele_w_pad, dtype=int)
+
+    for i in range(batch_size):
+        filter = (pow(2, bit_width+pad_zero) - 1) << ((bit_width + pad_zero) * i)
+        # filtered_nums = [x & filter for x in component]
+        for j in len(component):
+            un_batched_nums[batch_size*j + batch_size-1-i] = (filter & component[j].ciphertext(be_secure=False)) >> ((bit_width + pad_zero) * i)
+
+    un_batched_nums = un_batched_nums[:num_ele]
+    pk = component[0].public_key
+    un_batched_nums_en = [PaillierEncryptedNumber(pk, x, 0) for x in un_batched_nums]
+    re = np.reshape(un_batched_nums_en, shape)
+    re = np.multiply(re, sign)
+    return re
+
+
+def distribute_decrypt_matrix_batch(private_key, matrix, batch_size=16, parallelism=8, bit_width=8, pad_zero=3):
+    _shape = matrix.shape
+    if len(_shape) == 3:
+        matrix = _convert_3d_to_2d_matrix(matrix)
+    elif len(_shape) == 1:
+        matrix = np.expand_dims(matrix, axis=1)
+
+
+    # X = prepare_table(matrix, batch_size=1)
+    # val = eggroll_decrypt(private_key, X)
+    # matrix = matrix.astype(np.int)
+
+    A = np.reshape(matrix, (1, -1))
+    A = np.squeeze(A)
+    A = [x.ciphertext(be_secure=False) if x.exponent == 0 else \
+             (x.decrease_exponent_to(0).ciphertext(be_secure=False) if x.exponent > 0 \
+                  else x.increase_exponent_to(0).ciphertext(be_secure=False)) for x in A]
+
+    A_len = len(A)
+    # pad array at the end so tha the array is the size of
+    A = A if (A_len % batch_size) == 0 \
+        else np.pad(A, (0, batch_size - (A_len % batch_size)), 'constant', constant_values=(0, 0))
+
+    idx_range = int(len(A) / batch_size)
+    idx_base = list(range(idx_range))
+    batched_nums = np.zeros(idx_range, dtype=int)
+    for i in range(batch_size):
+        idx_filter = [i + x * batch_size for x in idx_base]
+        # print(idx_filter)
+        filted_num = A[idx_filter]
+        # print(filted_num)
+        batched_nums += filted_num << ((bit_width + pad_zero) * i)
+        # print(batched_nums)
+
+    batched_nums = np.expand_dims(batched_nums, axis=1)
+
+    X = prepare_table(batched_nums, 1)
+    val = eggroll_decrypt(private_key, X)
+
+    result = []
+    last_index = len(val) - 1
+    for i in range(last_index):
+        result.append(val[i])
+
+    if len(result) == 0:
+        result = val[last_index]
+    elif len(result[0]) == len(val[last_index]):
+        result.append(val[last_index])
+        result = np.array(result)
+        result = result.reshape((result.shape[0] * result.shape[1], result.shape[-1]))
+    else:
+        result = np.array(result)
+        result = result.reshape((result.shape[0] * result.shape[1], result.shape[-1]))
+        result = np.vstack((result, val[last_index]))
+
+    result = np.squeeze(result)
+    result = restore_shape(result, _shape)
+
+    # if len(_shape) == 3:
+    #     result = result.reshape(_shape)
+    # elif len(_shape) == 1:
+    #     result = np.squeeze(result, axis=1)
+
+    result = (result - 0.5) * 2
+
+    destroy_table(X)
+    return result
+
+
 def distribute_encrypt_matrix(public_key, matrix):
     _shape = matrix.shape
     if len(_shape) == 3:
@@ -196,6 +286,77 @@ def distribute_encrypt_matrix(public_key, matrix):
 
     destroy_table(X)
     return result
+
+def distribute_encrypt_matrix_batch(public_key, matrix, batch_size=16, parallelism=8, bit_width=8, pad_zero=3, r_max=1, r_min=0):
+    _shape = matrix.shape
+    _signs = np.sign(matrix)
+    matrix = np.multiply(matrix, _signs)
+    if len(_shape) == 3:
+        matrix = _convert_3d_to_2d_matrix(matrix)
+    elif len(_shape) == 1:
+        matrix = np.expand_dims(matrix, axis=1)
+
+    A = np.reshape(matrix, (1, -1))
+    A = np.squeeze(A)
+
+    A = (np.clip(A,r_max,r_min))
+
+
+
+    A_len = len(A)
+    # pad array at the end so tha the array is the size of
+    A = A if (A_len % batch_size) == 0 \
+        else np.pad(A, (0, batch_size - (A_len % batch_size)), 'constant', constant_values=(0, 0))
+
+    # quantization step
+    # A = (A * 255.0 + 0.5).astype(np.int)
+    A = ((A - r_min) * (pow(2, bit_width) - 1.0) / (r_max - r_min)).astype(np.int)
+
+    idx_range = int(len(A) / batch_size)
+    idx_base = list(range(idx_range))
+    batched_nums = np.zeros(idx_range, dtype=int)
+    for i in range(batch_size):
+        idx_filter = [i + x * batch_size for x in idx_base]
+        # print(idx_filter)
+        filted_num = A[idx_filter]
+        # print(filted_num)
+        batched_nums *= pow(2, bit_width + pad_zero)
+        # batched_nums += (filted_num << ((bit_width + pad_zero) * i))
+        batched_nums += filted_num
+        # print(batched_nums)
+
+    # batched_nums = batched_nums.tolist()
+    # batched_nums = np.reshape(batched_nums, (parallelism, -1))
+    batched_nums = np.expand_dims(batched_nums, axis=1)
+
+    X = prepare_table(batched_nums, 1)
+    val = eggroll_encrypt(public_key, X)
+
+    result = []
+    last_index = len(val) - 1
+    for i in range(last_index):
+        result.append(val[i])
+
+    if len(result) == 0:
+        result = val[last_index]
+    elif len(result[0]) == len(val[last_index]):
+        result.append(val[last_index])
+        result = np.array(result)
+        result = result.reshape((result.shape[0] * result.shape[1], result.shape[-1]))
+    else:
+        result = np.array(result)
+        result = result.reshape((result.shape[0] * result.shape[1], result.shape[-1]))
+        result = np.vstack((result, val[last_index]))
+
+    # if len(_shape) == 3:
+    #     result = result.reshape(_shape)
+    # elif len(_shape) == 1:
+    #     result = np.squeeze(result, axis=1)
+    result = np.squeeze(result)
+
+
+    destroy_table(X)
+    return result, _shape, _signs
 
 
 # def encrypt_matmul_2(X, Y, partition=20):

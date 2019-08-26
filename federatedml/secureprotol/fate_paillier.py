@@ -69,10 +69,11 @@ class PaillierPublicKey(object):
     def apply_obfuscator(self, ciphertext, random_value=None):
         """ 
         """
-        r = random_value or random.SystemRandom().randrange(1, self.n)
-        obfuscator = gmpy_math.powmod(r, self.n, self.nsquare)
-
-        return (ciphertext * obfuscator) % self.nsquare
+        # r = random_value or random.SystemRandom().randrange(1, self.n)
+        # obfuscator = gmpy_math.powmod(r, self.n, self.nsquare)
+        #
+        # return (ciphertext * obfuscator) % self.nsquare
+        return ciphertext
    
     def raw_encrypt(self, plaintext, random_value=None):
         """
@@ -80,6 +81,7 @@ class PaillierPublicKey(object):
         if not isinstance(plaintext, int):
             raise TypeError("plaintext should be int, but got: %s" %
                             type(plaintext))
+        # print('raw_encrypting: %d' % plaintext)
         
         if plaintext >= (self.n - self.max_int) and plaintext < self.n:
             # Very large plaintext, take a sneaky shortcut using inverses
@@ -214,16 +216,16 @@ class PaillierEncryptedNumber(object):
     def ciphertext(self, be_secure=True):
         """return the ciphertext of the PaillierEncryptedNumber.
         """
-        if be_secure and not self.__is_obfuscator:
-            self.apply_obfuscator()
+        # if be_secure and not self.__is_obfuscator:
+        #     self.apply_obfuscator()
 
         return self.__ciphertext
 
     def apply_obfuscator(self):
         """ciphertext by multiplying by r ** n with random r
         """        
-        self.__ciphertext = self.public_key.apply_obfuscator(self.__ciphertext)
-        self.__is_obfuscator = True
+        # self.__ciphertext = self.public_key.apply_obfuscator(self.__ciphertext)
+        # self.__is_obfuscator = True
   
     def __add__(self, other):       
         if isinstance(other, PaillierEncryptedNumber):
@@ -279,6 +281,19 @@ class PaillierEncryptedNumber(object):
         new_encryptednumber = self.__mul__(factor)        
         new_encryptednumber.exponent = new_exponent
         
+        return new_encryptednumber
+
+    def decrease_exponent_to(self, new_exponent):
+        """return PaillierEncryptedNumber:
+           new PaillierEncryptedNumber with same value but having great exponent.
+        """
+        if new_exponent > self.exponent:
+            raise ValueError("New exponent %i should be smaller than old exponent %i" % (new_exponent, self.exponent))
+
+        factor = pow(FixedPointNumber.BASE, self.exponent - new_exponent)
+        new_encryptednumber = self.__mul__(factor)
+        new_encryptednumber.exponent = new_exponent
+
         return new_encryptednumber
     
     def __align_exponent(self, x, y):

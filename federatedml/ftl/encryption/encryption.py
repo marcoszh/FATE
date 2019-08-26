@@ -97,6 +97,10 @@ def decrypt_scalar(private_key: PaillierPrivateKey, x):
     return private_key.decrypt(x)
 
 
+def decrypt_scalar_batch(private_key: PaillierPrivateKey, x):
+    return (private_key.decrypt(x) - 0.5) * 2
+
+
 def decrypt_array(private_key: PaillierPrivateKey, X):
     decrypt_x = []
     for i in range(X.shape[0]):
